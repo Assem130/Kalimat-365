@@ -2,11 +2,12 @@
 
 كلمة عربية فصيحة واحدة كل يوم: اسمعها، افهم معناها، وراجعها حتى تثبت.
 
-Kalimat is a calm, local-first Arabic learning experience for intermediate-and-advanced learners. It is currently a public beta (`0.3.0`), published as the [GitHub release `v0.3.0-beta.1`](https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.1).
+Kalimat is a calm, local-first Arabic learning experience for intermediate-and-advanced learners. It is currently a public beta (`0.3.0`), published as the [GitHub release `v0.3.0-beta.2`](https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.2). The Chrome extension is available on the [Chrome Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe); Firefox store submission is postponed.
 
 - **Live site:** <https://assem130.github.io/arabic-word-of-the-day/>
 - **Privacy:** <https://assem130.github.io/arabic-word-of-the-day/privacy.html>
 - **Support:** <https://github.com/Assem130/arabic-word-of-the-day/issues>
+- **Chrome Web Store:** <https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe>
 
 ## القناتان / Two surfaces
 
@@ -35,13 +36,15 @@ Then open <http://localhost:8000/>. Python 3 is the only development runtime req
 
 ## Extension beta installation
 
-Download the assets from the published GitHub release [`v0.3.0-beta.1`](https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.1):
+Install the Chrome extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe). Firefox store submission is postponed.
+
+For unpacked or local testing, download the assets from the published GitHub release [`v0.3.0-beta.2`](https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.2):
 
 - Download the matching `kalimat-chrome-0.3.0.zip` or `kalimat-firefox-0.3.0.zip`, then extract the ZIP.
 - **Chrome:** open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select the extracted Chrome folder (the folder containing `manifest.json`).
 - **Firefox:** open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select the extracted Firefox `manifest.json` file.
 
-For local packaging or testing, use the verification command below and load the unpacked `extension/dist/chrome` or `extension/dist/firefox` directory in the relevant browser. Store listing links remain intentionally omitted while store submissions are pending.
+For local packaging or testing, use the verification command below and load the unpacked `extension/dist/chrome` or `extension/dist/firefox` directory in the relevant browser.
 
 ## Verification
 
