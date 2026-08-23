@@ -12,3 +12,8 @@ docs/superpowers/
 extension/dist/
 agents doc/
 agent-docs/
+
+.agents/
+.codex/
+.playwright-mcp/
+opencode.json
