@@ -4,7 +4,7 @@
 
 - Product: **Kalimat — Arabic Word of the Day / كَلِمات — كلمة عربية كل يوم**
 - Beta label: **Public beta · 0.3.0**
-- Published GitHub release: [`v0.3.0-beta.1`](https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.1)
+- Published GitHub release: [`v0.3.0-beta.2`](https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.2)
 - Archive names: `kalimat-chrome-0.3.0.zip`, `kalimat-firefox-0.3.0.zip`
 - Audience: self-identified intermediate-and-advanced Arabic learners
 
@@ -64,8 +64,9 @@ The extension is an optional companion with challenge level, interests, a daily 
 
 - Privacy policy: <https://assem130.github.io/arabic-word-of-the-day/privacy.html>
 - Support: <https://github.com/Assem130/arabic-word-of-the-day/issues>
+- Chrome Web Store: <https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe>
 
-No Chrome Web Store or Firefox Add-ons URL is listed yet; store accounts and final submissions remain release-owner steps.
+Chrome `0.3.0` is published on the Chrome Web Store. Firefox Add-ons submission is postponed.
 
 ## Screenshot mapping
 
@@ -79,13 +80,15 @@ Submit exactly these three real PNGs, each 1280×800:
 
 ## Account and submission checklist
 
-- [ ] Confirm the public beta audience is intermediate-and-advanced; remove any beginner-course wording.
-- [ ] Publish `privacy.html` at the exact privacy URL and verify it loads over HTTPS.
-- [ ] Verify the support URL accepts issue reports.
-- [ ] Create or verify the Chrome Web Store and Firefox Add-ons publisher accounts (user-owned prerequisite).
-- [ ] Upload the matching `0.3.0` archive and listing copy for each browser.
-- [ ] Declare Chrome’s optional Wiktionary host permission and data boundary exactly as above.
+- [x] Confirm the public beta audience is intermediate-and-advanced; remove any beginner-course wording.
+- [x] Publish `privacy.html` at the exact privacy URL and verify it loads over HTTPS.
+- [x] Verify the support URL accepts issue reports.
+- [x] Create and verify the Chrome Web Store publisher account.
+- [x] Upload the Chrome `0.3.0` archive and listing copy.
+- [x] Declare Chrome’s optional Wiktionary host permission and data boundary exactly as above.
 - [ ] Declare Firefox `required: ['none']` data collection.
-- [ ] Upload only the three real 1280×800 screenshots and map them to the listing fields.
-- [ ] Complete each store’s review questionnaire and privacy/data-safety form; do not invent store URLs before approval.
-- [ ] Stop for release-owner approval before submitting, paying, or changing external repository/store state.
+- [x] Upload only the three real 1280×800 screenshots and map them to the listing fields.
+- [x] Complete Chrome’s review questionnaire and privacy/data-safety form.
+- [x] Submit the Chrome listing for review with release-owner approval.
+- [x] Monitor Chrome review and add the public listing URL after approval.
+- [ ] Resume Firefox submission only when the release owner chooses to do so.
