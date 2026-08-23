@@ -343,15 +343,15 @@ svg.badge-icon, svg.due-icon { width: 1em; height: 1em; fill: none; stroke: curr
 
 .manifesto-text { margin: 0; font-size: clamp(2.5rem, 6vw, 6.1rem); line-height: 1.25; letter-spacing: normal; }
 
-.accordion-section { padding: clamp(74px, 10vw, 130px) max(20px, calc((100vw - 1180px) / 2)); background: var(--paper); }
+.accordion-section { padding: clamp(36px, 4vw, 56px) max(20px, calc((100vw - 1180px) / 2)); background: var(--paper); }
 
-.accordion-heading { max-width: 700px; margin-bottom: 54px; }
+.accordion-heading { max-width: 700px; margin-bottom: 24px; }
 
-.accordion-heading h2 { margin: 0; font-size: clamp(2.7rem, 5vw, 5rem); font-weight: 400; line-height: 1.35; letter-spacing: normal; }
+.accordion-heading h2 { margin: 0; font-size: clamp(2.4rem, 4.5vw, 4.2rem); font-weight: 400; line-height: 1.35; letter-spacing: normal; }
 
-.horizontal-accordion { min-height: 460px; display: flex; gap: 2px; }
+.horizontal-accordion { min-height: 180px; display: flex; gap: 2px; }
 
-.horizontal-accordion details { position: relative; flex: 1; min-width: 0; padding: 24px; background: var(--ink); color: var(--paper-light); overflow: hidden; transition: flex .45s ease, background .3s ease; }
+.horizontal-accordion details { position: relative; flex: 1; min-width: 0; padding: 16px 20px; background: var(--ink); color: var(--paper-light); overflow: hidden; transition: flex .45s ease, background .3s ease; }
 
 .horizontal-accordion details:nth-child(2) { background: var(--ink-soft); }
 
@@ -359,21 +359,21 @@ svg.badge-icon, svg.due-icon { width: 1em; height: 1em; fill: none; stroke: curr
 
 .horizontal-accordion details:hover, .horizontal-accordion details:focus-within, .horizontal-accordion details[open] { flex: 2.2; }
 
-.horizontal-accordion summary { display: grid; gap: 10px; cursor: pointer; font: 600 .7rem var(--sans); list-style: none; }
+.horizontal-accordion summary { display: grid; gap: 6px; cursor: pointer; font: 600 .68rem var(--sans); list-style: none; }
 
 .horizontal-accordion summary::-webkit-details-marker { display: none; }
 
 .horizontal-accordion summary::marker { content: ""; }
 
-.horizontal-accordion .accordion-teaser { max-width: 18ch; color: currentColor; font: 400 clamp(1rem, 1.5vw, 1.3rem) var(--serif); letter-spacing: normal; line-height: 1.45; opacity: .82; }
+.horizontal-accordion .accordion-teaser { max-width: 18ch; color: currentColor; font: 400 clamp(.92rem, 1.2vw, 1.15rem) var(--serif); letter-spacing: normal; line-height: 1.4; opacity: .82; }
 
-.horizontal-accordion details > div { position: absolute; right: 24px; bottom: 26px; left: 24px; opacity: 0; transform: translateY(14px); transition: opacity .25s, transform .25s; }
+.horizontal-accordion details > div { position: absolute; right: 20px; bottom: 14px; left: 20px; opacity: 0; transform: translateY(8px); transition: opacity .25s, transform .25s; }
 
 .horizontal-accordion details:hover > div, .horizontal-accordion details:focus-within > div, .horizontal-accordion details[open] > div { opacity: 1; transform: none; }
 
-.horizontal-accordion h3 { margin: 0 0 10px; font-size: clamp(2.6rem, 4vw, 4.2rem); font-weight: 400; line-height: 1.35; letter-spacing: normal; }
+.horizontal-accordion h3 { margin: 0 0 4px; font-size: clamp(1.4rem, 2vw, 1.8rem); font-weight: 400; line-height: 1.25; letter-spacing: normal; }
 
-.horizontal-accordion p { max-width: 28ch; margin: 0; font-size: 1.08rem; line-height: 1.7; }
+.horizontal-accordion p { max-width: 28ch; margin: 0; font-size: .88rem; line-height: 1.5; }
 
 .footer { padding: 30px max(20px, calc((100vw - 1180px) / 2)); background: var(--ink); color: var(--paper-light); display: flex; justify-content: space-between; gap: 20px; align-items: center; }
 
@@ -1164,18 +1164,6 @@ html[data-theme="midnight"] .rating-btn:focus-visible {
     font-variant-numeric: tabular-nums;
 }
 
-.hero-tagline-en {
-    margin: 18px 0 0;
-    color: rgb(243 239 229 / 62%);
-    font: 400 .82rem var(--sans);
-}
-
-.how-it-works {
-    width: var(--content);
-    margin: 0 auto;
-    padding-block: 56px;
-}
-
 .how-steps {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1840,9 +1828,9 @@ kbd { display: inline-block; padding: 3px 8px; font: 600 .75rem var(--sans); bac
     .hero h1 { font-size: clamp(4.1rem, 20vw, 6.6rem); }
     .hero-art { min-height: 290px; }
     .manifesto, .accordion-section { padding-inline: 20px; }
-    .horizontal-accordion { min-height: 540px; flex-direction: column; }
-    .horizontal-accordion details { min-height: 120px; }
-    .horizontal-accordion details:hover, .horizontal-accordion details:focus-within, .horizontal-accordion details[open] { flex: 3; }
+    .horizontal-accordion { min-height: 260px; flex-direction: column; }
+    .horizontal-accordion details { min-height: 70px; }
+    .horizontal-accordion details:hover, .horizontal-accordion details:focus-within, .horizontal-accordion details[open] { flex: 3; min-height: 180px; }
     .word-experience { margin-top: 96px; }
     .identity-masthead { grid-template-columns: 1fr; }
     .identity-word { align-items: start; flex-direction: column; margin-block: 58px 34px; }
