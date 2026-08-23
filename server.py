@@ -14,6 +14,7 @@ class UTF8ServerHandler(http.server.SimpleHTTPRequestHandler):
                 if 'charset' not in value.lower():
                     value = f"{value}; charset=utf-8"
             super().send_header('X-Content-Type-Options', 'nosniff')
+            super().send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
         super().send_header(keyword, value)
 
     def do_GET(self):
