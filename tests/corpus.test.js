@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const Core = require("../app-core.js");
+const KalimatExport = require("../extension/shared/export.js");
 
 const words = require("../words.js");
 
@@ -201,7 +202,7 @@ test("Corpus Suite — 365-Day Classical Arabic Vocabulary Invariants", async (t
     });
 
     await t.test("10. Anki CSV Deck Formatting Across All 365 Words", () => {
-        const csv = Core.serializeAnkiCSV(null, words);
+        const csv = KalimatExport.serializeAnkiCSV(null, words);
         assert.ok(csv.startsWith("\uFEFF"), "Anki CSV must start with UTF-8 BOM");
         const lines = csv.trim().split("\r\n");
         assert.equal(lines.length, 366, "Anki CSV must contain 1 header line + 365 word lines");

@@ -318,8 +318,7 @@ test("renderSocialCard generates a complete 1080x1080 social card with all graph
   assert.equal(Boolean(brandArabic), true, "Renders 'كَلِمات' header branding");
   const brandSub = calls.find((c) => c.method === "fillText" && c.args[0] === "كلمة اليوم من الفصحى");
   assert.equal(Boolean(brandSub), true, "Renders subtitle");
-  const brandUrl = calls.find((c) => c.method === "fillText" && c.args[0] === "kalimaat.app");
-  assert.equal(Boolean(brandUrl), true, "Renders URL");
+  assert.equal(calls.some((c) => c.method === "fillText" && /kalimaat\.app/i.test(String(c.args[0]))), false, "does not advertise a fake domain");
 
   // 5. Headword & Pronunciation
   const headword = calls.find((c) => c.method === "fillText" && c.args[0] === "السَّمَيْدَع");

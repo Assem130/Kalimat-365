@@ -7,6 +7,7 @@ Thumbs.db
 .env
 .superpowers/
 docs/superpowers/
+docs/beta/private/
 .worktrees/
 .review-release/
 extension/dist/

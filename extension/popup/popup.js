@@ -884,6 +884,7 @@
     elements.reminderTime.addEventListener("change", updateReminderTime);
     byId("explore").addEventListener("click", openAtlas);
     byId("explore-empty").addEventListener("click", openAtlas);
+    byId("recovery-atlas").addEventListener("click", openAtlas);
     byId("recovery-reset").addEventListener("click", resetRecovery);
 
     if (elements.dueReviewBadge) elements.dueReviewBadge.addEventListener("click", openPracticeModal);

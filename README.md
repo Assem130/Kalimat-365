@@ -35,7 +35,7 @@ No account, backend, telemetry, analytics, gamification, or vocabulary expansion
 
 ## الخصوصية
 
-Learning data stays on-device until you delete it. Both surfaces offer JSON export and deletion.
+Learning data stays on-device until you delete it. Both surfaces offer JSON export and deletion. Anki CSV contains vocabulary content only; it does not transfer review intervals or schedules.
 
 - Website fonts are local WOFF2. No external font request.
 - Website reminder is an opt-in `Notification` and fires only while a Kalimat tab is open. Clear-data removes learning state, onboarding, and reminder settings; `kalimat_theme` stays.
@@ -43,6 +43,10 @@ Learning data stays on-device until you delete it. Both surfaces offer JSON expo
 - Chrome may make an explicit, read-only Arabic Wiktionary lookup on search, sending only the normalized term. Firefox stays local-only.
 
 Full policy: [privacy.html](https://assem130.github.io/arabic-word-of-the-day/privacy.html).
+
+## 21-day beta study
+
+The manual, no-telemetry protocol and Day 0/7/14/21 forms live in [`docs/beta/`](docs/beta/2026-08-10-kalimat-21-day-beta.md). Learners derive only `daysUsed` for the exact 21-day inclusive study window with `node tools/summarize-beta-export.js <export.json> <study-start> <study-end>`; the facilitator analyzes only coded scalar responses with `node tools/analyze-beta.js <responses.json>`. Raw exports and responses stay local and ignored. Missing required Day-21 data returns `insufficient`.
 
 ## الموقع محلياً
 
@@ -94,6 +98,7 @@ app.js           word-page controller and browser-speech UI
 revamp.js        home-page controller and lexicon/review UI
 web-ui.js        shared website UI helpers
 sw.js            offline app-shell service worker
+tools/           dependency-free local beta summarizer and analyzer
 extension/       optional Chrome/Firefox MV3 companion and Atlas
 server.py        local UTF-8 development server
 ```

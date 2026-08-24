@@ -55,6 +55,7 @@ The extension is an optional companion with challenge level, interests, a daily 
 
 - Website data is in browser `localStorage`; extension data is in `storage.local`. The stores, assignments, and reviews are separate.
 - Data remains on the device until the learner deletes it. JSON export and deletion controls are available on the website and in Atlas settings.
+- Anki CSV contains vocabulary content only; it does not transfer review intervals or schedules.
 - No account, sync, backend, analytics, telemetry, advertising, cookies, or background collection is used by Kalimat.
 - The website uses self-hosted local WOFF2 fonts and makes no external font request.
 - The website reminder is an opt-in browser `Notification` that fires only while a Kalimat tab is open. Website clear-data removes learning state, onboarding, and reminder settings while preserving `kalimat_theme`; the extension reminder remains a separate MV3 `alarms`/`notifications` setting.

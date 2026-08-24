@@ -1,6 +1,5 @@
 // Service Worker for Kalimat (Offline PWA)
-const STATIC_CACHE_NAME = "kalimat-static-v2.4";
-const AUDIO_CACHE_NAME = "kalimat-audio-v1";
+const STATIC_CACHE_NAME = "kalimat-static-v2.5";
 const STATIC_ASSETS = [
     "./",
     "./index.html",
@@ -12,35 +11,19 @@ const STATIC_ASSETS = [
     "./revamp.js",
     "./words.js",
     "./app.js",
+    "./extension/shared/export.js",
     "./extension/shared/review-policy.js",
     "./extension/shared/speech.js",
     "./manifest.webmanifest",
+    "./assets/fonts/Amiri-Regular.woff2",
+    "./assets/fonts/Amiri-Bold.woff2",
+    "./assets/fonts/Outfit-Regular.woff2",
+    "./assets/fonts/Outfit-Medium.woff2",
+    "./assets/fonts/Outfit-SemiBold.woff2",
     "./assets/icons/icon-192.png",
     "./assets/icons/icon-512.png"
 ];
-const AUDIO_CACHE_MAX_ENTRIES = 60;
 const CANONICAL_PAGES = new Set(["/", "/index.html", "/word.html"]);
-
-function isAudioRequest(request, url) {
-    const pathname = url.pathname || "";
-    const href = request.url || "";
-    const accept = (request.headers && typeof request.headers.get === "function") ? (request.headers.get("accept") || "") : "";
-    return (
-        /\.(mp3|ogg|aac|wav|m4a)($|\?)/i.test(pathname) ||
-        /\.(mp3|ogg|aac|wav|m4a)($|\?)/i.test(href) ||
-        pathname.includes("/assets/audio/") ||
-        href.includes("/assets/audio/") ||
-        accept.includes("audio/")
-    );
-}
-
-async function trimAudioCache(cache) {
-    const keys = await cache.keys();
-    while (keys.length > AUDIO_CACHE_MAX_ENTRIES) {
-        const oldest = keys.shift();
-        await cache.delete(oldest);
-    }
-}
 
 // Cache key without query string, so deep links map onto canonical pages.
 function canonicalUrlFor(url) {
@@ -71,30 +54,9 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
     const request = event.request;
     if (request.method !== "GET") return;
+    if (request.destination === "audio") return;
 
     const url = new URL(request.url);
-
-    // Audio Assets: Immutable Cache-First strategy (on-demand caching, NO background revalidation)
-    if (isAudioRequest(request, url)) {
-        event.respondWith(
-            caches.open(AUDIO_CACHE_NAME).then(cache => {
-                return cache.match(request).then(cachedResponse => {
-                    if (cachedResponse) {
-                        return cachedResponse;
-                    }
-                    return fetch(request).then(networkResponse => {
-                        if (networkResponse && (networkResponse.ok || networkResponse.type === "opaque")) {
-                            const clone = networkResponse.clone();
-                            cache.put(request, clone);
-                            event.waitUntil(trimAudioCache(cache));
-                        }
-                        return networkResponse;
-                    });
-                });
-            })
-        );
-        return;
-    }
 
     // HTML Navigation: Network-first with fallback to cache.
     // Only canonical pages are cached so ?id/?date deep links don't pile up entries.
@@ -137,26 +99,4 @@ self.addEventListener("fetch", event => {
         return;
     }
 
-    // External fonts: Stale-While-Revalidate
-    event.respondWith(
-        caches.match(request).then(cachedResponse => {
-            if (cachedResponse) {
-                // Background revalidation
-                fetch(request).then(networkResponse => {
-                    if (networkResponse && (networkResponse.ok || networkResponse.type === "opaque")) {
-                        caches.open(STATIC_CACHE_NAME).then(cache => cache.put(request, networkResponse));
-                    }
-                }).catch(() => {});
-                return cachedResponse;
-            }
-
-            return fetch(request).then(networkResponse => {
-                if (networkResponse && (networkResponse.ok || networkResponse.type === "opaque")) {
-                    const clone = networkResponse.clone();
-                    caches.open(STATIC_CACHE_NAME).then(cache => cache.put(request, clone));
-                }
-                return networkResponse;
-            });
-        })
-    );
 });

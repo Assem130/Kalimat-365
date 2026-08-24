@@ -13,11 +13,13 @@
     <title>كَلِمات | كلمة اليوم</title>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; worker-src 'self'; manifest-src 'self'">
     <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="assets/icons/icon-192.png" sizes="192x192">
     <link rel="preload" href="assets/fonts/Amiri-Regular.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="assets/fonts/Amiri-Bold.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="assets/fonts/Outfit-Regular.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="style.css">
     <script src="words.js" charset="utf-8" defer></script>
+    <script src="extension/shared/export.js" defer></script>
     <script src="extension/shared/review-policy.js" defer></script>
     <script src="extension/shared/speech.js" defer></script>
     <script src="app-core.js" charset="utf-8" defer></script>
@@ -157,6 +159,7 @@
                     <div id="streak-badge" class="streak-badge" title="تتابع القراءة اليومي" aria-label="تتابع القراءة اليومي"><svg class="icon" aria-hidden="true"><use href="#i-flame"/></svg> لا يوجد تتابع بعد</div>
                     <div class="word-menu-theme" role="group" aria-labelledby="reminder-label">
                         <span id="reminder-label">التذكير اليومي</span>
+                        <small>الساعة ٢٠:٠٠ — يعمل ما دامت صفحة كَلِمات مفتوحة</small>
                         <button id="btn-toggle-reminder" type="button" aria-pressed="false" aria-label="تفعيل التذكير اليومي">معطّل</button>
                     </div>
                     <label class="word-menu-theme" for="theme-select">
@@ -204,6 +207,7 @@
                 <button id="btn-start-practice" type="button" class="history-action-btn highlight" aria-label="بدء اختبار التثبيت والمراجعة"><svg class="icon"><use href="#i-sparkles"/></svg> اختبر حفظك</button>
                 <button id="btn-export-anki" type="button" class="history-action-btn" aria-label="تصدير الكلمات إلى ملف Anki CSV">تصدير Anki (CSV)</button>
             </div>
+            <p class="local-data-note">ملف CSV يحتوي المحتوى فقط ولا ينقل مواعيد المراجعة.</p>
         </div>
         <div class="drawer-content">
             <p class="history-stats-row" id="history-stats-row" role="status"></p>

@@ -317,7 +317,7 @@ function createDOMEnvironment(initialState = null) {
         addEventListener: (event, cb) => {
             doc.addEventListener(event, cb);
         },
-        location: { search: "", pathname: "/word.html", origin: "https://kalimaat.app" }
+        location: { search: "", pathname: "/arabic-word-of-the-day/word.html", origin: "https://assem130.github.io" }
     };
 
     const sandbox = {
@@ -424,11 +424,8 @@ test("1. HTML Markup & Accessibility Attributes (index.html & word.html)", () =>
     assert.equal((indexHtml.match(/class="local-data-note"/g) || []).length, 1, "homepage must show one local-data note");
     assert.match(indexHtml, /<section class="manifesto"[\s\S]*?<p class="channel-boundary">الموقع والامتداد تجربتان محليتان منفصلتان/, "channel boundary must remain explicit");
 
-    // Check #practice-dialog modal attributes in index.html
-    assert.match(indexHtml, /<dialog\s+class="practice-dialog"\s+id="practice-dialog"/, "index.html must define <dialog id='practice-dialog'>");
-    assert.match(indexHtml, /role="dialog"/, "practice-dialog must have role='dialog'");
-    assert.match(indexHtml, /aria-modal="true"/, "practice-dialog must have aria-modal='true'");
-    assert.match(indexHtml, /aria-labelledby="practice-title"/, "practice-dialog must have aria-labelledby='practice-title'");
+    assert.doesNotMatch(indexHtml, /id="practice-dialog"/, "homepage must not ship an inert review dialog");
+    assert.match(indexHtml, /rel="icon"[^>]+assets\/icons\/icon-192\.png/, "homepage must reuse the local app icon");
 
     // Check word.html markup
     assert.match(wordHtml, /id="due-review-badge"/, "word.html must include #due-review-badge");
@@ -436,8 +433,11 @@ test("1. HTML Markup & Accessibility Attributes (index.html & word.html)", () =>
     assert.match(wordHtml, /<dialog\s+class="practice-dialog"\s+id="practice-dialog"/, "word.html must define <dialog id='practice-dialog'>");
     assert.match(wordHtml, /role="dialog"/, "word.html practice-dialog must have role='dialog'");
     assert.match(wordHtml, /aria-modal="true"/, "word.html practice-dialog must have aria-modal='true'");
+    assert.match(wordHtml, /rel="icon"[^>]+assets\/icons\/icon-192\.png/, "word page must reuse the local app icon");
+    assert.match(wordHtml, /src="extension\/shared\/export\.js"/, "word page must load the shared export helper");
     assert.doesNotMatch(wordHtml, /<label[^>]+for="reminder-time"/, "website reminder toggle must not label a missing time input");
     assert.match(wordHtml, /<div class="word-menu-theme" role="group" aria-labelledby="reminder-label">[\s\S]*<span id="reminder-label">التذكير اليومي<\/span>[\s\S]*id="btn-toggle-reminder"/, "website reminder toggle must have an accessible group label");
+    assert.match(wordHtml, /الساعة ٢٠:٠٠ — يعمل ما دامت صفحة كَلِمات مفتوحة/, "website reminder must state its open-tab limit");
 });
 
 test("History dialog stays closed and history rows use the paper surface", () => {

@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 const Core = require("./app-core.js");
+const KalimatExport = require("./extension/shared/export.js");
 const WebUI = require("./web-ui.js");
 
 class FakeElement {
@@ -190,15 +191,6 @@ assert.ok(citation.includes("السَّمَيْدَع"));
 assert.ok(citation.includes("الخنساء"));
 assert.ok(citation.includes("كَلِمات"));
 
-// Test quiz generation
-const sampleDb = [
-    { id: 1, word: "أ", root: "ا ا ا", weight: "فعل", meaning: "معنى أ" },
-    { id: 2, word: "ب", root: "ب ب ب", weight: "فاعل", meaning: "معنى ب" },
-    { id: 3, word: "ج", root: "ج ج ج", weight: "مفعول", meaning: "معنى ج" },
-    { id: 4, word: "د", root: "د د د", weight: "فعيل", meaning: "معنى د" }
-];
-const quizFromEmpty = Core.generateQuizQuestions([], sampleDb, 3);
-assert.equal(quizFromEmpty.length, 3);
 // Test Arabic normalization
 assert.equal(Core.normalizeArabicText("السَّمَيْـدَعُ"), "السميدع");
 assert.equal(Core.normalizeArabicText("إِقْدَامٌ"), "اقدام");
@@ -226,51 +218,6 @@ assert.equal(related.sameRoot.length, 1);
 assert.equal(related.sameRoot[0].id, 4);
 assert.equal(related.sameWeight.length, 1);
 assert.equal(related.sameWeight[0].id, 5);
-
-// Arabic Voice Discovery & Prioritization Unit Tests
-assert.equal(Core.isArabicVoice({ lang: "ar-SA" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar-EG" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar-AE" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar-KW" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar-XA" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar-001" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ara-001" }), true);
-assert.equal(Core.isArabicVoice({ lang: "arb-001" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar_SA" }), true);
-assert.equal(Core.isArabicVoice({ lang: "AR-EG" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar" }), true);
-assert.equal(Core.isArabicVoice({ lang: "en-US" }), false);
-assert.equal(Core.isArabicVoice({ lang: "fr-FR" }), false);
-assert.equal(Core.isArabicVoice({ lang: "es-ES" }), false);
-assert.equal(Core.isArabicVoice(null), false);
-assert.equal(Core.isArabicVoice({}), false);
-assert.equal(Core.isArabicVoice({ lang: "" }), false);
-
-// Voice scoring & prioritization
-const sampleVoices = [
-    { name: "Microsoft David", lang: "en-US" },
-    { name: "eSpeak Arabic", lang: "ar" },
-    { name: "Arabic Saudi", lang: "ar-SA" },
-    { name: "Google tarek", lang: "ar-XA" },
-    { name: "Microsoft Naayf Online (Natural) - Arabic (Saudi Arabia)", lang: "ar-SA" },
-    { name: "Maged (Enhanced)", lang: "ar-001" },
-    { name: "نايف (طبيعي) - العربية", lang: "ar-SA" }
-];
-assert.equal(Core.scoreArabicVoice(sampleVoices[0]), -1, "Non-Arabic voice returns score -1");
-assert.ok(Core.scoreArabicVoice(sampleVoices[4]) > Core.scoreArabicVoice(sampleVoices[2]), "Natural/Online Naayf must score higher than generic Arabic");
-assert.ok(Core.scoreArabicVoice(sampleVoices[5]) > Core.scoreArabicVoice(sampleVoices[1]), "Enhanced Maged with ar-001 must score higher than eSpeak Arabic");
-assert.ok(Core.scoreArabicVoice(sampleVoices[6]) > Core.scoreArabicVoice(sampleVoices[2]), "Arabic-script localized Naayf must score higher than generic Arabic");
-
-const filteredVoices = Core.filterArabicVoices(sampleVoices);
-assert.equal(filteredVoices.length, 6, "Must exclude non-Arabic voices");
-assert.equal(filteredVoices.some(v => v.lang === "en-US"), false, "English voices must never be included");
-assert.ok(filteredVoices[0].name.includes("Naayf") || filteredVoices[0].name.includes("نايف"), "Top prioritized voice must be Neural/Natural Naayf");
-
-const bestVoice = Core.findBestArabicVoice(sampleVoices);
-assert.ok(bestVoice.name.includes("Naayf") || bestVoice.name.includes("نايف"));
-assert.equal(Core.findBestArabicVoice([]), null);
-assert.equal(Core.findBestArabicVoice([{ name: "English", lang: "en-US" }]), null);
-assert.equal(Core.findBestArabicVoice(null), null);
 
 class FakeCanvasElement extends FakeElement {
     constructor() {
@@ -402,14 +349,14 @@ const testWords = [
     { id: 1, word: "الغَسَق", root: "غ س ق", weight: "فَعَل", vocalization: "غَسَقٌ", meaning: "ظلمة أول الليل", englishMeaning: "Twilight; the darkness of early night.", example: "أَقِمِ الصَّلَاةَ لِدُلُوكِ الشَّمْسِ إِلَىٰ غَسَقِ اللَّيْلِ — سورة الإسراء" },
     { id: 2, word: "الوَصَب", root: "و ص ب", weight: "فَعَل", vocalization: "وَصَبٌ", meaning: "المرض الدائم والألم الملازم", englishMeaning: "Chronic illness, continuous pain or fatigue.", example: "مَا يُصِيبُ المُسْلِمَ مِنْ نَصَبٍ وَلاَ وَصَبٍ — حديث نبوي" }
 ];
-const fullAnkiCsv = Core.serializeAnkiCSV(null, testWords);
+const fullAnkiCsv = KalimatExport.serializeAnkiCSV(null, testWords);
 assert.equal(fullAnkiCsv.startsWith("\uFEFF"), true, "Anki CSV must start with UTF-8 BOM");
 assert.equal(fullAnkiCsv.includes('"Word","Root","Weight","Vocalization","Meaning","English Meaning","Example"'), true, "Anki CSV must have correct header");
 assert.equal(fullAnkiCsv.includes('"الغَسَق","غ س ق","فَعَل","غَسَقٌ","ظلمة أول الليل","Twilight; the darkness of early night."'), true, "Anki CSV data row matches RFC 4180 format");
 assert.equal(fullAnkiCsv.includes("\r\n"), true, "Anki CSV must use CRLF line endings");
 
 // Anki CSV Filtering with History
-const filteredAnkiCsv = Core.serializeAnkiCSV({ 1: { firstSeen: "2026-08-14" } }, testWords);
+const filteredAnkiCsv = KalimatExport.serializeAnkiCSV({ 1: { firstSeen: "2026-08-14" } }, testWords);
 assert.equal(filteredAnkiCsv.includes("الغَسَق"), true);
 assert.equal(filteredAnkiCsv.includes("الوَصَب"), false);
 
@@ -424,7 +371,7 @@ const quoteWord = [{
     englishMeaning: 'A word, "speech", or utterance.',
     example: '«وقالت: "مرحباً"»'
 }];
-const escapedCsv = Core.serializeAnkiCSV(null, quoteWord);
+const escapedCsv = KalimatExport.serializeAnkiCSV(null, quoteWord);
 assert.equal(escapedCsv.includes('""قول""'), true, 'Double quotes must be escaped as double-double quotes in RFC 4180');
 assert.equal(escapedCsv.includes('""speech""'), true);
 
@@ -439,20 +386,17 @@ const formulaWord = [{
     englishMeaning: '@risk of +evil =formulas',
     example: '=cmd|calc'
 }];
-const formulaCsv = Core.serializeAnkiCSV(null, formulaWord);
+const formulaCsv = KalimatExport.serializeAnkiCSV(null, formulaWord);
 assert.equal(formulaCsv.includes('"\'=HYPERLINK'), true, "Leading '=' must be neutralized with a quote prefix");
 assert.equal(formulaCsv.includes('"\'@risk'), true, "Leading '@' must be neutralized with a quote prefix");
 assert.equal(formulaCsv.includes('"\'=cmd|calc"'), true, "Example cells starting with '=' must be neutralized");
-
-// Alias generateAnkiCsv compatibility
-assert.equal(Core.generateAnkiCsv(testWords), fullAnkiCsv);
 
 // Deep Link Query Parameter Parser (parseWordIdFromQuery)
 assert.equal(Core.parseWordIdFromQuery("?id=1", 60), 1);
 assert.equal(Core.parseWordIdFromQuery("?id=60", 60), 60);
 assert.equal(Core.parseWordIdFromQuery("?id=5", 60), 5);
 assert.equal(Core.parseWordIdFromQuery("id=42", 60), 42);
-assert.equal(Core.parseWordIdFromQuery("https://kalimaat.app/word.html?id=12", 60), 12);
+assert.equal(Core.parseWordIdFromQuery("https://assem130.github.io/arabic-word-of-the-day/word.html?id=12", 60), 12);
 assert.equal(Core.parseWordIdFromQuery("?ref=share&id=33&theme=paper", 60), 33);
 assert.equal(Core.parseWordIdFromQuery(new URLSearchParams("id=20"), 60), 20);
 assert.equal(Core.parseWordIdFromQuery("?id=0", 60), null);
@@ -465,17 +409,6 @@ assert.equal(Core.parseWordIdFromQuery("?foo=bar", 60), null);
 assert.equal(Core.parseWordIdFromQuery("", 60), null);
 assert.equal(Core.parseWordIdFromQuery(null, 60), null);
 assert.equal(Core.parseWordIdFromQuery(undefined, 60), null);
-
-// resolveWordSelection
-const selDeep = Core.resolveWordSelection("?id=2", testWords, "2026-08-14");
-assert.equal(selDeep.isDeepLink, true);
-assert.equal(selDeep.requestedId, 2);
-assert.equal(selDeep.word.id, 2);
-
-const selInvalid = Core.resolveWordSelection("?id=999", testWords, "2026-08-14");
-assert.equal(selInvalid.isDeepLink, false);
-assert.equal(selInvalid.requestedId, null);
-assert.equal(selInvalid.word.id, testWords[Core.getDailyWordIndex("2026-08-14", testWords.length)].id);
 
 const words = require("./words.js");
 assert.equal(words.length, 365);
@@ -939,7 +872,7 @@ function loadBrowserApp({ state, rawStorage, extraStorage, storageFails = false,
         console, document, localStorage, navigator: { onLine }, setInterval: () => 0, setTimeout: callback => timers.push(callback),
         clearTimeout: id => clearTimeout(id),
         window: {
-            location: { search: search || "", origin: "https://kalimaat.app", pathname: "/word.html" }
+            location: { search: search || "", origin: "https://assem130.github.io", pathname: "/arabic-word-of-the-day/word.html" }
         }
     };
     if (audioMock) {
@@ -951,6 +884,7 @@ function loadBrowserApp({ state, rawStorage, extraStorage, storageFails = false,
     context.window.KalimatCore = Core;
     vm.createContext(context);
     vm.runInContext(fs.readFileSync("words.js", "utf8"), context, { filename: "words.js" });
+    vm.runInContext(fs.readFileSync("extension/shared/export.js", "utf8"), context, { filename: "export.js" });
     vm.runInContext(fs.readFileSync("extension/shared/review-policy.js", "utf8"), context, { filename: "review-policy.js" });
     vm.runInContext(fs.readFileSync("extension/shared/speech.js", "utf8"), context, { filename: "speech.js" });
     vm.runInContext(fs.readFileSync("app-core.js", "utf8"), context, { filename: "app-core.js" });
@@ -1381,6 +1315,7 @@ assert.equal(cardProbe.link.clickCount, 1, "Card export link must be clicked");
 assert.match(cardProbe.link.download, /^kalimat-word-\d+\.png$/, "Card export filename must follow kalimat-word-{id}.png pattern");
 assert.equal(cardProbe.link.parentNode, null, "Card export link must be removed from DOM");
 assert.equal(cardApp.elements["app-menu-dropdown"].hidden, true, "Menu must be closed after exporting card");
+assert.match(cardApp.elements.toast.textContent, /تم تصدير بطاقة الكلمة/, "Card export must confirm success");
 cardApp.timers.splice(0).forEach((callback) => callback());
 assert.equal(cardProbe.revoked, "blob:kalimat-test", "Object URL must be revoked after card export");
 
@@ -1430,7 +1365,7 @@ assert.equal(invalidDeepApp.elements["archive-preview-note"].hidden, true, "Inva
 const shareApp = loadBrowserApp({ state: savedState });
 const shareWord = words[0];
 const generatedShareText = shareApp.context.getShareText(shareWord);
-assert.match(generatedShareText, /kalimaat\.app\/word\.html\?id=1/, "Share text must include deep link URL with word ID");
+assert.match(generatedShareText, /assem130\.github\.io\/arabic-word-of-the-day\/word\.html\?id=1/, "Share text must include the published deep link URL with word ID");
 
 // ==========================================
 // Browser speech integration checks

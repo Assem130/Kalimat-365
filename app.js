@@ -804,10 +804,6 @@ function setButtonPlaybackState(buttonEl, state, activeIcon = "i-waveform", idle
     }
 }
 
-function setButtonSpeakingState(buttonEl, isSpeaking, activeIcon = "i-waveform", idleIcon = "i-volume-high") {
-    return setButtonPlaybackState(buttonEl, isSpeaking ? "speaking" : "idle", activeIcon, idleIcon);
-}
-
 let historyUIStale = true;
 function updateHistoryUI(force = false) {
     // After the initial build, skip full rebuilds while the dialog is hidden;
@@ -921,7 +917,7 @@ function exportHistory() {
 }
 
 function exportAnkiDeck() {
-    const csvContent = Core.serializeAnkiCSV(appState.history, WORDS_DB);
+    const csvContent = globalThis.KalimatExport.serializeAnkiCSV(appState.history, WORDS_DB);
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -933,259 +929,6 @@ function exportAnkiDeck() {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 0);
     showToast("تم تصدير بطاقات Anki بنجاح!");
-}
-
-async function renderSocialCard(word) {
-    if (!word) return;
-    if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
-        try {
-            await document.fonts.ready;
-        } catch {}
-    }
-
-    if (typeof document === "undefined" || typeof document.createElement !== "function") return;
-    const canvas = document.createElement("canvas");
-    canvas.width = 1080;
-    canvas.height = 1080;
-    const ctx = canvas.getContext ? canvas.getContext("2d") : null;
-    if (!ctx) return;
-
-    // Background: Dark Editorial styling (#0f172a / #14211b)
-    const bgGrad = ctx.createLinearGradient ? ctx.createLinearGradient(0, 0, 1080, 1080) : null;
-    if (bgGrad && typeof bgGrad.addColorStop === "function") {
-        bgGrad.addColorStop(0, "#0f172a");
-        bgGrad.addColorStop(1, "#14211b");
-        ctx.fillStyle = bgGrad;
-    } else {
-        ctx.fillStyle = "#0f172a";
-    }
-    ctx.fillRect(0, 0, 1080, 1080);
-
-    // Outer borders & Gold/Lime accent (#84cc16)
-    ctx.strokeStyle = "#84cc16";
-    ctx.lineWidth = 6;
-    ctx.strokeRect(36, 36, 1008, 1008);
-
-    ctx.strokeStyle = "rgba(243, 239, 229, 0.15)";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(48, 48, 984, 984);
-
-    // Watermark Calligraphy glyph
-    if (typeof ctx.save === "function") ctx.save();
-    ctx.font = "bold 320px 'Amiri', serif";
-    ctx.fillStyle = "rgba(132, 204, 22, 0.05)";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.direction = "rtl";
-    if (typeof ctx.fillText === "function") ctx.fillText("ض", 540, 540);
-    if (typeof ctx.restore === "function") ctx.restore();
-
-    // Header Branding
-    if (typeof ctx.save === "function") ctx.save();
-    ctx.direction = "rtl";
-    ctx.textAlign = "right";
-
-    ctx.fillStyle = "#84cc16";
-    ctx.font = "bold 36px 'Outfit', sans-serif";
-    if (typeof ctx.fillText === "function") ctx.fillText("كَلِمات", 980, 110);
-
-    ctx.fillStyle = "rgba(243, 239, 229, 0.75)";
-    ctx.font = "500 24px 'Outfit', sans-serif";
-    if (typeof ctx.fillText === "function") ctx.fillText("كلمة اليوم من الفصحى", 980, 150);
-
-    ctx.textAlign = "left";
-    ctx.direction = "ltr";
-    ctx.font = "600 22px 'Outfit', sans-serif";
-    ctx.fillStyle = "rgba(243, 239, 229, 0.6)";
-    if (typeof ctx.fillText === "function") ctx.fillText("kalimaat.app", 100, 110);
-    if (typeof ctx.restore === "function") ctx.restore();
-
-    // Divider
-    ctx.strokeStyle = "rgba(243, 239, 229, 0.2)";
-    ctx.lineWidth = 1;
-    if (typeof ctx.beginPath === "function") {
-        ctx.beginPath();
-        ctx.moveTo(100, 185);
-        ctx.lineTo(980, 185);
-        ctx.stroke();
-    }
-
-    // Headword
-    if (typeof ctx.save === "function") ctx.save();
-    ctx.direction = "rtl";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#f3efe5";
-    ctx.font = "bold 100px 'Amiri', serif";
-    if (typeof ctx.fillText === "function") ctx.fillText(word.word, 540, 310);
-
-    // Vocalization
-    ctx.fillStyle = "#84cc16";
-    ctx.font = "34px 'Amiri', serif";
-    if (typeof ctx.fillText === "function") ctx.fillText(word.vocalization || "", 540, 370);
-    if (typeof ctx.restore === "function") ctx.restore();
-
-    // Metadata Badges (Root, Weight, Category)
-    const metadata = [
-        { label: "الجذر", val: word.root },
-        { label: "الوزن", val: word.weight },
-        { label: "التصنيف", val: word.category }
-    ];
-
-    const boxWidth = 260;
-    const boxHeight = 75;
-    const boxY = 415;
-    const boxGap = 40;
-    const totalWidth = 3 * boxWidth + 2 * boxGap;
-    const startX = (1080 - totalWidth) / 2;
-
-    metadata.forEach((item, index) => {
-        const x = startX + index * (boxWidth + boxGap);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
-        ctx.fillRect(x, boxY, boxWidth, boxHeight);
-        ctx.strokeStyle = "rgba(243, 239, 229, 0.2)";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, boxY, boxWidth, boxHeight);
-
-        if (typeof ctx.save === "function") ctx.save();
-        ctx.direction = "rtl";
-        ctx.textAlign = "center";
-        ctx.fillStyle = "rgba(243, 239, 229, 0.7)";
-        ctx.font = "20px 'Outfit', sans-serif";
-        if (typeof ctx.fillText === "function") ctx.fillText(item.label, x + boxWidth / 2, boxY + 28);
-
-        ctx.fillStyle = "#f3efe5";
-        ctx.font = "bold 24px 'Amiri', serif";
-        if (typeof ctx.fillText === "function") ctx.fillText(item.val || "—", x + boxWidth / 2, boxY + 60);
-        if (typeof ctx.restore === "function") ctx.restore();
-    });
-
-    function wrapText(text, maxWidth, font, direction = "rtl") {
-        ctx.font = font;
-        ctx.direction = direction;
-        const words = String(text || "").split(" ");
-        const lines = [];
-        let currentLine = "";
-        for (const w of words) {
-            const testLine = currentLine ? `${currentLine} ${w}` : w;
-            const metrics = ctx.measureText ? ctx.measureText(testLine) : { width: testLine.length * 10 };
-            if (metrics.width > maxWidth && currentLine) {
-                lines.push(currentLine);
-                currentLine = w;
-            } else {
-                currentLine = testLine;
-            }
-        }
-        if (currentLine) lines.push(currentLine);
-        return lines;
-    }
-
-    // Meaning Section
-    if (typeof ctx.save === "function") ctx.save();
-    ctx.direction = "rtl";
-    ctx.textAlign = "right";
-    ctx.fillStyle = "#84cc16";
-    ctx.font = "bold 22px 'Outfit', sans-serif";
-    if (typeof ctx.fillText === "function") ctx.fillText("المعنى والدلالة:", 980, 540);
-
-    ctx.fillStyle = "#f3efe5";
-    const meaningLines = wrapText(word.meaning, 880, "30px 'Amiri', serif", "rtl");
-    let currentY = 585;
-    meaningLines.slice(0, 3).forEach(line => {
-        if (typeof ctx.fillText === "function") ctx.fillText(line, 980, currentY);
-        currentY += 42;
-    });
-
-    if (word.englishMeaning) {
-        if (typeof ctx.save === "function") ctx.save();
-        ctx.direction = "ltr";
-        ctx.textAlign = "left";
-        ctx.fillStyle = "rgba(243, 239, 229, 0.75)";
-        const enLines = wrapText(word.englishMeaning, 880, "italic 22px 'Outfit', sans-serif", "ltr");
-        currentY += 8;
-        enLines.slice(0, 2).forEach(line => {
-            if (typeof ctx.fillText === "function") ctx.fillText(line, 100, currentY);
-            currentY += 30;
-        });
-        if (typeof ctx.restore === "function") ctx.restore();
-    }
-    if (typeof ctx.restore === "function") ctx.restore();
-
-    // Literary Example Box
-    if (word.example) {
-        const exBoxY = Math.max(currentY + 20, 770);
-        const exBoxHeight = 180;
-        ctx.fillStyle = "rgba(255, 255, 255, 0.04)";
-        ctx.fillRect(100, exBoxY, 880, exBoxHeight);
-        ctx.strokeStyle = "#84cc16";
-        ctx.lineWidth = 3;
-        if (typeof ctx.beginPath === "function") {
-            ctx.beginPath();
-            ctx.moveTo(980, exBoxY);
-            ctx.lineTo(980, exBoxY + exBoxHeight);
-            ctx.stroke();
-        }
-
-        if (typeof ctx.save === "function") ctx.save();
-        ctx.direction = "rtl";
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#84cc16";
-        ctx.font = "bold 20px 'Outfit', sans-serif";
-        if (typeof ctx.fillText === "function") ctx.fillText("الشاهد الأدبي:", 960, exBoxY + 35);
-
-        ctx.fillStyle = "#f3efe5";
-        const exLines = wrapText(`«${word.example}»`, 830, "26px 'Amiri', serif", "rtl");
-        let exY = exBoxY + 75;
-        exLines.slice(0, 2).forEach(line => {
-            if (typeof ctx.fillText === "function") ctx.fillText(line, 960, exY);
-            exY += 38;
-        });
-        if (typeof ctx.restore === "function") ctx.restore();
-    }
-
-    // Footer Branding
-    if (typeof ctx.save === "function") ctx.save();
-    ctx.direction = "rtl";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(243, 239, 229, 0.5)";
-    ctx.font = "500 20px 'Outfit', sans-serif";
-    if (typeof ctx.fillText === "function") ctx.fillText("كَلِمات — تجربة يومية للاحتفاء بجماليات اللغة العربية وثراء مفرداتها", 540, 1015);
-    if (typeof ctx.restore === "function") ctx.restore();
-
-    const filename = `kalimat-word-${word.id}.png`;
-    if (typeof canvas.toBlob === "function") {
-        canvas.toBlob(blob => {
-            if (blob) {
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = filename;
-                link.hidden = true;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                setTimeout(() => URL.revokeObjectURL(url), 0);
-            } else if (typeof canvas.toDataURL === "function") {
-                const link = document.createElement("a");
-                link.href = canvas.toDataURL("image/png");
-                link.download = filename;
-                link.hidden = true;
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-            }
-            showToast("تم تصدير بطاقة الكلمة بنجاح!");
-        }, "image/png");
-    } else if (typeof canvas.toDataURL === "function") {
-        const link = document.createElement("a");
-        link.href = canvas.toDataURL("image/png");
-        link.download = filename;
-        link.hidden = true;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        showToast("تم تصدير بطاقة الكلمة بنجاح!");
-    }
-    setMenuOpen(false);
 }
 
 async function importHistory(file) {
@@ -1480,7 +1223,10 @@ function setupEventListeners() {
     btnExportHistory.addEventListener("click", exportHistory);
     if (btnExportCard) {
         btnExportCard.addEventListener("click", async () => {
-            if (currentWord) await renderSocialCard(currentWord);
+            if (currentWord) {
+                const result = await globalThis.KalimatExport.renderSocialCard(currentWord);
+                showToast(result ? "تم تصدير بطاقة الكلمة بنجاح!" : "تعذّر تصدير بطاقة الكلمة.");
+            }
             setMenuOpen(false);
         });
     }
@@ -1621,10 +1367,6 @@ function startSpacedRepetitionReview(limitOverride = null, mode = "due") {
     announceAudioStatus(`بدأت جلسة المراجعة. متبقي ${activeReviewQueue.length} بطاقات مستحقة. اضغط مسافة لكشف البطاقة.`);
     if (typeof practiceDialog.showModal === "function") practiceDialog.showModal();
     renderFlashcardStep();
-}
-
-function startPracticeQuiz() {
-    startSpacedRepetitionReview();
 }
 
 function renderEmptyReviewQueue() {
@@ -2212,7 +1954,7 @@ function getShareTitle(word, archiveDateKey = activeArchiveDateKey) {
 }
 
 function getShareText(word, archiveDateKey = activeArchiveDateKey) {
-    const origin = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "https://kalimaat.app";
+    const origin = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "https://assem130.github.io/arabic-word-of-the-day";
     const pathname = (typeof window !== "undefined" && window.location && window.location.pathname) ? window.location.pathname.replace(/\/[^/]*$/, "/word.html") : "/word.html";
     const dateKey = isValidDateKey(archiveDateKey) ? archiveDateKey : (activeDateKey || Core.getLocalDateKey(new Date()));
     const isArchivePreview = Boolean(archiveDateKey);
@@ -2292,7 +2034,6 @@ if (typeof window !== "undefined") {
         speakText,
         stopSpeech,
         setupSpeech,
-        setButtonSpeakingState,
         setButtonPlaybackState,
         announceAudioStatus,
         renderWord,
@@ -2304,9 +2045,7 @@ if (typeof window !== "undefined") {
         exportHistory,
         exportAnkiDeck,
         clearLearningData,
-        renderSocialCard,
         startSpacedRepetitionReview,
-        startPracticeQuiz: startSpacedRepetitionReview,
         flipFlashcard,
         handleRatingSubmission,
         updateDueReviewBadge,

@@ -207,11 +207,6 @@
     ctx.font = "500 24px 'Outfit', sans-serif";
     if (typeof ctx.fillText === "function") ctx.fillText("كلمة اليوم من الفصحى", 980, 150);
 
-    ctx.textAlign = "left";
-    ctx.direction = "ltr";
-    ctx.font = "600 22px 'Outfit', sans-serif";
-    ctx.fillStyle = "rgba(243, 239, 229, 0.6)";
-    if (typeof ctx.fillText === "function") ctx.fillText("kalimaat.app", 100, 110);
     if (typeof ctx.restore === "function") ctx.restore();
 
     // Divider line

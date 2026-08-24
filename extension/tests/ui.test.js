@@ -129,7 +129,7 @@ function popupApi(responses = {}, options = {}) {
     "status", "action-status", "onboarding", "assigned", "assigned-title", "assignment-date", "interest-count", "empty", "error", "recovery", "warning",
     "empty-title", "error-title", "word", "meaning-ar", "meaning-en", "example", "example-en",
     "pronunciation", "fixed-label", "save", "speak", "reminder", "reminder-time",
-    "onboarding-submit", "onboarding-skip", "explore", "explore-empty", "recovery-reset",
+    "onboarding-submit", "onboarding-skip", "explore", "explore-empty", "recovery-atlas", "recovery-reset",
     "known", "difficult", "theme-select", "streak-badge", "btn-export-anki", "btn-export-card",
     "due-review-badge", "practice-dialog", "practice-body", "practice-progress", "practice-close",
     "practice-finished", "practice-finished-message", "practice-error", "practice-error-message", "practice-retry", "practice-finish-btn", "flashcard-card", "card-front-face", "card-back-face", "card-front-flip", "card-front-word",
@@ -534,6 +534,8 @@ test("popup exposes RTL accessible onboarding and assigned-word controls", () =>
   assert.match(html, /<button[^>]+id="reminder"[^>]+role="switch"[^>]+aria-checked="false"/);
   assert.doesNotMatch(html, /<button[^>]+id="reminder"[^>]*aria-pressed=/);
   assert.match(html, /<button[^>]+id="reminder"[^>]+aria-label="تفعيل التذكير اليومي"/);
+  assert.match(html, /<button[^>]+id="recovery-atlas"[^>]*>فتح الأطلس<\/button>/);
+  assert.match(html, /ملف CSV يحتوي المحتوى فقط ولا ينقل مواعيد المراجعة/);
   const popupCss = source("popup.css");
   assert.match(popupCss, /\.levels\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, 1fr\)/);
   for (const [value, label] of [["1", "أيسر"], ["2", "متوازن"], ["3", "أعمق"]]) {
@@ -1153,6 +1155,15 @@ test("popup recovery reset requires confirmation and cancellation leaves state u
   const fixture = popupApi({}, { confirm: () => false });
   await fixture.api.resetRecovery();
   assert.equal(fixture.calls.some((message) => message.type === "state.clear"), false);
+});
+
+test("popup recovery can open Atlas without duplicating recovery tools", async () => {
+  const fixture = popupApi();
+  await fixture.api.initialize();
+  fixture.elements.get("recovery-atlas").listeners.click();
+  assert.deepEqual(JSON.parse(JSON.stringify(fixture.calls.at(-1))), {
+    tab: { url: "extension://kalimat/atlas/atlas.html?view=explore&q=" },
+  });
 });
 
 test("popup recovery reset does not retain a profile-only warning as a reminder warning", async () => {

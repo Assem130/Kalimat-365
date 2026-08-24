@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "studyId": "baseline-YYYY-MM",
+  "participants": [
+    { "code": "P01", "band": "intermediate", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P02", "band": "advanced", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P03", "band": "intermediate", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P04", "band": "advanced", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P05", "band": "intermediate", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P06", "band": "advanced", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P07", "band": "intermediate", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P08", "band": "advanced", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P09", "band": "intermediate", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P10", "band": "advanced", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P11", "band": "intermediate", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] },
+    { "code": "P12", "band": "advanced", "day0Comprehension": 0, "daysUsed": null, "contextUsefulness": null, "difficultyFit": null, "day21Comprehension": null, "retentionIntent": null, "flaggedWordIds": [] }
+  ]
+}

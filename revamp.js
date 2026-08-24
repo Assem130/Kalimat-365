@@ -118,14 +118,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    const btnClosePractice = document.getElementById("btn-close-practice");
-    const practiceDialog = document.getElementById("practice-dialog");
-    if (btnClosePractice && practiceDialog) {
-        btnClosePractice.addEventListener("click", () => {
-            if (typeof practiceDialog.close === "function") practiceDialog.close();
-        });
-    }
-
     // Initialize Lexicon & Root Tree Explorer
     if (Core && typeof window.KalimatWebUI?.initLexiconExplorer === "function") {
         const wordsList = (typeof WORDS_DB !== "undefined" && Array.isArray(WORDS_DB)) ? WORDS_DB : (typeof WORDS !== "undefined" && Array.isArray(WORDS) ? WORDS : []);
