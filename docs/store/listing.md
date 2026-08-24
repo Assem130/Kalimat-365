@@ -3,9 +3,9 @@
 ## Release identity
 
 - Product: **Kalimat — Arabic Word of the Day / كَلِمات — كلمة عربية كل يوم**
-- Beta label: **Public beta · 0.3.0**
+- Beta label: **Public beta · 0.3.1**
 - Published GitHub release: [`v0.3.0-beta.2`](https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.2)
-- Archive names: `kalimat-chrome-0.3.0.zip`, `kalimat-firefox-0.3.0.zip`
+- Archive names: `kalimat-chrome-0.3.1.zip`, `kalimat-firefox-0.3.1.zip`
 - Audience: self-identified intermediate-and-advanced Arabic learners
 
 ## Single purpose

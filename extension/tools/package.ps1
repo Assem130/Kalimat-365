@@ -131,7 +131,7 @@ foreach ($browser in "chrome", "firefox") {
 
     $manifestSource = Join-Path $extensionRoot "manifest.$browser.json"
     $manifest = Get-Content -Raw -LiteralPath $manifestSource | ConvertFrom-Json
-    if ($manifest.manifest_version -ne 3 -or $manifest.version -ne "0.3.0" -or $null -eq $manifest.content_security_policy.extension_pages) {
+    if ($manifest.manifest_version -ne 3 -or $manifest.version -ne "0.3.1" -or $null -eq $manifest.content_security_policy.extension_pages) {
         throw "Invalid $browser manifest."
     }
     if ($browser -eq "firefox" -and ($manifest.browser_specific_settings.gecko.id -ne "kalimat@assem130.github.io" -or $null -eq $manifest.browser_specific_settings.gecko.data_collection_permissions -or $manifest.browser_specific_settings.gecko.data_collection_permissions.required -ne @("none"))) {
@@ -146,7 +146,7 @@ foreach ($browser in "chrome", "firefox") {
     $fileItems = @(Get-ChildItem -LiteralPath $target -File -Recurse)
     $totalBytes = [int64](($fileItems | Measure-Object -Property Length -Sum).Sum)
 
-    $archivePath = Join-Path $distRoot "kalimat-$browser-0.3.0.zip"
+    $archivePath = Join-Path $distRoot "kalimat-$browser-0.3.1.zip"
     if (Test-Path -LiteralPath $archivePath) {
         $archiveItem = Get-Item -LiteralPath $archivePath -Force
         $expectedArchive = [IO.Path]::GetFullPath($archivePath).TrimEnd('\')

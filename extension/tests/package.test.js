@@ -10,8 +10,8 @@ const extensionRoot = path.join(__dirname, "..");
 const distRoot = path.join(extensionRoot, "dist");
 const browsers = ["chrome", "firefox"];
 const archiveNames = {
-  chrome: "kalimat-chrome-0.3.0.zip",
-  firefox: "kalimat-firefox-0.3.0.zip",
+  chrome: "kalimat-chrome-0.3.1.zip",
+  firefox: "kalimat-firefox-0.3.1.zip",
 };
 const runtimeFiles = [
   "assets/fonts/Amiri-Bold.woff2",
@@ -166,7 +166,7 @@ function assertNoUnsafePayload(browser) {
 test("Chrome manifest uses a MV3 service worker with fixed optional ar.wiktionary.org host permission", () => {
   const chrome = manifest("chrome");
   assertSafeManifest(chrome, "chrome");
-  assert.equal(chrome.version, "0.3.0");
+  assert.equal(chrome.version, "0.3.1");
   assert.deepEqual(Object.keys(chrome.background), ["service_worker"]);
   assert.equal(chrome.background.service_worker, "background.js");
 });
@@ -174,7 +174,7 @@ test("Chrome manifest uses a MV3 service worker with fixed optional ar.wiktionar
 test("Firefox manifest uses ordered event-page scripts with no host permissions", () => {
   const firefox = manifest("firefox");
   assertSafeManifest(firefox, "firefox");
-  assert.equal(firefox.version, "0.3.0");
+  assert.equal(firefox.version, "0.3.1");
   assert.deepEqual(firefox.browser_specific_settings, {
     gecko: {
       id: "kalimat@assem130.github.io",
@@ -237,7 +237,7 @@ test("both packages contain exactly the runtime allowlist and selected manifest"
     assert.deepEqual(new Set(listFiles(path.join(distRoot, browser))), expectedPackageFiles, `${browser} package drifted from the allowlist`);
     assert.doesNotThrow(() => assertSafeManifest(packageManifest(browser), browser));
     assert.deepEqual(packageManifest(browser), manifest(browser));
-    assert.equal(manifest(browser).version, "0.3.0");
+    assert.equal(manifest(browser).version, "0.3.1");
     assert.equal(packageManifest(browser).background.service_worker ?? undefined, browser === "chrome" ? "background.js" : undefined);
     if (browser === "firefox") assert.deepEqual(packageManifest(browser).background.scripts, manifest("firefox").background.scripts);
   }

@@ -16,7 +16,7 @@
   <a href="https://assem130.github.io/arabic-word-of-the-day/privacy.html">الخصوصية</a>
 </p>
 
-Local-first Arabic learning for intermediate and advanced learners. Public beta `0.3.0`. Chrome is on the [Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe); Firefox store submission is postponed. Support: [issues](https://github.com/Assem130/arabic-word-of-the-day/issues).
+Local-first Arabic learning for intermediate and advanced learners. Public beta `0.3.1`. Chrome is on the [Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe); Firefox store submission is postponed. Support: [issues](https://github.com/Assem130/arabic-word-of-the-day/issues).
 
 <p align="center">
   <img src="docs/store/screenshots/01-daily-word.png" alt="كلمة اليوم" width="260">
@@ -64,9 +64,9 @@ Then open <http://localhost:8000/>. Python 3 is the only development runtime req
 
 Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe). Firefox store submission is postponed.
 
-Unpacked / local testing from [`v0.3.0-beta.2`](https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.2):
+Unpacked / local testing:
 
-- Download `kalimat-chrome-0.3.0.zip` or `kalimat-firefox-0.3.0.zip`, then extract.
+- Download `kalimat-chrome-0.3.1.zip` or `kalimat-firefox-0.3.1.zip`, then extract.
 - **Chrome:** `chrome://extensions` → Developer mode → **Load unpacked** → folder containing `manifest.json`.
 - **Firefox:** `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → extracted Firefox `manifest.json`.
 
@@ -85,7 +85,7 @@ $env:KALIMAT_PACKAGE_ALREADY_BUILT = '1'; node extension/tests/package.test.js; 
 git diff --check
 ```
 
-Managed Windows may report `spawn EPERM` for Node child workers; rerun the identical command with permitted process execution. A clean package must emit `extension/dist/kalimat-chrome-0.3.0.zip` and `extension/dist/kalimat-firefox-0.3.0.zip`.
+Managed Windows may report `spawn EPERM` for Node child workers; rerun the identical command with permitted process execution. A clean package must emit `extension/dist/kalimat-chrome-0.3.1.zip` and `extension/dist/kalimat-firefox-0.3.1.zip`.
 
 ## Project map
 

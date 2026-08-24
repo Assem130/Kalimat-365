@@ -22,7 +22,7 @@ Kalimat (كَلِمات) is a no-build, vanilla HTML/CSS/JavaScript Arabic learn
 - `app.js` owns the word permalink; `revamp.js` owns the home/lexicon surface; `web-ui.js` contains shared website UI helpers.
 - `extension/shared/review-policy.js` and `extension/shared/speech.js` are shared by the website and extension adapters.
 - `sw.js` precaches the same-origin app shell, shared export helper, privacy page, and local WOFF2 files. It does not maintain audio or cross-origin caches.
-- `extension/tools/package.ps1` emits the version `0.3.0` Chrome and Firefox archives from the validated runtime allowlist.
+- `extension/tools/package.ps1` emits the version `0.3.1` Chrome and Firefox archives from the validated runtime allowlist.
 
 ## Beta protocol and gates
 
