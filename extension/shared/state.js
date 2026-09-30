@@ -193,10 +193,6 @@
     return result;
   }
 
-  function vocabularyIds(vocabulary) {
-    return vocabularyIndex(vocabulary).aliases;
-  }
-
   function mapRatingToGrade(rating) {
     return ReviewPolicy.mapRatingToGrade(rating);
   }
@@ -382,13 +378,13 @@
       const numericId = numericAlias(wId);
       const targetId = index?.aliases.has(String(wId)) ? index.aliases.get(String(wId)) : (numericId ?? wId);
 
-      if (ws.saved && !favorites[targetId] && !favorites[wId]) {
-        favorites[targetId] = true;
-      }
+      const favoriteId = index ? targetId : wId;
+      if (ws.saved === true) favorites[favoriteId] = true;
+      else if (ws.saved === false) delete favorites[favoriteId];
       if (ws.dateKey && !history[targetId] && !history[wId]) {
         history[targetId] = { firstSeen: ws.dateKey };
       }
-      if (!srs[targetId] && !srs[wId]) {
+      if ((ws.status || ws.dateKey || history[targetId] || history[wId]) && !srs[targetId] && !srs[wId]) {
         const item = createDefaultSrsItem(targetId, ws.dateKey || getLocalDateKey(new Date()));
         if (ws.status === "known") {
           item.repetition = 1;
@@ -524,11 +520,17 @@
       }
     }
 
-    // Also update SM-2 state accordingly
-    const currentSrs = current.srs[targetId] || current.srs[input.wordId] || createDefaultSrsItem(targetId, input.dateKey);
-    const rating = input.status === "known" ? "good" : "again";
-    const sm2Result = calculateSM2(currentSrs, rating, input.dateKey);
-    current.srs[targetId] = sm2Result;
+    // Daily feedback contributes one automatic SRS grade per assignment.
+    // Corrections update ability evidence without rewriting deliberate practice.
+    if (!assignment.status) {
+      const currentSrs = current.srs[targetId] || current.srs[input.wordId] || createDefaultSrsItem(targetId, input.dateKey);
+      const rating = input.status === "known" ? "good" : "again";
+      const sm2Result = calculateSM2(currentSrs, rating, input.dateKey);
+      sm2Result.history.at(-1).source = "daily";
+      const persistedSrs = { ...sm2Result };
+      delete persistedSrs.historyEntry;
+      current.srs[targetId] = persistedSrs;
+    }
     current.history[targetId] = { firstSeen: current.history[targetId]?.firstSeen || input.dateKey };
 
     return current;
@@ -559,7 +561,7 @@
 
     const currentSrs = current.srs[targetId] || current.srs[wordId] || createDefaultSrsItem(targetId, todayKey);
     if (Array.isArray(currentSrs.history) && currentSrs.history.some((entry) => {
-      if (!entry || entry.date !== todayKey) return false;
+      if (!entry || entry.source === "daily" || entry.date !== todayKey) return false;
       try { return canonicalReviewRating(entry.rating ?? entry.grade) === canonicalRating; } catch (_) { return false; }
     })) return current;
     const sm2Result = calculateSM2(currentSrs, canonicalRating, todayKey);
@@ -660,22 +662,6 @@
     };
   }
 
-  function migrateLegacyToV2(profile) {
-    return copyProfile(profile);
-  }
-
-  function migrateState(rawState, currentDateKey, validIds = null) {
-    const fallbackDate = isDateKey(currentDateKey) ? currentDateKey : getLocalDateKey(new Date());
-    let raw = rawState;
-    if (typeof raw === "string") {
-      try { raw = JSON.parse(raw); } catch { raw = null; }
-    }
-    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-      return createProfile();
-    }
-    return copyProfile(raw);
-  }
-
   function parseImport(text, vocabulary) {
     try {
       if (typeof text !== "string" || encoder.encode(text).byteLength > MAX_IMPORT_BYTES) throw new TypeError("size");
@@ -717,8 +703,6 @@
     canonicalReviewRating,
     normalizeWordId: canonicalWordId,
     vocabularyIndex,
-    migrateLegacyToV2,
-    migrateState,
     parseImport,
     serializeExport,
     pruneAssignments,

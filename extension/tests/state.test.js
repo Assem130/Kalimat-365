@@ -386,3 +386,35 @@ test("pruning retains the newest 5000 assignments and export is newline-terminat
   parsed.assignments["2000-01-03"].wordId = "w2";
   assert.equal(pruned.assignments["2000-01-03"].wordId, "w1");
 });
+
+
+test("daily feedback grades SRS once and preserves later deliberate practice", () => {
+  const dateKey = "2026-09-30";
+  const first = applyFeedback(profileWithAssignment(dateKey), { dateKey, wordId: "w1", status: "known" }, vocabulary);
+  const repeated = applyFeedback(first, { dateKey, wordId: "w1", status: "known" }, vocabulary);
+  assert.deepEqual(repeated.srs, parseImport(serializeExport(first), vocabulary).srs);
+  const practiced = recordReview(parseImport(serializeExport(first), vocabulary), "w1", "good", dateKey, vocabulary);
+  assert.equal(practiced.srs.w1.reviewCount, 2);
+  const replay = recordReview(practiced, "w1", "good", dateKey, vocabulary);
+  assert.deepEqual(replay.srs, practiced.srs);
+  const corrected = applyFeedback(practiced, { dateKey, wordId: "w1", status: "difficult" }, vocabulary);
+  assert.equal(corrected.assignments[dateKey].status, "difficult");
+  assert.deepEqual(corrected.srs, parseImport(serializeExport(practiced), vocabulary).srs);
+  const restored = applyFeedback(corrected, { dateKey, wordId: "w1", status: "known" }, vocabulary);
+  assert.deepEqual(restored.srs, parseImport(serializeExport(practiced), vocabulary).srs);
+});
+
+test("saved-only entries synchronize favorites without creating learning records", () => {
+  const profile = createProfile({ seedHex: seed });
+  profile.wordStates.w1 = { saved: true };
+  const saved = validateStoredProfile(profile, vocabulary).profile;
+  assert.equal(saved.favorites.w1, true);
+  assert.equal(saved.srs.w1, undefined);
+  assert.equal(saved.history.w1, undefined);
+  saved.wordStates.w1.saved = false;
+  const unsaved = parseImport(serializeExport(saved), vocabulary);
+  assert.equal(unsaved.favorites.w1, undefined);
+  assert.equal(unsaved.srs.w1, undefined);
+  const legacy = { ...profile, wordStates: {}, favorites: { w1: true } };
+  assert.equal(parseImport(JSON.stringify(legacy), vocabulary).favorites.w1, true);
+});

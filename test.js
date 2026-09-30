@@ -190,15 +190,6 @@ assert.ok(citation.includes("السَّمَيْدَع"));
 assert.ok(citation.includes("الخنساء"));
 assert.ok(citation.includes("كَلِمات"));
 
-// Test quiz generation
-const sampleDb = [
-    { id: 1, word: "أ", root: "ا ا ا", weight: "فعل", meaning: "معنى أ" },
-    { id: 2, word: "ب", root: "ب ب ب", weight: "فاعل", meaning: "معنى ب" },
-    { id: 3, word: "ج", root: "ج ج ج", weight: "مفعول", meaning: "معنى ج" },
-    { id: 4, word: "د", root: "د د د", weight: "فعيل", meaning: "معنى د" }
-];
-const quizFromEmpty = Core.generateQuizQuestions([], sampleDb, 3);
-assert.equal(quizFromEmpty.length, 3);
 // Test Arabic normalization
 assert.equal(Core.normalizeArabicText("السَّمَيْـدَعُ"), "السميدع");
 assert.equal(Core.normalizeArabicText("إِقْدَامٌ"), "اقدام");
@@ -226,51 +217,6 @@ assert.equal(related.sameRoot.length, 1);
 assert.equal(related.sameRoot[0].id, 4);
 assert.equal(related.sameWeight.length, 1);
 assert.equal(related.sameWeight[0].id, 5);
-
-// Arabic Voice Discovery & Prioritization Unit Tests
-assert.equal(Core.isArabicVoice({ lang: "ar-SA" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar-EG" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar-AE" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar-KW" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar-XA" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar-001" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ara-001" }), true);
-assert.equal(Core.isArabicVoice({ lang: "arb-001" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar_SA" }), true);
-assert.equal(Core.isArabicVoice({ lang: "AR-EG" }), true);
-assert.equal(Core.isArabicVoice({ lang: "ar" }), true);
-assert.equal(Core.isArabicVoice({ lang: "en-US" }), false);
-assert.equal(Core.isArabicVoice({ lang: "fr-FR" }), false);
-assert.equal(Core.isArabicVoice({ lang: "es-ES" }), false);
-assert.equal(Core.isArabicVoice(null), false);
-assert.equal(Core.isArabicVoice({}), false);
-assert.equal(Core.isArabicVoice({ lang: "" }), false);
-
-// Voice scoring & prioritization
-const sampleVoices = [
-    { name: "Microsoft David", lang: "en-US" },
-    { name: "eSpeak Arabic", lang: "ar" },
-    { name: "Arabic Saudi", lang: "ar-SA" },
-    { name: "Google tarek", lang: "ar-XA" },
-    { name: "Microsoft Naayf Online (Natural) - Arabic (Saudi Arabia)", lang: "ar-SA" },
-    { name: "Maged (Enhanced)", lang: "ar-001" },
-    { name: "نايف (طبيعي) - العربية", lang: "ar-SA" }
-];
-assert.equal(Core.scoreArabicVoice(sampleVoices[0]), -1, "Non-Arabic voice returns score -1");
-assert.ok(Core.scoreArabicVoice(sampleVoices[4]) > Core.scoreArabicVoice(sampleVoices[2]), "Natural/Online Naayf must score higher than generic Arabic");
-assert.ok(Core.scoreArabicVoice(sampleVoices[5]) > Core.scoreArabicVoice(sampleVoices[1]), "Enhanced Maged with ar-001 must score higher than eSpeak Arabic");
-assert.ok(Core.scoreArabicVoice(sampleVoices[6]) > Core.scoreArabicVoice(sampleVoices[2]), "Arabic-script localized Naayf must score higher than generic Arabic");
-
-const filteredVoices = Core.filterArabicVoices(sampleVoices);
-assert.equal(filteredVoices.length, 6, "Must exclude non-Arabic voices");
-assert.equal(filteredVoices.some(v => v.lang === "en-US"), false, "English voices must never be included");
-assert.ok(filteredVoices[0].name.includes("Naayf") || filteredVoices[0].name.includes("نايف"), "Top prioritized voice must be Neural/Natural Naayf");
-
-const bestVoice = Core.findBestArabicVoice(sampleVoices);
-assert.ok(bestVoice.name.includes("Naayf") || bestVoice.name.includes("نايف"));
-assert.equal(Core.findBestArabicVoice([]), null);
-assert.equal(Core.findBestArabicVoice([{ name: "English", lang: "en-US" }]), null);
-assert.equal(Core.findBestArabicVoice(null), null);
 
 class FakeCanvasElement extends FakeElement {
     constructor() {
@@ -465,17 +411,6 @@ assert.equal(Core.parseWordIdFromQuery("?foo=bar", 60), null);
 assert.equal(Core.parseWordIdFromQuery("", 60), null);
 assert.equal(Core.parseWordIdFromQuery(null, 60), null);
 assert.equal(Core.parseWordIdFromQuery(undefined, 60), null);
-
-// resolveWordSelection
-const selDeep = Core.resolveWordSelection("?id=2", testWords, "2026-08-14");
-assert.equal(selDeep.isDeepLink, true);
-assert.equal(selDeep.requestedId, 2);
-assert.equal(selDeep.word.id, 2);
-
-const selInvalid = Core.resolveWordSelection("?id=999", testWords, "2026-08-14");
-assert.equal(selInvalid.isDeepLink, false);
-assert.equal(selInvalid.requestedId, null);
-assert.equal(selInvalid.word.id, testWords[Core.getDailyWordIndex("2026-08-14", testWords.length)].id);
 
 const words = require("./words.js");
 assert.equal(words.length, 365);

@@ -473,7 +473,12 @@ function handleMessage(message) {
       const loaded = await loadProfile(vocabulary);
       if (loaded.recoveryRaw !== undefined) return recovery(loaded);
       const dateKey = message.dateKey;
-      const updatedProfile = dependencies.state.recordReview(loaded.profile, message.wordId, message.rating, dateKey, vocabulary);
+      const targetId = dependencies.state.normalizeWordId(message.wordId, dependencies.state.vocabularyIndex(vocabulary));
+      dependencies.state.canonicalReviewRating(message.rating);
+      // The queue is enrolled from SRS. Clear or replacement import can remove
+      // that enrollment while a surface still holds its old active card.
+      if (!Object.hasOwn(loaded.profile.srs, targetId)) return { kind: "stale" };
+      const updatedProfile = dependencies.state.recordReview(loaded.profile, targetId, message.rating, dateKey, vocabulary);
       const alreadyApplied = sameProfile(updatedProfile, loaded.profile);
       const warningResult = alreadyApplied
         ? false
@@ -481,7 +486,6 @@ function handleMessage(message) {
       if (warningResult) throw new Error("Review was not persisted.");
       await updateBadge(updatedProfile, vocabulary);
       const dueWords = dependencies.state.getDueReviewWords(updatedProfile, vocabulary, dateKey);
-      const targetId = dependencies.state.normalizeWordId(message.wordId, dependencies.state.vocabularyIndex(vocabulary));
       return {
         kind: "ok",
         srs: updatedProfile.srs ? (updatedProfile.srs[targetId] || updatedProfile.srs[message.wordId]) : null,
@@ -524,7 +528,10 @@ function handleMessage(message) {
       if (!exactMessage(message, new Set(["type", "wordId", "saved"])) || typeof message.saved !== "boolean") throw new TypeError("Invalid save.");
       const wordId = dependencies.state.normalizeWordId(message.wordId, dependencies.state.vocabularyIndex(vocabulary));
       const key = String(wordId);
-      return { ...profile, wordStates: { ...profile.wordStates, [key]: { ...profile.wordStates[key], saved: message.saved } } };
+      const favorites = { ...profile.favorites };
+      if (message.saved) favorites[key] = true;
+      else delete favorites[key];
+      return { ...profile, favorites, wordStates: { ...profile.wordStates, [key]: { ...profile.wordStates[key], saved: message.saved } } };
     }, (profile, vocabulary) => {
       const wordId = dependencies.state.normalizeWordId(message.wordId, dependencies.state.vocabularyIndex(vocabulary));
       return { wordId, saved: profile.wordStates[String(wordId)]?.saved === true };

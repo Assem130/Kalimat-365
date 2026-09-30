@@ -83,7 +83,9 @@
   function findWord(vocabulary, id) {
     if (!Array.isArray(vocabulary) || id === null || id === undefined) return undefined;
     const strId = String(id);
-    const numId = typeof id === "number" ? id : (strId.startsWith("w") ? parseInt(strId.slice(1), 10) : parseInt(strId, 10));
+    const exact = vocabulary.find((word) => word && String(word.id) === strId);
+    if (exact) return exact;
+    const numId = /^(?:w)?[0-9]+$/.test(strId) ? Number(strId.replace(/^w/, "")) : NaN;
     return vocabulary.find((word) => {
       if (!word) return false;
       if (word.id === id || String(word.id) === strId) return true;

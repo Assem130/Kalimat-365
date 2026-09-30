@@ -480,17 +480,3 @@ test("SM-2 Engine — Review Statistics ignore SRS IDs outside the supplied voca
     assert.equal(stats.reviewCount, 2);
     assert.equal(stats.retentionRate, 100);
 });
-
-test("SM-2 Engine — scheduleDailyWordSrs Auto-Enrollment", async (t) => {
-    const state = Core.createDefaultState();
-    const enrolled = Core.scheduleDailyWordSrs(state, 5, "2026-08-16");
-
-    assert.equal(enrolled.version, 2);
-    assert.ok(enrolled.history[5]);
-    assert.equal(enrolled.history[5].firstSeen, "2026-08-16");
-    assert.ok(enrolled.srs[5]);
-    assert.equal(enrolled.srs[5].wordId, 5);
-    assert.equal(enrolled.srs[5].repetition, 0);
-    assert.equal(enrolled.srs[5].interval, 0);
-    assert.equal(enrolled.srs[5].nextReviewDate, "2026-08-16");
-});

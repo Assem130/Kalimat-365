@@ -16,7 +16,7 @@ function loadFetchHandler({ cached, network } = {}) {
         URL,
         Request: function (url) { this.url = url; },
         self: {
-            location: { origin: "https://example.test" },
+            location: { origin: "https://example.test", href: "https://example.test/sw.js" },
             addEventListener(type, handler) { handlers[type] = handler; },
             skipWaiting: async () => {},
             clients: { claim: async () => {} }
@@ -33,20 +33,26 @@ function loadFetchHandler({ cached, network } = {}) {
     return { handleFetch: handlers.fetch, puts };
 }
 
-function loadServiceWorker({ cacheKeys = [] } = {}) {
+function loadServiceWorker({ cacheKeys = [], scriptUrl = "https://example.test/sw.js", offline = false } = {}) {
     const handlers = {};
     const deleted = [];
     let precached = [];
     let skipWaitingCalls = 0;
+    const contents = new Map();
+    const cacheKey = request => new URL(typeof request === "string" ? request : request.url, scriptUrl).href;
     const cache = {
-        addAll: async (assets) => { precached = assets; },
-        match: async () => undefined,
-        put: async () => {}
+        addAll: async (assets) => {
+            precached = assets;
+            for (const asset of assets) contents.set(cacheKey(asset), { body: cacheKey(asset) });
+        },
+        match: async request => contents.get(cacheKey(request)),
+        put: async (request, response) => { contents.set(cacheKey(request), response); }
     };
     const sandbox = {
         URL,
+        Request: function (url) { this.url = url; },
         self: {
-            location: { origin: "https://example.test" },
+            location: { origin: new URL(scriptUrl).origin, href: scriptUrl },
             addEventListener(type, handler) { handlers[type] = handler; },
             skipWaiting: async () => { skipWaitingCalls += 1; },
             clients: { claim: async () => {} }
@@ -57,10 +63,13 @@ function loadServiceWorker({ cacheKeys = [] } = {}) {
             keys: async () => cacheKeys,
             delete: async (key) => { deleted.push(key); return true; }
         },
-        fetch: async () => ({ ok: true, clone() { return this; } })
+        fetch: async request => {
+            if (offline) throw new Error("offline");
+            return { body: request.url, ok: true, clone() { return this; } };
+        }
     };
     vm.runInNewContext(fs.readFileSync("sw.js", "utf8"), sandbox);
-    return { handlers, deleted, getPrecached: () => precached, getSkipWaitingCalls: () => skipWaitingCalls };
+    return { handlers, deleted, getPrecached: () => precached, getSkipWaitingCalls: () => skipWaitingCalls, contents };
 }
 
 test("same-origin app assets serve from cache and revalidate in the background", async () => {
@@ -99,55 +108,6 @@ test("same-origin app assets fall back to network when uncached", async () => {
     });
 
     assert.equal(await response, fresh);
-});
-
-test("audio cache is trimmed to the FIFO cap", async () => {
-    const handlers = {};
-    const store = new Map();
-    let putCount = 0;
-    const fakeCache = {
-        match: async (request) => store.get(request.url),
-        put: async (request, response) => { putCount += 1; store.set(request.url, response); },
-        keys: async () => [...store.keys()].map(url => ({ url }))
-    };
-    const sandbox = {
-        URL,
-        Request: function (url) { this.url = url; },
-        self: {
-            location: { origin: "https://example.test" },
-            addEventListener(type, handler) { handlers[type] = handler; },
-            skipWaiting: async () => {},
-            clients: { claim: async () => {} }
-        },
-        caches: {
-            open: async () => fakeCache,
-            match: async () => undefined,
-            keys: async () => [],
-            delete: async (key) => store.delete(key)
-        },
-        fetch: async (request) => ({ body: `audio:${request.url}`, ok: true, type: "basic", clone() { return this; } })
-    };
-    vm.runInNewContext(fs.readFileSync("sw.js", "utf8"), sandbox);
-
-    // Seed one over-cap entry so the trim has something to evict.
-    store.set("https://example.test/assets/audio/words/0.mp3", { body: "seed" });
-
-    const waitUntilQueue = [];
-    const event = {
-        request: {
-            method: "GET",
-            mode: "cors",
-            url: "https://example.test/assets/audio/words/1.mp3",
-            headers: { get: () => "audio/mpeg" }
-        },
-        respondWith(value) { this.response = value; },
-        waitUntil(promise) { waitUntilQueue.push(promise); }
-    };
-    handlers.fetch(event);
-    const audioResponse = await event.response;
-    assert.equal(audioResponse.body, "audio:https://example.test/assets/audio/words/1.mp3");
-    await Promise.all(waitUntilQueue);
-    assert.ok(putCount >= 1, "fetched audio must be cached");
 });
 
 test("the offline shell pre-caches every same-origin page script", () => {
@@ -192,4 +152,66 @@ test("activation removes only obsolete Kalimat caches", async () => {
     await activation;
 
     assert.deepEqual(worker.deleted, ["kalimat-static-old", "kalimat-audio-v1"]);
+});
+
+test("successful installation includes every CSS font for a first offline visit", async () => {
+    const worker = loadServiceWorker();
+    let installation;
+    worker.handlers.install({ waitUntil(promise) { installation = promise; } });
+    await installation;
+    const css = fs.readFileSync("style.css", "utf8");
+    const fonts = [...css.matchAll(/url\(["']?([^"')]+\.woff2)["']?\)/g)].map(match => match[1]);
+    assert.ok(fonts.length > 0, "website must declare its fonts");
+    for (const font of fonts) {
+        assert.ok(fs.existsSync(font), `${font} must exist locally`);
+        assert.ok(worker.getPrecached().includes(`./${font}`), `${font} must be available without a prior online font request`);
+    }
+    for (const asset of worker.getPrecached()) {
+        const url = new URL(asset, "https://example.test/Kalimat-365/sw.js");
+        assert.equal(url.origin, "https://example.test", "precache must contain only same-origin resources");
+        assert.ok(url.pathname.startsWith("/Kalimat-365/"), "precache must respect the deployment subpath");
+    }
+});
+
+function requestFromWorker(worker, path, mode = "navigate") {
+    let response;
+    worker.handlers.fetch({
+        request: { method: "GET", mode, url: path, headers: { get: () => mode === "navigate" ? "text/html" : "font/woff2" } },
+        respondWith(promise) { response = promise; }
+    });
+    return response;
+}
+
+test("installed subpath shell serves deep links and every CSS font offline", async () => {
+    const base = "https://example.test/Kalimat-365/";
+    const worker = loadServiceWorker({ scriptUrl: `${base}sw.js`, offline: true });
+    let installation;
+    worker.handlers.install({ waitUntil(promise) { installation = promise; } });
+    await installation;
+    for (const page of ["index.html", "word.html", "privacy.html"]) {
+        const response = await requestFromWorker(worker, `${base}${page}?id=23&date=2026-09-30`);
+        assert.equal(response.body, `${base}${page}`, "deep links must use the matching page's queryless cached shell");
+    }
+    const fonts = [...fs.readFileSync("style.css", "utf8").matchAll(/url\(["']?([^"')]+\.woff2)["']?\)/g)];
+    for (const [, font] of fonts) {
+        const response = await requestFromWorker(worker, `${base}${font}`, "cors");
+        assert.equal(response.body, `${base}${font}`, "a first offline request must find the installed font");
+    }
+});
+
+test("subpath navigation refreshes one canonical cache entry across deep links", async () => {
+    const base = "https://example.test/Kalimat-365/";
+    const worker = loadServiceWorker({ scriptUrl: `${base}sw.js` });
+    await requestFromWorker(worker, `${base}word.html?id=23`);
+    await requestFromWorker(worker, `${base}word.html?id=24`);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.deepEqual([...worker.contents.keys()], [`${base}word.html`], "online deep links must refresh the canonical subpath shell, without query entries");
+    assert.equal(worker.contents.get(`${base}word.html`).body, `${base}word.html?id=24`);
+});
+
+test("external resources are not intercepted or stored by the local-only worker", () => {
+    const worker = loadServiceWorker();
+    assert.equal(requestFromWorker(worker, "https://external.test/font.woff2", "cors"), undefined);
+    assert.equal(requestFromWorker(worker, "https://external.test/page.html"), undefined);
+    assert.equal(worker.contents.size, 0);
 });

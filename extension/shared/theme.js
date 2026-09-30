@@ -10,39 +10,6 @@
   const PRIMARY_STORAGE_KEY = "kalimat.theme";
   const LEGACY_STORAGE_KEY = "kalimat_theme";
 
-  const THEME_PALETTES = Object.freeze({
-    paper: Object.freeze({
-      ink: "#14211b",
-      inkSoft: "#24332b",
-      paper: "#d8cfbf",
-      paperLight: "#f3efe5",
-      lime: "#d9ff76",
-      lineDark: "rgba(20, 33, 27, 0.34)",
-      lineLight: "rgba(243, 239, 229, 0.40)",
-      navBg: "rgba(20, 33, 27, 0.94)",
-    }),
-    emerald: Object.freeze({
-      ink: "#062c22",
-      inkSoft: "#114b3d",
-      paper: "#e2dabf",
-      paperLight: "#f4f0e6",
-      lime: "#d4af37",
-      lineDark: "rgba(6, 44, 34, 0.34)",
-      lineLight: "rgba(244, 240, 230, 0.40)",
-      navBg: "rgba(6, 44, 34, 0.94)",
-    }),
-    midnight: Object.freeze({
-      ink: "#f1f5f9",
-      inkSoft: "#cbd5e1",
-      paper: "#152244",
-      paperLight: "#0b1329",
-      lime: "#38bdf8",
-      lineDark: "rgba(241, 245, 249, 0.20)",
-      lineLight: "rgba(241, 245, 249, 0.15)",
-      navBg: "rgba(7, 13, 28, 0.94)",
-    }),
-  });
-
   /**
    * Normalizes theme input against the valid theme whitelist.
    * Falls back to "paper" for invalid or corrupt inputs.
@@ -324,71 +291,16 @@
     };
   }
 
-  /**
-   * Parses a hex color string into [R, G, B] integer channels.
-   * @param {string} hex
-   * @returns {[number, number, number]}
-   */
-  function parseHexColor(hex) {
-    if (typeof hex !== "string") return [0, 0, 0];
-    const clean = hex.replace(/^#/, "").trim();
-    if (clean.length === 3) {
-      const r = parseInt(clean[0] + clean[0], 16);
-      const g = parseInt(clean[1] + clean[1], 16);
-      const b = parseInt(clean[2] + clean[2], 16);
-      return [r, g, b];
-    }
-    const num = parseInt(clean, 16);
-    if (Number.isNaN(num)) return [0, 0, 0];
-    return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
-  }
-
-  /**
-   * Computes W3C relative luminance from sRGB integer channels.
-   * @param {number} r
-   * @param {number} g
-   * @param {number} b
-   * @returns {number}
-   */
-  function getRelativeLuminance(r, g, b) {
-    const rs = r / 255;
-    const gs = g / 255;
-    const bs = b / 255;
-    const rl = rs <= 0.04045 ? rs / 12.92 : Math.pow((rs + 0.055) / 1.055, 2.4);
-    const gl = gs <= 0.04045 ? gs / 12.92 : Math.pow((gs + 0.055) / 1.055, 2.4);
-    const bl = bs <= 0.04045 ? bs / 12.92 : Math.pow((bs + 0.055) / 1.055, 2.4);
-    return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
-  }
-
-  /**
-   * Computes the WCAG 2.1 contrast ratio between two hex colors.
-   * @param {string} hex1
-   * @param {string} hex2
-   * @returns {number}
-   */
-  function getContrastRatio(hex1, hex2) {
-    const [r1, g1, b1] = parseHexColor(hex1);
-    const [r2, g2, b2] = parseHexColor(hex2);
-    const l1 = getRelativeLuminance(r1, g1, b1);
-    const l2 = getRelativeLuminance(r2, g2, b2);
-    const lighter = Math.max(l1, l2);
-    const darker = Math.min(l1, l2);
-    return (lighter + 0.05) / (darker + 0.05);
-  }
 
   return {
     VALID_THEMES,
     DEFAULT_THEME,
     PRIMARY_STORAGE_KEY,
     LEGACY_STORAGE_KEY,
-    THEME_PALETTES,
     normalizeTheme,
     applyTheme,
     getStoredTheme,
     setStoredTheme,
     initThemeController,
-    parseHexColor,
-    getRelativeLuminance,
-    getContrastRatio,
   };
 });

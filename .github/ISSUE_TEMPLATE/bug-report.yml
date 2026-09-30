@@ -1,0 +1,51 @@
+name: Bug report
+description: Report a reproducible problem with the website or extension.
+body:
+  - type: markdown
+    attributes:
+      value: "Include only information needed to reproduce the problem. Remove personal information from screenshots and errors. Do not attach learner exports or browser storage data."
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - Website
+        - Chrome extension
+        - Firefox extension
+        - Local development or packaging
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and operating system
+      placeholder: "Example: Chrome 140 on Windows 11"
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Installation source and version
+      description: Website URL, Chrome Web Store, release archive, or local build. Include the version or commit if known.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include what you opened or selected, in order.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Add relevant screenshots or error messages with personal information removed.
+    validations:
+      required: true

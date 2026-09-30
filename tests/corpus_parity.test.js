@@ -73,3 +73,37 @@ test("website and extension vocabularies stay lexically identical by ID", () => 
     "Only the documented generic-attribution examples may differ"
   );
 });
+
+
+test("converter check accepts CRLF and detects metadata drift without rewriting corpus", () => {
+  const childProcess = require("node:child_process");
+  const os = require("node:os");
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "kalimat-corpus-"));
+  try {
+    const root = path.join(__dirname, "..");
+    for (const relative of ["words.js", "extension/tools/convert-vocabulary.js", "extension/shared/vocabulary.js", "extension/data/vocabulary.json", "extension/data/vocabulary-metadata.json"]) {
+      const destination = path.join(temporary, relative);
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.copyFileSync(path.join(root, relative), destination);
+    }
+    const converter = path.join(temporary, "extension/tools/convert-vocabulary.js");
+    const output = path.join(temporary, "extension/data/vocabulary.json");
+    const original = fs.readFileSync(output);
+    childProcess.execFileSync(process.execPath, [converter, "--check"]);
+    assert.deepEqual(fs.readFileSync(output), original);
+    const crlf = Buffer.from(original.toString("utf8").replace(/\r?\n/g, "\r\n"));
+    fs.writeFileSync(output, crlf);
+    childProcess.execFileSync(process.execPath, [converter, "--check"]);
+    assert.deepEqual(fs.readFileSync(output), crlf);
+    const changed = JSON.parse(original);
+    changed[0].topics = ["unexpected-topic"];
+    fs.writeFileSync(output, `${JSON.stringify(changed, null, 2)}\n`.replace(/\n/g, "\r\n"));
+    const drifted = fs.readFileSync(output);
+    const result = childProcess.spawnSync(process.execPath, [converter, "--check"], { encoding: "utf8" });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Generated vocabulary differs/);
+    assert.deepEqual(fs.readFileSync(output), drifted);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});

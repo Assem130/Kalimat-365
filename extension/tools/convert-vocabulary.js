@@ -40,7 +40,7 @@ function normalizeArabic(value) {
     .normalize("NFC");
 }
 
-const vocabulary = words.map((seed, index) => {
+const vocabulary = words.map((seed) => {
   const metadata = metadataBySourceId.get(seed.id);
   if (!metadata || metadata.reviewed !== true) throw new TypeError(`Missing reviewed metadata for source ${seed.id}.`);
   const source = seed;
@@ -84,6 +84,12 @@ for (const word of vocabulary) {
 }
 const validated = validateVocabulary(vocabulary);
 const output = path.join(__dirname, "..", "data", "vocabulary.json");
-fs.mkdirSync(path.dirname(output), { recursive: true });
-fs.writeFileSync(output, `${JSON.stringify(validated, null, 2)}\n`, "utf8");
-console.log(`Validated ${validated.length} vocabulary records: ${output}`);
+const serialized = `${JSON.stringify(validated, null, 2)}\n`;
+if (process.argv.includes("--check")) {
+  if (fs.readFileSync(output, "utf8").replace(/\r\n/g, "\n") !== serialized) throw new Error("Generated vocabulary differs from the tracked corpus. Regenerate and review the change.");
+  console.log(`Checked ${validated.length} vocabulary records: ${output}`);
+} else {
+  fs.mkdirSync(path.dirname(output), { recursive: true });
+  fs.writeFileSync(output, serialized, "utf8");
+  console.log(`Validated ${validated.length} vocabulary records: ${output}`);
+}

@@ -203,3 +203,14 @@ test("all 365 reviewed vocabulary records are discoverable through canonical Exp
     }
   }
 });
+
+
+test("findWord accepts full aliases and prefers exact string IDs", () => {
+  const { findWord } = require("../shared/vocabulary.js");
+  const words = [{ id: 1 }, { id: "1junk" }, { id: "w2" }];
+  assert.equal(findWord(words, "w1").id, 1);
+  assert.equal(findWord(words, "2").id, "w2");
+  assert.equal(findWord(words, "1junk").id, "1junk");
+  assert.equal(findWord(words, "w1junk"), undefined);
+  assert.equal(findWord(words, "2junk"), undefined);
+});

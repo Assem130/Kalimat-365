@@ -642,6 +642,8 @@
       updateStreakBadge();
       status("تم حفظ تقييمك.");
       actionStatus("تم حفظ تقييمك.");
+      await refreshProfile();
+      await loadDueReviews({ force: true });
     } catch (_) {
       status("تعذّر حفظ التقييم.");
       actionStatus("تعذّر حفظ التقييم.", true);
@@ -815,6 +817,7 @@
 
   const reviewSession = ReviewSession.create();
   let reviewQueueLoad = null;
+  let reviewQueueRefreshRequested = false;
   let reviewInvoker = null;
 
   function toArabicDigits(value) {
@@ -875,13 +878,58 @@
     syncReviewControls();
   }
 
+  function practiceIsActive() {
+    return ReviewSession.isSubmitting(reviewSession) || elements["practice-dialog"]?.open === true || elements["practice-dialog"]?.hasAttribute("open");
+  }
+
+  let profileRefreshRevision = 0;
+  async function refreshProfile() {
+    const revision = ++profileRefreshRevision;
+    try {
+      const exported = await ExtApi.runtime.sendMessage({ type: "state.export" });
+      if (revision !== profileRefreshRevision) return;
+      if (exported?.kind === "recovery") return renderRecovery(exported.recoveryRaw);
+      if (exported?.kind !== "export") return;
+      state.profile = JSON.parse(exported.text);
+      warning(exported.storageWarning === true || state.reminderWarning || state.storageWarning);
+      if (state.today) {
+        const assignment = state.profile.assignments?.[state.today.dateKey];
+        state.today.status = assignment?.status;
+        const wordState = state.profile.wordStates?.[String(state.today.word.id)] || state.profile.wordStates?.[`w${state.today.word.id}`];
+        elements["today-known"].setAttribute("aria-pressed", String(assignment?.status === "known"));
+        elements["today-difficult"].setAttribute("aria-pressed", String(assignment?.status === "difficult"));
+        elements["today-save"].setAttribute("aria-pressed", String(wordState?.saved === true || (wordState?.saved === undefined && state.profile.favorites?.[String(state.today.word.id)] === true)));
+      }
+      updateStreakBadge();
+    } catch (_) { warning(true); }
+  }
+
+  function listenForProfileChanges() {
+    ExtApi.storage?.onChanged?.addListener((changes, areaName) => {
+      if ((areaName && areaName !== "local") || !changes?.["kalimat.profile"]) return;
+      refreshProfile().then(() => {
+        if (!practiceIsActive()) return loadDueReviews({ force: true });
+      });
+    });
+  }
+
   function loadDueReviews({ force = false } = {}) {
+    if (ReviewSession.isSubmitting(reviewSession) || (practiceIsActive() && !ReviewSession.hasError(reviewSession))) return Promise.resolve();
     if (!force && ReviewSession.isLoaded(reviewSession)) return Promise.resolve();
-    if (reviewQueueLoad) return reviewQueueLoad;
+    if (reviewQueueLoad) {
+      if (force) reviewQueueRefreshRequested = true;
+      return reviewQueueLoad;
+    }
 
     hideReviewBadge();
     reviewQueueLoad = (async () => {
-      const result = await ReviewSession.load(reviewSession, () => ExtApi.runtime.sendMessage({ type: "review.queue" }));
+      let result;
+      do {
+        // A mutation may commit while this request is pending. Keep all callers
+        // waiting until a later request has observed that authoritative state.
+        reviewQueueRefreshRequested = false;
+        result = await ReviewSession.load(reviewSession, () => ExtApi.runtime.sendMessage({ type: "review.queue" }));
+      } while (reviewQueueRefreshRequested && !practiceIsActive());
       if (result.kind === "recovery") {
           hideReviewBadge();
           renderRecovery(result.recoveryRaw);
@@ -936,26 +984,12 @@
     showPracticeCard(0);
   }
 
-  function openPracticeModal() {
-    if (!elements["practice-dialog"]) return;
+  async function openPracticeModal() {
+    if (!elements["practice-dialog"] || practiceIsActive()) return;
     reviewInvoker = document.activeElement && typeof document.activeElement.focus === "function" ? document.activeElement : null;
-    if (ReviewSession.hasError(reviewSession)) {
-      loadDueReviews({ force: true }).then((result) => {
-        if (result?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) return;
-        showPracticeContent();
-        presentPracticeDialog();
-      });
-      return;
-    }
-    const needsLoad = !ReviewSession.isLoaded(reviewSession) || ReviewSession.count(reviewSession) === 0;
-    if (needsLoad) {
-      loadDueReviews().then((result) => {
-        if (result?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) return;
-        showPracticeContent();
-        presentPracticeDialog();
-      });
-      return;
-    }
+    await refreshProfile();
+    const result = await loadDueReviews({ force: true });
+    if (result?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) return;
     showPracticeContent();
     presentPracticeDialog();
   }
@@ -1074,6 +1108,12 @@
         dateKey: state.today?.dateKey || (globalThis.KalimatDate?.todayDateKey ? globalThis.KalimatDate.todayDateKey() : new Date().toISOString().slice(0, 10)),
       });
       if (result?.kind === "recovery") return renderRecovery(result.recoveryRaw);
+      if (result?.kind === "stale") {
+        ReviewSession.fail(reviewSession, "تغيّرت بيانات التعلّم. حدّث المراجعات للمتابعة.");
+        hideReviewBadge();
+        showPracticeError();
+        return;
+      }
       if (result?.kind !== "ok") throw new Error("Review unchanged.");
       const nextIndex = ReviewSession.advance(reviewSession);
       if (nextIndex !== null) {
@@ -1223,6 +1263,7 @@
       });
     }
     listen();
+    listenForProfileChanges();
     try {
       await load();
     } catch (_) { renderError(); }
