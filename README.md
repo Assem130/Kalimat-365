@@ -7,95 +7,72 @@
 <p align="center" dir="rtl">كلمة عربية فصيحة واحدة كل يوم: اسمعها، افهم معناها، وراجعها حتى تثبت.</p>
 
 <p align="center">
-  <a href="https://assem130.github.io/arabic-word-of-the-day/">الموقع</a>
+  <a href="https://assem130.github.io/Kalimat-365/">الموقع</a>
   ·
   <a href="https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe">متجر كروم</a>
   ·
-  <a href="https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.2">v0.3.0-beta.2</a>
-  ·
-  <a href="https://assem130.github.io/arabic-word-of-the-day/privacy.html">الخصوصية</a>
+  <a href="https://assem130.github.io/Kalimat-365/privacy.html">الخصوصية</a>
 </p>
-
-Local-first Arabic learning for intermediate and advanced learners. Public beta `0.3.0`. Chrome is on the [Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe); Firefox store submission is postponed. Support: [issues](https://github.com/Assem130/arabic-word-of-the-day/issues).
 
 <p align="center">
-  <img src="docs/store/screenshots/01-daily-word.png" alt="كلمة اليوم" width="260">
-  <img src="docs/store/screenshots/02-review.png" alt="المراجعة" width="260">
-  <img src="docs/store/screenshots/03-atlas.png" alt="الأطلس" width="260">
+  <a href="https://github.com/Assem130/Kalimat-365/actions/workflows/verify.yml?query=branch%3Amain"><img src="https://github.com/Assem130/Kalimat-365/actions/workflows/verify.yml/badge.svg?branch=main" alt="Verify Kalimat on main"></a>
 </p>
 
-## القناتان
+Kalimat is a local-first Arabic learning experience for intermediate and advanced learners: one daily word, meaning, context, browser speech, and local review from a focused **365-word corpus**.
 
-Website and extension are separate local experiences. They do not sync.
+## Try Kalimat
 
-- **Website:** one date-based daily word, full lexicon, browser speech, local spaced review. History lives in `localStorage`.
-- **Extension:** optional Chrome/Firefox companion with challenge level, interests, reminders, Atlas, and the same review policy. Profile lives in `storage.local`.
+- **Website:** open [Kalimat](https://assem130.github.io/Kalimat-365/).
+- **Chrome companion:** install from the [Chrome Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe).
+- **Status:** public beta. Chrome `0.3.0` is published; Firefox store submission is postponed.
+- **Source and archives:** `main` contains ongoing work. The [beta.2 release](https://github.com/Assem130/Kalimat-365/releases/tag/v0.3.0-beta.2) contains historical `0.3.0` downloads and does not track current `main` or subsequent store updates. See [local installation and packaging](docs/DEVELOPMENT.md#extension-installation-and-packaging) for testing the current source.
 
-No account, backend, telemetry, analytics, gamification, or vocabulary expansion in this beta. Not a beginner product.
+## Website and extension
 
-## الخصوصية
+These are separate local experiences. They do not sync.
 
-Learning data stays on-device until you delete it. Both surfaces offer JSON export and deletion.
+| | Website | Chrome / Firefox extension |
+| --- | --- | --- |
+| Daily word | Universal, date-based selection | Personalized by challenge level and interests |
+| Explore and review | Full lexicon and local spaced review | Atlas and the same review policy |
+| Reminder | Opt-in notification while a Kalimat tab is open | Separate opt-in browser alarms and notifications |
+| Learning data | Browser `localStorage` | Browser `storage.local` |
 
-- Website fonts are local WOFF2. No external font request.
-- Website reminder is an opt-in `Notification` and fires only while a Kalimat tab is open. Clear-data removes learning state, onboarding, and reminder settings; `kalimat_theme` stays.
-- Extension reminder is its own MV3 `alarms`/`notifications` setting.
-- Chrome may make an explicit, read-only Arabic Wiktionary lookup on search, sending only the normalized term. Firefox stays local-only.
+No account, backend, telemetry, analytics, points, competitive rewards, or vocabulary expansion. Reading streaks remain available. Kalimat is not a beginner course.
 
-Full policy: [privacy.html](https://assem130.github.io/arabic-word-of-the-day/privacy.html).
+## Screenshots
 
-## الموقع محلياً
+<table>
+  <tr>
+    <td align="center"><img src="docs/store/screenshots/01-daily-word.png" alt="Website daily word with meaning, context, and speech control" width="260"><br><strong>Daily word</strong><br>Website meaning, context, and pronunciation.</td>
+    <td align="center"><img src="docs/store/screenshots/02-review.png" alt="Website review dialog with recall controls" width="260"><br><strong>Local review</strong><br>Website recall and review controls.</td>
+    <td align="center"><img src="docs/store/screenshots/03-atlas.png" alt="Extension daily word in Atlas" width="260"><br><strong>Atlas</strong><br>Extension daily word in Atlas.</td>
+  </tr>
+</table>
 
-Open the [live site](https://assem130.github.io/arabic-word-of-the-day/) or:
+## Privacy
 
-```powershell
-git clone https://github.com/Assem130/arabic-word-of-the-day.git
-cd arabic-word-of-the-day
-python server.py
+Learning data stays on-device until you delete it. Both surfaces offer JSON export and deletion. Website fonts are bundled locally.
+
+Chrome can make an explicit, read-only Arabic Wiktionary lookup when you submit a search, sending only the normalized term. Firefox stays local-only. Read the [website privacy policy](https://assem130.github.io/Kalimat-365/privacy.html) and [extension privacy details](extension/PRIVACY.md).
+
+## Development and documentation
+
+Run the website locally with Python 3:
+
+```sh
+git clone https://github.com/Assem130/Kalimat-365.git
+cd Kalimat-365
+python3 server.py
 ```
 
-Then open <http://localhost:8000/>. Python 3 is the only development runtime required.
+Open <http://localhost:8000/>. On Windows, use `python` instead of `python3`.
 
-## تثبيت الامتداد
+- [Development guide](docs/DEVELOPMENT.md): verification, local extension installation, packaging, corpus maintenance, and project map.
+- [Documentation index](docs/README.md): product context, privacy, store material, beta study, and historical release notes.
+- [Contributing](CONTRIBUTING.md): focused bug reports and pull requests.
+- [Report a bug](https://github.com/Assem130/Kalimat-365/issues/new?template=bug-report.yml).
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe). Firefox store submission is postponed.
+## License status
 
-Unpacked / local testing from [`v0.3.0-beta.2`](https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.2):
-
-- Download `kalimat-chrome-0.3.0.zip` or `kalimat-firefox-0.3.0.zip`, then extract.
-- **Chrome:** `chrome://extensions` → Developer mode → **Load unpacked** → folder containing `manifest.json`.
-- **Firefox:** `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on** → extracted Firefox `manifest.json`.
-
-Local packaging uses the verification commands below, then load `extension/dist/chrome` or `extension/dist/firefox`.
-
-## Verification
-
-From the repository root:
-
-```powershell
-node test.js
-node --test tests/*.test.js extension/tests/*.test.js
-git ls-files '*.js' | Where-Object { $_ -notlike 'extension/dist/*' } | ForEach-Object { node --check $_ }
-powershell -NoProfile -ExecutionPolicy Bypass -File extension/tools/package.ps1
-$env:KALIMAT_PACKAGE_ALREADY_BUILT = '1'; node extension/tests/package.test.js; Remove-Item Env:KALIMAT_PACKAGE_ALREADY_BUILT
-git diff --check
-```
-
-Managed Windows may report `spawn EPERM` for Node child workers; rerun the identical command with permitted process execution. A clean package must emit `extension/dist/kalimat-chrome-0.3.0.zip` and `extension/dist/kalimat-firefox-0.3.0.zip`.
-
-## Project map
-
-```text
-index.html       editorial home, lexicon, and website review entry point
-word.html        daily-word permalink, history, export/import, and review
-words.js         canonical 365-word website corpus
-app-core.js      date selection, local state, and review policy adapters
-app.js           word-page controller and browser-speech UI
-revamp.js        home-page controller and lexicon/review UI
-web-ui.js        shared website UI helpers
-sw.js            offline app-shell service worker
-extension/       optional Chrome/Firefox MV3 companion and Atlas
-server.py        local UTF-8 development server
-```
-
-Vanilla HTML, CSS, and JavaScript. No package dependencies.
+This repository does not include a source-code license. The bundled Amiri and Outfit fonts have their own [website font license](assets/fonts/OFL.txt) and [extension font license](extension/assets/fonts/OFL.txt); those licenses cover the fonts.

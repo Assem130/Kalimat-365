@@ -8,18 +8,72 @@ const {
   DEFAULT_THEME,
   PRIMARY_STORAGE_KEY,
   LEGACY_STORAGE_KEY,
-  THEME_PALETTES,
   normalizeTheme,
   applyTheme,
   getStoredTheme,
   setStoredTheme,
   initThemeController,
-  parseHexColor,
-  getRelativeLuminance,
-  getContrastRatio,
 } = require("../shared/theme.js");
 
 const themeCssPath = path.join(__dirname, "..", "shared", "theme.css");
+
+// Read the shipped palettes so contrast checks protect the actual UI colors.
+const themeCss = fs.readFileSync(themeCssPath, "utf8");
+const THEME_PALETTES = Object.fromEntries(VALID_THEMES.map((theme) => {
+  const block = themeCss.match(new RegExp(`html\\[data-theme="${theme}"\\]\\s*\\{([^}]+)\\}`))[1];
+  return [theme, Object.fromEntries([...block.matchAll(/--([a-z-]+):\s*([^;]+);/g)].map(([, key, value]) => [key.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()), value.trim()]))];
+}));
+/**
+ * Parses a hex color string into [R, G, B] integer channels.
+ * @param {string} hex
+ * @returns {[number, number, number]}
+ */
+function parseHexColor(hex) {
+  if (typeof hex !== "string") return [0, 0, 0];
+  const clean = hex.replace(/^#/, "").trim();
+  if (clean.length === 3) {
+    const r = parseInt(clean[0] + clean[0], 16);
+    const g = parseInt(clean[1] + clean[1], 16);
+    const b = parseInt(clean[2] + clean[2], 16);
+    return [r, g, b];
+  }
+  const num = parseInt(clean, 16);
+  if (Number.isNaN(num)) return [0, 0, 0];
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+
+/**
+ * Computes W3C relative luminance from sRGB integer channels.
+ * @param {number} r
+ * @param {number} g
+ * @param {number} b
+ * @returns {number}
+ */
+function getRelativeLuminance(r, g, b) {
+  const rs = r / 255;
+  const gs = g / 255;
+  const bs = b / 255;
+  const rl = rs <= 0.04045 ? rs / 12.92 : Math.pow((rs + 0.055) / 1.055, 2.4);
+  const gl = gs <= 0.04045 ? gs / 12.92 : Math.pow((gs + 0.055) / 1.055, 2.4);
+  const bl = bs <= 0.04045 ? bs / 12.92 : Math.pow((bs + 0.055) / 1.055, 2.4);
+  return 0.2126 * rl + 0.7152 * gl + 0.0722 * bl;
+}
+
+/**
+ * Computes the WCAG 2.1 contrast ratio between two hex colors.
+ * @param {string} hex1
+ * @param {string} hex2
+ * @returns {number}
+ */
+function getContrastRatio(hex1, hex2) {
+  const [r1, g1, b1] = parseHexColor(hex1);
+  const [r2, g2, b2] = parseHexColor(hex2);
+  const l1 = getRelativeLuminance(r1, g1, b1);
+  const l2 = getRelativeLuminance(r2, g2, b2);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
 
 function createMockDocument(initialTheme = null) {
   const attributes = Object.create(null);

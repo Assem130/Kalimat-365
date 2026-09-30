@@ -1,5 +1,7 @@
 # Kalimat v0.3.0-beta.1
 
+Historical release record. Counts, archive sizes, hashes, commands, and prerequisites below describe beta.1, not the current checkout. The [beta.2 archives](https://github.com/Assem130/Kalimat-365/releases/tag/v0.3.0-beta.2) are also historical. See the [documentation index](../README.md) and [current store listing](listing.md) for current status. The current product retains reading streaks without points or competitive rewards.
+
 ## Public beta / الإصدار التجريبي العام
 
 Kalimat is a focused, local-first Arabic learning experience for self-identified intermediate-and-advanced learners. This release is a public beta, not a beginner-course or mastery claim.

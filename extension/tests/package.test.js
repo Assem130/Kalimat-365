@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const zlib = require("node:zlib");
 
+const python = process.env.PYTHON || (process.platform === "win32" ? "python" : "python3");
 const extensionRoot = path.join(__dirname, "..");
 const distRoot = path.join(extensionRoot, "dist");
 const browsers = ["chrome", "firefox"];
@@ -17,9 +18,7 @@ const runtimeFiles = [
   "assets/fonts/Amiri-Bold.woff2",
   "assets/fonts/Amiri-Regular.woff2",
   "assets/fonts/OFL.txt",
-  "assets/fonts/Outfit-Medium.woff2",
   "assets/fonts/Outfit-Regular.woff2",
-  "assets/fonts/Outfit-SemiBold.woff2",
   "atlas/atlas.css",
   "atlas/atlas.html",
   "atlas/atlas.js",
@@ -76,6 +75,10 @@ function archiveEntries(browser) {
   let offset = centralOffset;
   for (let index = 0; index < count; index += 1) {
     assert.equal(bytes.readUInt32LE(offset), 0x02014b50, `${browser} archive has an invalid central entry`);
+    assert.equal(bytes.readUInt16LE(offset + 4) >> 8, 3, "ZIP platform must be fixed to Unix");
+    assert.equal(bytes.readUInt16LE(offset + 12), 0, "ZIP time must be midnight");
+    assert.equal(bytes.readUInt16LE(offset + 14), 33, "ZIP date must be 1980-01-01");
+    assert.equal(bytes.readUInt32LE(offset + 38) >>> 16, 0o100644, "ZIP permissions must be fixed");
     const method = bytes.readUInt16LE(offset + 10);
     const compressedSize = bytes.readUInt32LE(offset + 20);
     const uncompressedSize = bytes.readUInt32LE(offset + 24);
@@ -119,8 +122,8 @@ function ensurePackages() {
   if (packageChecked) return;
   if (process.env.KALIMAT_PACKAGE_ALREADY_BUILT !== "1") {
     packageOutput = childProcess.execFileSync(
-      "powershell",
-      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(extensionRoot, "tools", "package.ps1")],
+      python,
+      [path.join(extensionRoot, "tools", "package.py")],
       { stdio: "pipe" },
     ).toString();
   }
@@ -137,7 +140,7 @@ function assertNoUnsafePayload(browser) {
   const files = packageTextFiles(browser);
   const forbiddenPath = /(?:^|\/)(?:tests|tools)(?:\/|$)|\.map$|(?:^|\/)manifest\.(?:chrome|firefox)\.json$|(?:^|\/)PRIVACY\.md$/i;
   const allowedRemoteUrl = /^https:\/\/ar\.wiktionary\.org\//i;
-  const allowedPrivacyUrl = /^https:\/\/assem130\.github\.io\/arabic-word-of-the-day\/privacy\.html$/i;
+  const allowedPrivacyUrl = /^https:\/\/assem130\.github\.io\/Kalimat-365\/privacy\.html$/i;
   const remoteUrlRegex = /\b(?:https?|wss?):\/\/[^\s"'`<>]+/gi;
   const unsafeSink = /\b(?:innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\s*\(|new\s+Function\s*\(|Function\s*\(|set(?:Timeout|Interval)\s*\(\s*["'])/;
   const secret = /-----BEGIN [^-]+ PRIVATE KEY-----|(?:api[_-]?key|access[_-]?token|secret[_-]?key|password)\s*[:=]\s*["'][^"']{8,}["']|\b(?:sk|pk|ghp|github_pat|xox[baprs]-)[A-Za-z0-9_-]{16,}\b/i;
@@ -221,7 +224,7 @@ test("privacy document states local learning storage, online-query scope, analyt
 test("packager reports per-browser file and byte totals", () => {
   ensurePackages();
   if (process.env.KALIMAT_PACKAGE_ALREADY_BUILT === "1") {
-    const script = fs.readFileSync(path.join(extensionRoot, "tools", "package.ps1"), "utf8");
+    const script = fs.readFileSync(path.join(extensionRoot, "tools", "package.py"), "utf8");
     assert.match(script, /vocabulary/i);
     assert.match(script, /popup/i);
     assert.match(script, /bytes/i);
@@ -249,7 +252,7 @@ test("ZIP archives have expected flat roots and browser-selected manifests", () 
     const archive = path.join(distRoot, archiveNames[browser]);
     assert.equal(fs.existsSync(archive), true, `${archiveNames[browser]} was not created`);
     const entries = archiveEntries(browser);
-    assert.deepEqual(new Set(entries.keys()), expectedPackageFiles, `${browser} archive drifted from the runtime allowlist`);
+    assert.deepEqual([...entries.keys()], [...runtimeFiles, "manifest.json"], `${browser} archive drifted from the runtime allowlist`);
     assert.deepEqual(JSON.parse(entries.get("manifest.json").toString("utf8")), manifest(browser));
   }
 });
@@ -266,10 +269,10 @@ test("ZIP archive bytes match their selected source files exactly", () => {
 });
 
 test("clean packaging produces byte-identical ZIP archives", () => {
-  const packageScript = path.join(extensionRoot, "tools", "package.ps1");
+  const packageScript = path.join(extensionRoot, "tools", "package.py");
   const runPackage = () => childProcess.execFileSync(
-    "powershell",
-    ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", packageScript],
+    python,
+    [packageScript],
     { stdio: "pipe" },
   );
   const archiveHashes = () => Object.fromEntries(
@@ -311,8 +314,104 @@ test("runtime vocabulary and popup code stay below release budgets", () => {
   }
 });
 
-test("packager cleanup is scoped to validated browser targets", () => {
-  const script = fs.readFileSync(path.join(extensionRoot, "tools", "package.ps1"), "utf8");
-  assert.doesNotMatch(script, /Remove-Item\s+[^\r\n]*\$distRoot\s+-Recurse/i);
-  assert.match(script, /Remove-Item\s+[^\r\n]*\$target\s+-Recurse/i);
+function packageFixture(change, check) {
+  const temporary = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "kalimat-package-"));
+  try {
+    const copy = path.join(temporary, "extension");
+    fs.cpSync(extensionRoot, copy, { recursive: true, filter: (file) => file !== distRoot });
+    change(copy, temporary);
+    const result = childProcess.spawnSync(python, [path.join(copy, "tools", "package.py")], { encoding: "utf8" });
+    assert.notEqual(result.status, 0, result.stdout);
+    assert.match(result.stderr, /Packaging failed:/);
+    check?.(copy, temporary, result);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+}
+
+test("packager rejects unexpected sources and missing runtime files before output", () => {
+  packageFixture((copy) => fs.writeFileSync(path.join(copy, "unexpected.txt"), "secret"), (copy) => {
+    assert.equal(fs.existsSync(path.join(copy, "dist")), false);
+  });
+  packageFixture((copy) => fs.unlinkSync(path.join(copy, "background.js")), (copy) => {
+    assert.equal(fs.existsSync(path.join(copy, "dist")), false);
+  });
+});
+
+test("packager rejects unsafe dist, browser, and archive targets without touching unrelated data", () => {
+  for (const relative of ["dist", "dist/chrome", "dist/firefox", "dist/kalimat-chrome-0.3.0.zip", "dist/kalimat-firefox-0.3.0.zip"]) {
+    packageFixture((copy, temporary) => {
+      const target = path.join(copy, relative);
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      if (relative.endsWith(".zip")) fs.mkdirSync(target);
+      else fs.writeFileSync(target, "keep");
+      fs.writeFileSync(relative === "dist" ? path.join(temporary, "sentinel") : path.join(copy, "dist/sentinel"), "keep");
+    }, (copy, temporary, result) => {
+      assert.match(result.stderr, /unsafe dist target|unvalidated package target|unvalidated package archive/);
+      const target = path.join(copy, relative);
+      if (!relative.endsWith(".zip")) assert.equal(fs.readFileSync(target, "utf8"), "keep");
+      assert.equal(fs.readFileSync(relative === "dist" ? path.join(temporary, "sentinel") : path.join(copy, "dist/sentinel"), "utf8"), "keep");
+    });
+  }
+});
+
+test("packager refuses source and output symlinks including nested cleanup targets", (t) => {
+  const probe = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "kalimat-link-"));
+  try {
+    try { fs.symlinkSync(probe, path.join(probe, "probe"), process.platform === "win32" ? "junction" : "dir"); }
+    catch (error) {
+      if (["EPERM", "EACCES"].includes(error.code)) { t.skip("OS denies creating test symlinks"); return; }
+      throw error;
+    }
+  } finally { fs.rmSync(probe, { recursive: true, force: true }); }
+  for (const relative of ["background.js", "shared", "dist", "dist/chrome", "dist/firefox/nested", "dist/kalimat-chrome-0.3.0.zip"]) {
+    packageFixture((copy, temporary) => {
+      const external = path.join(temporary, "external");
+      fs.mkdirSync(external);
+      fs.writeFileSync(path.join(external, "sentinel"), "keep");
+      const target = path.join(copy, relative);
+      fs.rmSync(target, { recursive: true, force: true });
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.symlinkSync(external, target, process.platform === "win32" ? "junction" : "dir");
+    }, (_, temporary) => assert.equal(fs.readFileSync(path.join(temporary, "external/sentinel"), "utf8"), "keep"));
+  }
+});
+
+test("package cleanup preserves unrelated dist files", () => {
+  ensurePackages();
+  const sentinel = path.join(distRoot, "unrelated.txt");
+  fs.writeFileSync(sentinel, "keep");
+  try {
+    childProcess.execFileSync(python, [path.join(extensionRoot, "tools/package.py")]);
+    assert.equal(fs.readFileSync(sentinel, "utf8"), "keep");
+  } finally { fs.unlinkSync(sentinel); }
+});
+
+
+test("packager rejects invalid manifests, Firefox disclosures, and over-budget payloads before cleanup", () => {
+  for (const change of [
+    (copy) => {
+      const file = path.join(copy, "manifest.chrome.json");
+      const value = JSON.parse(fs.readFileSync(file));
+      value.version = "9.0.0";
+      fs.writeFileSync(file, JSON.stringify(value));
+    },
+    (copy) => {
+      const file = path.join(copy, "manifest.firefox.json");
+      const value = JSON.parse(fs.readFileSync(file));
+      value.browser_specific_settings.gecko.data_collection_permissions.required = ["unexpected"];
+      fs.writeFileSync(file, JSON.stringify(value));
+    },
+    (copy) => fs.writeFileSync(path.join(copy, "data/vocabulary.json"), Buffer.alloc(2_097_152)),
+    (copy) => fs.writeFileSync(path.join(copy, "popup/popup.js"), Buffer.alloc(102_400)),
+  ]) {
+    packageFixture((copy) => {
+      fs.mkdirSync(path.join(copy, "dist/chrome"), { recursive: true });
+      fs.writeFileSync(path.join(copy, "dist/chrome/sentinel"), "keep");
+      change(copy);
+    }, (copy, _, result) => {
+      assert.match(result.stderr, /Invalid chrome manifest|Invalid Firefox store disclosure|Release budget exceeded/);
+      assert.equal(fs.readFileSync(path.join(copy, "dist/chrome/sentinel"), "utf8"), "keep");
+    });
+  }
 });

@@ -231,7 +231,7 @@ class FakeElement {
     }
 }
 
-function createDOMEnvironment(initialState = null) {
+function createDOMEnvironment(initialState = null, sharedStorage = null) {
     const elementsById = new Map();
     const doc = {
         activeElement: null,
@@ -288,7 +288,7 @@ function createDOMEnvironment(initialState = null) {
         storage.set("arabic_words_state", JSON.stringify(initialState));
     }
 
-    const localStorage = {
+    const localStorage = sharedStorage || {
         getItem: (key) => (storage.has(key) ? storage.get(key) : null),
         setItem: (key, val) => storage.set(key, String(val)),
         removeItem: (key) => storage.delete(key),
@@ -423,12 +423,6 @@ test("1. HTML Markup & Accessibility Attributes (index.html & word.html)", () =>
     assert.match(indexHtml, /<section class="hero"[\s\S]*?<p class="local-data-note">لا حسابات؛ تبقى بيانات تعلّمك على هذا الجهاز\.<\/p>/, "local-data note must be in the hero viewport");
     assert.equal((indexHtml.match(/class="local-data-note"/g) || []).length, 1, "homepage must show one local-data note");
     assert.match(indexHtml, /<section class="manifesto"[\s\S]*?<p class="channel-boundary">الموقع والامتداد تجربتان محليتان منفصلتان/, "channel boundary must remain explicit");
-
-    // Check #practice-dialog modal attributes in index.html
-    assert.match(indexHtml, /<dialog\s+class="practice-dialog"\s+id="practice-dialog"/, "index.html must define <dialog id='practice-dialog'>");
-    assert.match(indexHtml, /role="dialog"/, "practice-dialog must have role='dialog'");
-    assert.match(indexHtml, /aria-modal="true"/, "practice-dialog must have aria-modal='true'");
-    assert.match(indexHtml, /aria-labelledby="practice-title"/, "practice-dialog must have aria-labelledby='practice-title'");
 
     // Check word.html markup
     assert.match(wordHtml, /id="due-review-badge"/, "word.html must include #due-review-badge");
@@ -1132,4 +1126,201 @@ test("6. WCAG 2.1 AA Color Contrast Ratios (>= 4.5:1) for Rating Tokens across T
             );
         }
     }
+});
+
+
+test("semantic hidden visibility wins over completion, gloss and empty-state layout", () => {
+    assert.match(styleCss, /(?:^|\n)\[hidden\]\s*\{\s*display:\s*none\s*!important\s*;?\s*\}/, "hidden must apply globally with priority over author display layouts");
+    for (const [page, id] of [["word.html", "completion-banner"], ["index.html", "lexicon-empty-state"]]) {
+        assert.match(fs.readFileSync(page, "utf8"), new RegExp(`<[^>]+id="${id}"[^>]*hidden`), `${id} must start hidden`);
+    }
+});
+
+
+// Separate VM app contexts share the same storage, deliberately without storage
+// events first: pending/background-tab events must not be required for safe edits.
+function sharingTabs() {
+    const a = createDOMEnvironment();
+    const b = createDOMEnvironment(null, a.localStorage);
+    return [a, b];
+}
+function click(env, id) { env.doc.getElementById(id).dispatchEvent({ type: "click" }); }
+function persisted(env) { return JSON.parse(env.localStorage.getItem("arabic_words_state")); }
+function selectWord(env, id) { vm.runInContext(`renderWord(WORDS_DB.find(w => w.id === ${id}), null)`, env.sandbox); }
+
+test("Interleaved tabs preserve favorites, preferences, related history and deletions", () => {
+    const [a, b] = sharingTabs();
+    selectWord(a, 1); selectWord(b, 2);
+    click(a, "btn-favorite"); click(b, "btn-favorite");
+    assert.equal(persisted(a).favorites[1], true);
+    assert.equal(persisted(a).favorites[2], true);
+    click(a, "btn-toggle-english");
+    click(b, "btn-audio-speed");
+    assert.equal(persisted(a).preferences.showEnglish, false);
+    assert.equal(persisted(a).preferences.speechRate, 1);
+    click(a, "btn-favorite");
+    click(b, "btn-audio-repeat");
+    assert.equal(persisted(a).favorites[1], undefined);
+    // Use a real related-word pill after the other tab's edits.
+    vm.runInContext("renderWord(WORDS_DB.find(w => Core.findRelatedWords(w, WORDS_DB).sameWeight.length > 0), null)", a.sandbox);
+    const pill = a.doc.getElementById("related-words-container").children[0];
+    assert.ok(pill, "fixture has a related-word link");
+    pill.dispatchEvent({ type: "click" });
+    assert.equal(persisted(a).preferences.speechRepeat, 3);
+    assert.equal(persisted(a).favorites[2], true);
+    assert.ok(persisted(a).history[vm.runInContext("currentWord.id", a.sandbox)]);
+    a.sandbox.window.confirm = () => true;
+    a.sandbox.window.KalimatApp.clearLearningData();
+    click(b, "btn-audio-repeat");
+    assert.deepEqual(persisted(a).favorites, {});
+    assert.deepEqual(persisted(a).history, {});
+    assert.deepEqual(persisted(a).srs, {});
+});
+
+test("Interleaved reviews use latest same-word SRS and preserve other-tab preferences", () => {
+    const [a, b] = sharingTabs();
+    const aa = a.sandbox.window.KalimatApp, bb = b.sandbox.window.KalimatApp;
+    aa.startSpacedRepetitionReview(); bb.startSpacedRepetitionReview();
+    const id = aa.getActiveReviewQueue()[0].word.id;
+    aa.handleRatingSubmission("good");
+    click(a, "btn-audio-repeat");
+    bb.handleRatingSubmission("easy");
+    assert.equal(persisted(a).srs[id].reviewCount, 2);
+    assert.equal(persisted(a).srs[id].history.length, 2);
+    assert.equal(persisted(a).preferences.speechRepeat, 3);
+    bb.startSpacedRepetitionReview(null, "all");
+    a.sandbox.window.confirm = () => true;
+    aa.clearLearningData();
+    bb.handleRatingSubmission("good");
+    assert.equal(a.localStorage.getItem("arabic_words_state"), null, "stale card must not restore cleared data");
+});
+
+test("Async backup merge reads latest tab changes after file text resolves", async () => {
+    const [a, b] = sharingTabs();
+    const incoming = a.sandbox.window.KalimatCore.createDefaultState();
+    incoming.favorites[3] = true;
+    let resolveText;
+    b.sandbox.pendingFile = { size: 100, text: () => new Promise(resolve => { resolveText = resolve; }) };
+    const pending = vm.runInContext("importHistory(pendingFile)", b.sandbox);
+    selectWord(a, 1); click(a, "btn-favorite"); click(a, "btn-audio-repeat");
+    resolveText(JSON.stringify(incoming));
+    await pending;
+    assert.equal(persisted(a).favorites[1], true);
+    assert.equal(persisted(a).favorites[3], true);
+    assert.equal(persisted(a).preferences.speechRepeat, 3);
+});
+
+test("Latest corrupt storage blocks edits/import and failed saves roll back session state", async () => {
+    const [a, b] = sharingTabs();
+    a.localStorage.setItem("arabic_words_state", "{broken");
+    selectWord(b, 1); click(b, "btn-favorite");
+    assert.equal(a.localStorage.getItem("arabic_words_state"), "{broken");
+    b.sandbox.pendingFile = { size: 100, text: async () => JSON.stringify(a.sandbox.window.KalimatCore.createDefaultState()) };
+    await vm.runInContext("importHistory(pendingFile)", b.sandbox);
+    assert.equal(a.localStorage.getItem("arabic_words_state"), "{broken");
+    const valid = a.sandbox.window.KalimatCore.createDefaultState();
+    a.localStorage.setItem("arabic_words_state", JSON.stringify(valid));
+    const before = a.localStorage.getItem("arabic_words_state");
+    const original = a.localStorage.setItem;
+    a.localStorage.setItem = () => { throw new Error("quota"); };
+    click(b, "btn-favorite");
+    assert.equal(a.localStorage.getItem("arabic_words_state"), before);
+    assert.deepEqual(JSON.parse(vm.runInContext("JSON.stringify(appState.favorites)", b.sandbox)), {});
+    click(b, "btn-audio-repeat");
+    assert.equal(vm.runInContext("appState.preferences.speechRepeat", b.sandbox), valid.preferences.speechRepeat);
+    a.localStorage.setItem = original;
+});
+
+test("Storage events refresh word-page indicators without reenrolling cleared learning", () => {
+    const [a, b] = sharingTabs();
+    selectWord(a, 1); selectWord(b, 1); click(a, "btn-favorite");
+    b.doc.dispatchEvent({ type: "storage", key: "arabic_words_state", storageArea: a.localStorage });
+    assert.equal(b.doc.getElementById("btn-favorite").getAttribute("aria-pressed"), "true");
+    a.sandbox.window.confirm = () => true;
+    a.sandbox.window.KalimatApp.clearLearningData();
+    b.doc.dispatchEvent({ type: "storage", key: "arabic_words_state", storageArea: a.localStorage });
+    assert.equal(b.doc.getElementById("btn-favorite").getAttribute("aria-pressed"), "false");
+    assert.equal(b.doc.getElementById("due-count").textContent, "0");
+    assert.equal(a.localStorage.getItem("arabic_words_state"), null);
+});
+
+
+test("Homepage storage events refresh due and streak badges after review and clear", () => {
+    const [a, home] = sharingTabs();
+    const due = home.doc.getElementById("home-due");
+    due.className = "due-review-badge";
+    const count = home.doc.createElement("span"); count.className = "due-count"; due.append(count);
+    const streak = home.doc.getElementById("home-streak"); streak.className = "streak-badge";
+    // Keep the homepage controller's DOMContentLoaded handler separate from the
+    // word controller already used to construct the shared DOM/core fixture.
+    home.doc.listeners.set("DOMContentLoaded", []);
+    home.doc.querySelectorAll = selector => selector === ".due-review-badge" ? [due] : selector === ".streak-badge" ? [streak] : [];
+    home.doc.createElementNS = (_ns, tag) => home.doc.createElement(tag);
+    vm.runInContext(fs.readFileSync("./revamp.js", "utf8"), home.sandbox);
+    home.doc.dispatchEvent({ type: "DOMContentLoaded" });
+    assert.equal(count.textContent, "1");
+    const beforeStreak = streak.getAttribute("aria-label");
+    a.sandbox.window.KalimatApp.startSpacedRepetitionReview();
+    a.sandbox.window.KalimatApp.handleRatingSubmission("good");
+    home.doc.dispatchEvent({ type: "storage", key: "arabic_words_state", storageArea: a.localStorage });
+    assert.equal(count.textContent, "0");
+    assert.equal(due.classList.contains("has-due"), false);
+    a.sandbox.window.confirm = () => true;
+    a.sandbox.window.KalimatApp.clearLearningData();
+    home.doc.dispatchEvent({ type: "storage", key: null, storageArea: a.localStorage });
+    assert.notEqual(streak.getAttribute("aria-label"), beforeStreak);
+    assert.equal(streak.getAttribute("aria-label"), a.sandbox.window.KalimatCore.formatStreakText(0));
+    assert.equal(a.localStorage.getItem("arabic_words_state"), null);
+    due.dispatchEvent({ type: "click" });
+    assert.equal(home.sandbox.window.location.href, "word.html?action=practice");
+});
+
+
+test("Distinct-word reviews and explicit reset preserve replacement semantics", () => {
+    const seed = createDOMEnvironment();
+    const Core = seed.sandbox.window.KalimatCore;
+    const today = Core.getLocalDateKey(new Date());
+    const state = Core.createDefaultState();
+    for (const id of [1, 2]) {
+        state.history[id] = { firstSeen: today };
+        state.srs[id] = Core.createDefaultSrsItem(id, today);
+    }
+    state.favorites[1] = true;
+    seed.localStorage.setItem("arabic_words_state", JSON.stringify(state));
+    const a = createDOMEnvironment(null, seed.localStorage);
+    const b = createDOMEnvironment(null, seed.localStorage);
+    const aa = a.sandbox.window.KalimatApp, bb = b.sandbox.window.KalimatApp;
+    aa.startSpacedRepetitionReview(); bb.startSpacedRepetitionReview();
+    const first = aa.getActiveReviewQueue()[0].word.id;
+    const second = aa.getActiveReviewQueue()[1].word.id;
+    assert.notEqual(first, second);
+    aa.handleRatingSubmission("good");
+    bb.handleRatingSubmission("easy"); // stale first card
+    bb.handleRatingSubmission("good"); // distinct second card
+    click(a, "btn-audio-repeat");
+    assert.equal(persisted(a).srs[first].reviewCount, 2);
+    assert.equal(persisted(a).srs[second].reviewCount, 1);
+    seed.localStorage.setItem("arabic_words_state", "{broken");
+    click(a, "btn-reset-storage");
+    assert.deepEqual(persisted(a).favorites, {});
+    click(b, "btn-audio-speed");
+    assert.deepEqual(persisted(a).favorites, {});
+    assert.equal(persisted(a).srs[first], undefined);
+    assert.equal(persisted(a).srs[second], undefined);
+});
+
+test("Failed async merge leaves latest persisted and session learning unchanged", async () => {
+    const [a, b] = sharingTabs();
+    selectWord(a, 1); click(a, "btn-favorite");
+    const before = a.localStorage.getItem("arabic_words_state");
+    const incoming = a.sandbox.window.KalimatCore.createDefaultState(); incoming.favorites[3] = true;
+    b.sandbox.pendingFile = { size: 100, text: async () => JSON.stringify(incoming) };
+    const original = a.localStorage.setItem;
+    a.localStorage.setItem = () => { throw new Error("quota"); };
+    await vm.runInContext("importHistory(pendingFile)", b.sandbox);
+    assert.equal(a.localStorage.getItem("arabic_words_state"), before);
+    assert.deepEqual(JSON.parse(vm.runInContext("JSON.stringify(appState.favorites)", b.sandbox)), { 1: true });
+    a.localStorage.setItem = original;
+    click(b, "btn-audio-repeat");
+    assert.equal(persisted(a).favorites[3], undefined, "failed import must not leak into a later successful edit");
 });

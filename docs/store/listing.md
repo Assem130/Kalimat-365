@@ -2,11 +2,13 @@
 
 ## Release identity
 
-- Product: **Kalimat — Arabic Word of the Day / كَلِمات — كلمة عربية كل يوم**
+- Product: **Kalimat / Arabic Word of the Day / كَلِمات / كلمة عربية كل يوم**
 - Beta label: **Public beta · 0.3.0**
-- Published GitHub release: [`v0.3.0-beta.2`](https://github.com/Assem130/arabic-word-of-the-day/releases/tag/v0.3.0-beta.2)
-- Archive names: `kalimat-chrome-0.3.0.zip`, `kalimat-firefox-0.3.0.zip`
+- Historical GitHub snapshot: [`v0.3.0-beta.2`](https://github.com/Assem130/Kalimat-365/releases/tag/v0.3.0-beta.2)
+- Historical archive names: `kalimat-chrome-0.3.0.zip`, `kalimat-firefox-0.3.0.zip`
 - Audience: self-identified intermediate-and-advanced Arabic learners
+
+The beta.2 release is a historical snapshot. Current `main` may contain later changes; matching manifest versions or archive names do not establish identical source or store contents. See the [documentation index](../README.md) and [development guide](../DEVELOPMENT.md) for current source and local packaging.
 
 ## Single purpose
 
@@ -38,16 +40,16 @@ The extension is an optional companion with challenge level, interests, a daily 
 
 ### Chrome
 
-- `storage` — keep the learner profile locally in `storage.local`.
-- `contextMenus` — offer the explicit word lookup action from the browser context menu.
-- Optional `alarms` and `notifications` — schedule an optional daily reminder only after the learner enables it.
-- Optional host permission `https://ar.wiktionary.org/*` — perform the explicit, read-only Arabic Wiktionary search after the learner submits a term. Only the normalized search term is sent; no browsing history or learner profile is sent.
+- `storage` / keep the learner profile locally in `storage.local`.
+- `contextMenus` / offer the explicit word lookup action from the browser context menu.
+- Optional `alarms` and `notifications` / schedule an optional daily reminder only after the learner enables it.
+- Optional host permission `https://ar.wiktionary.org/*` / perform the explicit, read-only Arabic Wiktionary search after the learner submits a term. Only the normalized search term is sent; no browsing history or learner profile is sent.
 
 ### Firefox
 
-- `storage` — keep the learner profile locally in `storage.local`.
-- `contextMenus` — offer the local context-menu action.
-- Optional `alarms` and `notifications` — schedule an optional reminder after opt-in.
+- `storage` / keep the learner profile locally in `storage.local`.
+- `contextMenus` / offer the local context-menu action.
+- Optional `alarms` and `notifications` / schedule an optional reminder after opt-in.
 - No host permission and no online lookup; Firefox remains local-only.
 - Firefox disclosure: `browser_specific_settings.gecko.data_collection_permissions.required` is `['none']`.
 
@@ -62,8 +64,8 @@ The extension is an optional companion with challenge level, interests, a daily 
 
 ## Public links
 
-- Privacy policy: <https://assem130.github.io/arabic-word-of-the-day/privacy.html>
-- Support: <https://github.com/Assem130/arabic-word-of-the-day/issues>
+- Privacy policy: <https://assem130.github.io/Kalimat-365/privacy.html>
+- Support: <https://github.com/Assem130/Kalimat-365/issues>
 - Chrome Web Store: <https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe>
 
 Chrome `0.3.0` is published on the Chrome Web Store. Firefox Add-ons submission is postponed.
@@ -75,20 +77,11 @@ Submit exactly these three real PNGs, each 1280×800:
 | File | Surface | What it demonstrates |
 | --- | --- | --- |
 | `docs/store/screenshots/01-daily-word.png` | Website `word.html` | A clean daily-word view with Arabic word, meaning, context, and speech control. |
-| `docs/store/screenshots/02-review.png` | Website review dialog | The real review flow after opening the local review dialog; no fabricated learner data. |
-| `docs/store/screenshots/03-atlas.png` | Extension Atlas | A real Atlas view from a clean extension session. If browser extension access is blocked, leave this asset absent and record the blocker in the Task 4 report. |
+| `docs/store/screenshots/02-review.png` | Website review dialog | The website review dialog and recall controls. |
+| `docs/store/screenshots/03-atlas.png` | Extension Atlas | The extension Atlas view with vocabulary exploration and local learning controls. |
 
-## Account and submission checklist
+## Current submission status
 
-- [x] Confirm the public beta audience is intermediate-and-advanced; remove any beginner-course wording.
-- [x] Publish `privacy.html` at the exact privacy URL and verify it loads over HTTPS.
-- [x] Verify the support URL accepts issue reports.
-- [x] Create and verify the Chrome Web Store publisher account.
-- [x] Upload the Chrome `0.3.0` archive and listing copy.
-- [x] Declare Chrome’s optional Wiktionary host permission and data boundary exactly as above.
-- [ ] Declare Firefox `required: ['none']` data collection.
-- [x] Upload only the three real 1280×800 screenshots and map them to the listing fields.
-- [x] Complete Chrome’s review questionnaire and privacy/data-safety form.
-- [x] Submit the Chrome listing for review with release-owner approval.
-- [x] Monitor Chrome review and add the public listing URL after approval.
-- [ ] Resume Firefox submission only when the release owner chooses to do so.
+Chrome `0.3.0` is published. Firefox submission remains postponed. A future Firefox submission must retain the `required: ['none']` disclosure and local-only lookup boundary.
+
+Keep all three screenshots and bundled font licenses. The local packages contain Amiri Regular, Amiri Bold, and one retained Outfit file used by the existing 400, 500, and 600 font faces. Kalimat offers reading streaks without points or competitive rewards.

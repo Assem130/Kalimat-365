@@ -127,7 +127,7 @@ function popupApi(responses = {}, options = {}) {
   const elements = new Map();
   const ids = [
     "status", "action-status", "onboarding", "assigned", "assigned-title", "assignment-date", "interest-count", "empty", "error", "recovery", "warning",
-    "empty-title", "error-title", "word", "meaning-ar", "meaning-en", "example", "example-en",
+    "empty-title", "error-title", "error-retry", "word", "meaning-ar", "meaning-en", "example", "example-en",
     "pronunciation", "fixed-label", "save", "speak", "reminder", "reminder-time",
     "onboarding-submit", "onboarding-skip", "explore", "explore-empty", "recovery-reset",
     "known", "difficult", "theme-select", "streak-badge", "btn-export-anki", "btn-export-card",
@@ -138,6 +138,7 @@ function popupApi(responses = {}, options = {}) {
   ];
   for (const id of ids) elements.set(id, element());
   elements.get("assigned").hidden = true;
+  elements.get("error").hidden = true;
   elements.get("interest-count").textContent = "0/3";
   elements.get("streak-badge").setAttribute("aria-label", "تتابع القراءة والزيارة");
   elements.get("streak-badge").title = "تتابع القراءة والزيارة";
@@ -160,6 +161,7 @@ function popupApi(responses = {}, options = {}) {
   const storage = {
     local: {
       get(keys, cb) {
+        if (options.storageReadFailure && keys === "kalimat.profile") return Promise.reject(new Error("storage unavailable"));
         let result = {};
         if (typeof keys === "string") {
           if (storageData[keys] !== undefined) result[keys] = storageData[keys];
@@ -506,7 +508,7 @@ test("popup ships separate native files without unsafe markup or timer work", ()
   assert.match(html, /<script\s+src="\.\.\/shared\/date\.js"><\/script>[\s\S]*<script\s+src="popup\.js"><\/script>/);
   assert.match(html, /<script\s+src="\.\.\/shared\/speech\.js"><\/script>/);
   assert.match(html, /<script\s+src="popup\.js"><\/script>/);
-  const withoutApprovedRemote = `${html.replace("https://assem130.github.io/arabic-word-of-the-day/privacy.html", "")}\n${css}\n${js}`;
+  const withoutApprovedRemote = `${html.replace("https://assem130.github.io/Kalimat-365/privacy.html", "")}\n${css}\n${js}`;
   assert.doesNotMatch(withoutApprovedRemote, /https?:\/\/|\b(?:innerHTML|outerHTML)\b|\b(?:setInterval|setTimeout)\s*\(/);
   assert.doesNotMatch(`${html}\n${js}`, /online[ -]lookup|lookup-result/i, "Popup must keep online lookup in Atlas only");
   assert.doesNotMatch(html, /\son[a-z]+\s*=/i);
@@ -649,7 +651,7 @@ test("popup renders the current card's exact review intervals", async () => {
   }, { vocabulary: [word], profile: {} });
   await fixture.api.initialize();
   await fixture.api.loadDueReviews();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
 
   for (const id of ["rate-again", "rate-hard", "rate-good", "rate-easy"]) {
     assert.equal(fixture.elements.get(id).children[0].textContent, "غدًا");
@@ -670,7 +672,7 @@ test("popup flip control exposes state, keeps speaker independent, and resets fo
   }, { vocabulary: words });
   await fixture.api.initialize();
   await fixture.api.loadDueReviews();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
 
   const flip = fixture.elements.get("card-front-flip");
   const card = fixture.elements.get("flashcard-card");
@@ -705,17 +707,17 @@ test("popup does not reopen stale review cards while the post-close queue refres
     "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
     "review.queue": () => {
       queueCalls += 1;
-      return queueCalls === 1 ? initialQueue : refreshPending;
+      return queueCalls <= 2 ? initialQueue : refreshPending;
     },
   }, { vocabulary: [firstWord, remainingWord], profile: {} });
   await fixture.api.initialize();
   await fixture.api.loadDueReviews();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
   assert.equal(fixture.elements.get("practice-dialog").open, true);
 
   fixture.api.closePracticeModal();
   fixture.api.openPracticeModal();
-  assert.equal(queueCalls, 2);
+  assert.equal(queueCalls, 3);
   assert.equal(fixture.elements.get("practice-dialog").open, false, "reopen waits for the authoritative refresh");
 
   resolveRefresh(refreshedQueue);
@@ -763,7 +765,7 @@ test("popup queue rejection is retryable and recovery uses the existing recovery
   const rejected = popupApi({ "assignment.get": assigned, "settings.get": settings, "review.queue": new Error("queue") }, { profile: {} });
   await rejected.api.initialize();
   assert.equal(rejected.elements.get("due-review-badge").hidden, true);
-  rejected.api.openPracticeModal();
+  await rejected.api.openPracticeModal();
   await new Promise(setImmediate);
   assert.equal(rejected.elements.get("practice-dialog").open, true);
   assert.equal(rejected.elements.get("practice-body").hidden, false);
@@ -781,7 +783,7 @@ test("popup queue rejection is retryable and recovery uses the existing recovery
   const inconsistent = popupApi({ "assignment.get": assigned, "settings.get": settings, "review.queue": { kind: "queue", words: [], dueCount: 1, visibleCount: 1, remainingCount: 0 } }, { profile: {} });
   await inconsistent.api.initialize();
   assert.equal(inconsistent.elements.get("due-review-badge").hidden, true);
-  inconsistent.api.openPracticeModal();
+  await inconsistent.api.openPracticeModal();
   await new Promise(setImmediate);
   assert.equal(inconsistent.elements.get("practice-error").hidden, false, "inconsistent queue counts must be retryable errors");
   assert.equal(inconsistent.elements.get("practice-finished").hidden, true);
@@ -796,7 +798,7 @@ test("popup queue rejection is retryable and recovery uses the existing recovery
     },
   }, { profile: {} });
   await retryRecovery.api.initialize();
-  retryRecovery.api.openPracticeModal();
+  await retryRecovery.api.openPracticeModal();
   await new Promise(setImmediate);
   assert.equal(retryRecovery.elements.get("practice-error").hidden, false);
   retryRecovery.elements.get("practice-retry").listeners.click({});
@@ -822,7 +824,7 @@ test("popup review focus returns to its invoker and numeric ratings require reve
   await fixture.api.initialize();
   const invoker = fixture.elements.get("due-review-badge");
   invoker.focus();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
   const event = { type: "keydown", key: "1", target: { tagName: "DIV" }, prevented: false, preventDefault() { this.prevented = true; } };
   fixture.documentListeners.keydown(event);
   assert.equal(fixture.calls.some((message) => message.type === "word.review"), false);
@@ -848,7 +850,7 @@ test("popup two-card review gate blocks keys before reveal and resets controls f
     "word.review": { kind: "ok" },
   }, { profile: {}, vocabulary: words });
   await fixture.api.initialize();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
   assert.equal(fixture.elements.get("rate-again").disabled, true);
   assert.equal(fixture.elements.get("card-front-speak").disabled, false);
   fixture.documentListeners.keydown({ type: "keydown", key: "1", target: { tagName: "DIV" }, preventDefault() {} });
@@ -886,7 +888,7 @@ test("popup rejected ratings restore revealed controls for a retry", async () =>
     },
   }, { profile: {} });
   await fixture.api.initialize();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
   assert.equal(fixture.elements.get("rate-good").disabled, true);
   fixture.elements.get("card-front-flip").listeners.click({});
   assert.equal(fixture.elements.get("rate-good").disabled, false);
@@ -1053,7 +1055,7 @@ test("onboarding focuses the assigned word and feedback retains the authoritativ
   await api.completeOnboarding();
   assert.equal(elements.get("word").focuses, 1);
   await api.sendFeedback("known", elements.get("known"));
-  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1))), { type: "word.feedback", dateKey: "2026-07-30", wordId: "w1", status: "known" });
+  assert.deepEqual(JSON.parse(JSON.stringify(calls.findLast((message) => message.type === "word.feedback"))), { type: "word.feedback", dateKey: "2026-07-30", wordId: "w1", status: "known" });
 });
 
 test("popup serializes onboarding submit and skip while completion is pending", async () => {
@@ -1227,7 +1229,7 @@ test("Atlas ships a dark, accessible four-view page without unsafe sinks or time
   assert.match(html, /<button[^>]+id="settings-reminder"[^>]+role="switch"[^>]+aria-checked="false"/);
   assert.doesNotMatch(html, /<button[^>]+id="settings-reminder"[^>]*aria-pressed=/);
   assert.match(html, /id="search-count"[^>]+aria-live="polite"/);
-  const withoutApprovedRemote = `${html.replace("https://assem130.github.io/arabic-word-of-the-day/privacy.html", "")}\n${css}\n${js.replace(/https:\/\/ar\.wiktionary\.org[^\s"'`)]*/g, "")}`;
+  const withoutApprovedRemote = `${html.replace("https://assem130.github.io/Kalimat-365/privacy.html", "")}\n${css}\n${js.replace(/https:\/\/ar\.wiktionary\.org[^\s"'`)]*/g, "")}`;
   assert.doesNotMatch(withoutApprovedRemote, /https?:\/\/|\b(?:innerHTML|outerHTML)\b|\b(?:setInterval|setTimeout)\s*\(/);
   assert.doesNotMatch(html, /\son[a-z]+\s*=/i);
   assert.match(css, /background:\s*#102b2a/i);
@@ -1688,9 +1690,13 @@ test("Atlas feedback and save update Today and History from returned authoritati
   let responseStatus = "known";
   const fixture = atlasApi({
     "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
-    "state.export": { kind: "export", text: JSON.stringify(profile) },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
     "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "word.feedback": () => ({ kind: "ok", wordId: "w1", dateKey: "2026-07-30", status: responseStatus }),
+    "word.feedback": () => {
+      profile.assignments["2026-07-30"].status = responseStatus;
+      profile.wordStates.w1 = { status: responseStatus, dateKey: "2026-07-30" };
+      return { kind: "ok", wordId: "w1", dateKey: "2026-07-30", status: responseStatus };
+    },
     "word.save": { kind: "ok", wordId: "w1", saved: true },
   });
   await fixture.api.initialize();
@@ -1712,11 +1718,16 @@ test("Atlas Today actions expose adjacent pending, success, failure, and focus s
   let releaseSave;
   const knownResult = new Promise((resolve) => { releaseKnown = resolve; });
   const saveResult = new Promise((resolve) => { releaseSave = resolve; });
+  let committedStatus;
   const fixture = atlasApi({
     "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
-    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(atlasProfile({ assignments: { "2026-07-30": { wordId: "w1", ...(committedStatus ? { status: committedStatus } : {}) } } })) }),
     "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "word.feedback": (message) => message.status === "known" ? knownResult : { kind: "ok", wordId: "w1", dateKey: "2026-07-30", status: "difficult" },
+    "word.feedback": async (message) => {
+      const result = message.status === "known" ? await knownResult : { kind: "ok", wordId: "w1", dateKey: "2026-07-30", status: "difficult" };
+      committedStatus = result.status;
+      return result;
+    },
     "word.save": () => saveResult,
   });
   await fixture.api.initialize();
@@ -1749,7 +1760,7 @@ test("Atlas Today actions expose adjacent pending, success, failure, and focus s
 
   const failed = atlasApi({
     "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
-    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(atlasProfile({ assignments: { "2026-07-30": { wordId: "w1", ...(committedStatus ? { status: committedStatus } : {}) } } })) }),
     "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
     "word.feedback": new Error("offline"),
     "word.save": new Error("offline"),
@@ -1864,7 +1875,7 @@ test("Atlas renders the current card's exact review intervals", async () => {
   }, { vocabulary: [word] });
   await fixture.api.initialize();
   await fixture.api.loadDueReviews();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
 
   for (const id of ["rate-again", "rate-hard", "rate-good", "rate-easy"]) {
     assert.equal(fixture.elements.get(id).children[0].textContent, "غدًا");
@@ -1886,7 +1897,7 @@ test("Atlas flip control exposes state, keeps speaker independent, and resets fo
   }, { vocabulary: words });
   await fixture.api.initialize();
   await fixture.api.loadDueReviews();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
 
   const flip = fixture.elements.get("card-front-flip");
   const card = fixture.elements.get("flashcard-card");
@@ -1922,17 +1933,17 @@ test("Atlas does not reopen stale review cards while the post-close queue refres
     "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
     "review.queue": () => {
       queueCalls += 1;
-      return queueCalls === 1 ? initialQueue : refreshPending;
+      return queueCalls <= 2 ? initialQueue : refreshPending;
     },
   }, { vocabulary: [firstWord, remainingWord] });
   await fixture.api.initialize();
   await fixture.api.loadDueReviews();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
   assert.equal(fixture.elements.get("practice-dialog").open, true);
 
   fixture.api.closePracticeModal();
   fixture.api.openPracticeModal();
-  assert.equal(queueCalls, 2);
+  assert.equal(queueCalls, 3);
   assert.equal(fixture.elements.get("practice-dialog").open, false, "reopen waits for the authoritative refresh");
 
   resolveRefresh(refreshedQueue);
@@ -2000,7 +2011,7 @@ test("Atlas rejected queues render a retryable error and do not claim completion
   });
   await fixture.api.initialize();
   assert.equal(fixture.elements.get("due-review-badge").hidden, true);
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
   await new Promise(setImmediate);
   assert.equal(fixture.elements.get("practice-dialog").open, true);
   assert.equal(fixture.elements.get("practice-body").hidden, false);
@@ -2015,7 +2026,7 @@ test("Atlas rejected queues render a retryable error and do not claim completion
   });
   await inconsistent.api.initialize();
   assert.equal(inconsistent.elements.get("due-review-badge").hidden, true);
-  inconsistent.api.openPracticeModal();
+  await inconsistent.api.openPracticeModal();
   await new Promise(setImmediate);
   assert.equal(inconsistent.elements.get("practice-error").hidden, false, "inconsistent queue counts must be retryable errors");
   assert.equal(inconsistent.elements.get("practice-finished").hidden, true);
@@ -2036,7 +2047,7 @@ test("Atlas review reveal gate controls keyboard ratings and returns focus to it
   await fixture.api.initialize();
   const invoker = fixture.elements.get("due-review-badge");
   invoker.focus();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
   assert.equal(fixture.elements.get("rate-good").disabled, true);
   assert.equal(fixture.elements.get("card-front-face").getAttribute("aria-hidden"), "false");
   assert.equal(fixture.elements.get("card-back-face").getAttribute("aria-hidden"), "true");
@@ -2074,7 +2085,7 @@ test("Atlas rejected ratings restore revealed controls for a retry", async () =>
     },
   });
   await fixture.api.initialize();
-  fixture.api.openPracticeModal();
+  await fixture.api.openPracticeModal();
   assert.equal(fixture.elements.get("rate-good").disabled, true);
   fixture.elements.get("card-front-flip").listeners.click({});
   assert.equal(fixture.elements.get("rate-good").disabled, false);
@@ -2427,3 +2438,145 @@ test("All popup and atlas files maintain zero CSP violations and no unsafe sinks
     assert.doesNotMatch(withoutApprovedRemote, /https?:\/\/|\b(?:innerHTML|outerHTML)\b|\b(?:setInterval|setTimeout)\s*\(/, `${name} contains unsafe sink or timer`);
   }
 });
+
+
+test("popup storage read failure shows an error and usable retry", async () => {
+  const options = { storageReadFailure: true, profile: undefined };
+  const fixture = popupApi({}, options);
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("error").hidden, false);
+  assert.equal(typeof fixture.elements.get("error-retry").listeners.click, "function");
+  options.storageReadFailure = false;
+  await fixture.elements.get("error-retry").listeners.click({});
+  assert.equal(fixture.elements.get("onboarding").hidden, false);
+});
+
+
+for (const surface of ["popup", "Atlas"]) {
+  test(`${surface} refreshes daily and external review changes without replacing an active or pending card`, async () => {
+    const profile = atlasProfile({ assignments: { "2026-07-30": { wordId: "w1" } }, assignmentOrdinal: 1 });
+    const word = { id: "w1", word: "كلمة", meaningAr: "معنى", pronunciation: "/w1/" };
+    let due = true;
+    let releaseRating;
+    const pendingRating = new Promise((resolve) => { releaseRating = resolve; });
+    const responses = {
+      "assignment.get": { kind: "assigned", wordId: "w1", word, dateKey: "2026-07-30" },
+      "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+      "review.queue": () => ({ kind: "queue", words: due ? [{ wordId: "w1", word }] : [], dueCount: due ? 1 : 0, visibleCount: due ? 1 : 0, remainingCount: 0 }),
+      "word.feedback": () => {
+        due = false;
+        profile.assignments["2026-07-30"].status = "known";
+        profile.wordStates.w1 = { status: "known", dateKey: "2026-07-30" };
+        return { kind: "ok", status: "known", dateKey: "2026-07-30", wordId: "w1" };
+      },
+      "word.review": () => pendingRating,
+    };
+    const fixture = surface === "popup" ? popupApi(responses, { profile, vocabulary: [word] }) : atlasApi(responses, { vocabulary: [word] });
+    await fixture.api.initialize();
+    await (surface === "popup" ? fixture.api.sendFeedback("known") : fixture.api.feedback("known"));
+    assert.equal(fixture.elements.get("due-review-badge").hidden, true, "feedback removes the now-reviewed daily word from the queue");
+    // A change in another page refreshes the idle badge and the saved indicator.
+    due = true;
+    profile.wordStates.w1.saved = true;
+    for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+    await new Promise(setImmediate);
+    assert.equal(fixture.elements.get("due-review-badge").hidden, false);
+    assert.equal(fixture.elements.get(surface === "popup" ? "save" : "today-save").getAttribute("aria-pressed"), "true");
+    // The new session rechecks authority even without a delivered storage event.
+    due = false;
+    await fixture.api.openPracticeModal();
+    assert.equal(fixture.elements.get("practice-finished").hidden, false);
+    fixture.api.closePracticeModal();
+    await new Promise(setImmediate);
+    due = true;
+    await fixture.api.openPracticeModal();
+    fixture.elements.get("card-front-flip").listeners.click({});
+    due = false;
+    for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+    await new Promise(setImmediate);
+    assert.equal(fixture.elements.get("card-front-word").textContent, word.word);
+    assert.equal(fixture.elements.get("card-front-flip").getAttribute("aria-pressed"), "true");
+    const rating = fixture.api.submitRating("good");
+    await new Promise(setImmediate);
+    for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+    await new Promise(setImmediate);
+    assert.equal(fixture.elements.get("card-front-word").textContent, word.word);
+    assert.equal(fixture.elements.get("rate-good").disabled, true);
+    releaseRating({ kind: "ok" });
+    await rating;
+  });
+}
+
+for (const surface of ["popup", "Atlas"]) {
+  test(`${surface} reloads authority after feedback overlaps a pending startup queue`, async () => {
+    const profile = atlasProfile({ assignments: { "2026-07-30": { wordId: "w1" } }, assignmentOrdinal: 1 });
+    const word = { id: "w1", word: "كلمة", meaningAr: "معنى", pronunciation: "/w1/" };
+    let releaseStartupQueue;
+    const startupQueue = new Promise((resolve) => { releaseStartupQueue = resolve; });
+    let queueCalls = 0;
+    const responses = {
+      "assignment.get": { kind: "assigned", wordId: "w1", word, dateKey: "2026-07-30" },
+      "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+      "review.queue": () => {
+        queueCalls += 1;
+        return queueCalls === 1 ? startupQueue : { kind: "queue", words: [], dueCount: 0, visibleCount: 0, remainingCount: 0 };
+      },
+      "word.feedback": () => {
+        profile.assignments["2026-07-30"].status = "known";
+        profile.wordStates.w1 = { status: "known", dateKey: "2026-07-30" };
+        return { kind: "ok", status: "known", wordId: "w1", dateKey: "2026-07-30" };
+      },
+    };
+    const fixture = surface === "popup" ? popupApi(responses, { profile, vocabulary: [word] }) : atlasApi(responses, { vocabulary: [word] });
+    const startup = fixture.api.initialize();
+    await new Promise(setImmediate);
+    assert.equal(queueCalls, 1);
+    const feedback = surface === "popup" ? fixture.api.sendFeedback("known") : fixture.api.feedback("known");
+    await new Promise(setImmediate);
+    assert.equal(profile.assignments["2026-07-30"].status, "known");
+    releaseStartupQueue({ kind: "queue", words: [{ wordId: "w1", word }], dueCount: 1, visibleCount: 1, remainingCount: 0 });
+    await Promise.all([startup, feedback]);
+    assert.equal(queueCalls, 2, "forced refresh waits for a subsequent authoritative request");
+    assert.equal(fixture.elements.get("due-review-badge").hidden, true);
+  });
+}
+
+for (const surface of ["popup", "Atlas"]) {
+  for (const replacement of [false, true]) {
+    test(`${surface} discards a stale review card and retries the current ${replacement ? "imported" : "cleared"} queue`, async () => {
+      const word = { id: "w1", word: "كلمة", meaningAr: "معنى" };
+      const replacementWord = { id: "w2", word: "جديد", meaningAr: "معنى جديد" };
+      const profile = atlasProfile({ assignments: { "2026-07-30": { wordId: "w1" } }, assignmentOrdinal: 1 });
+      let stale = false;
+      const responses = {
+        "assignment.get": { kind: "assigned", wordId: "w1", word, dateKey: "2026-07-30" },
+        "state.export": { kind: "export", text: JSON.stringify(profile) },
+        "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+        "review.queue": () => {
+          const words = stale ? (replacement ? [{ word: replacementWord }] : []) : [{ word }];
+          return { kind: "queue", words, dueCount: words.length, visibleCount: words.length, remainingCount: 0 };
+        },
+        "word.review": () => ({ kind: "stale" }),
+      };
+      const fixture = surface === "popup" ? popupApi(responses, { profile, vocabulary: [word, replacementWord] }) : atlasApi(responses, { vocabulary: [word, replacementWord] });
+      await fixture.api.initialize();
+      await fixture.api.openPracticeModal();
+      fixture.elements.get("card-front-flip").listeners.click({});
+      stale = true; // Authority changed without a delivered storage event.
+      await fixture.api.submitRating("good");
+      assert.equal(fixture.elements.get("practice-error").hidden, false);
+      assert.match(fixture.elements.get("practice-error-message").textContent, /تغيّرت بيانات التعلّم/);
+      assert.equal(fixture.elements.get("card-front-word").textContent, "");
+      assert.equal(fixture.elements.get("rate-good").disabled, true);
+      await fixture.api.submitRating("good");
+      assert.equal(fixture.calls.filter((message) => message.type === "word.review").length, 1, "retrying rating cannot resend the rejected card");
+      await fixture.elements.get("practice-retry").listeners.click({});
+      await new Promise(setImmediate);
+      assert.equal(fixture.elements.get("practice-error").hidden, true);
+      assert.equal(fixture.elements.get("practice-finished").hidden, replacement);
+      assert.equal(fixture.elements.get("card-front-word").textContent, replacement ? replacementWord.word : "");
+    });
+  }
+}

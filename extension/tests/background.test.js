@@ -199,14 +199,16 @@ test("real numeric vocabulary keeps assignment, save, and review canonical and t
       await assert.rejects(background.handleMessage({ type: "word.review", wordId: assigned.wordId, rating: "invalid", dateKey: "2026-08-17" }), /rating/i);
       assert.equal(JSON.stringify(values["kalimat.profile"]), beforeInvalid);
 
+      // Daily feedback enrolls the card before deliberate practice.
+      await background.handleMessage({ type: "word.feedback", wordId: assigned.wordId, status: "known", dateKey: "2026-08-17" });
       const reviewed = await background.handleMessage({ type: "word.review", wordId: `w${assigned.wordId}`, rating: "good", dateKey: "2026-08-17" });
       assert.equal(reviewed.kind, "ok");
       assert.equal(reviewed.srs.wordId, assigned.wordId);
-      assert.equal(reviewed.srs.reviewCount, 1);
+      assert.equal(reviewed.srs.reviewCount, 2);
       const afterReview = JSON.stringify(values["kalimat.profile"]);
 
       const replay = await background.handleMessage({ type: "word.review", wordId: assigned.wordId, rating: "good", dateKey: "2026-08-17" });
-      assert.equal(replay.srs.reviewCount, 1);
+      assert.equal(replay.srs.reviewCount, 2);
       assert.equal(JSON.stringify(values["kalimat.profile"]), afterReview);
     });
   });
@@ -922,3 +924,70 @@ test("online.lookup is strictly read-only and never modifies profile or assignme
     assert.equal(calls.set, 0);
   });
 });
+
+
+test("saved-only save and unsave survive export/import without SRS enrollment", async () => {
+  await withBackground({}, async ({ background, values }) => {
+    await background.handleMessage({ type: "word.save", wordId: "w1", saved: true });
+    let exported = await background.handleMessage({ type: "state.export" });
+    let profile = JSON.parse(exported.text);
+    assert.equal(profile.favorites.w1, true);
+    assert.equal(profile.srs.w1, undefined);
+    await background.handleMessage({ type: "word.save", wordId: "w1", saved: false });
+    exported = await background.handleMessage({ type: "state.export" });
+    profile = JSON.parse(exported.text);
+    assert.equal(profile.favorites.w1, undefined);
+    await background.handleMessage({ type: "state.import", text: exported.text });
+    assert.equal(values["kalimat.profile"].favorites.w1, undefined);
+    assert.equal(values["kalimat.profile"].srs.w1, undefined);
+  });
+});
+
+
+test("daily feedback replay and corrections preserve a same-grade deliberate review", async () => {
+  await withBackground({}, async ({ background, values }) => {
+    const assignment = await background.handleMessage({ type: "assignment.get" });
+    const feedback = { type: "word.feedback", wordId: assignment.wordId, dateKey: assignment.dateKey, status: "known" };
+    await background.handleMessage(feedback);
+    await background.handleMessage(feedback);
+    assert.equal(values["kalimat.profile"].srs[assignment.wordId].reviewCount, 1);
+    const review = { type: "word.review", wordId: assignment.wordId, dateKey: assignment.dateKey, rating: "good" };
+    await background.handleMessage(review);
+    const practiced = JSON.stringify(values["kalimat.profile"].srs);
+    assert.equal(values["kalimat.profile"].srs[assignment.wordId].reviewCount, 2);
+    await background.handleMessage(review);
+    await background.handleMessage({ ...feedback, status: "difficult" });
+    await background.handleMessage(feedback);
+    assert.equal(JSON.stringify(values["kalimat.profile"].srs), practiced);
+  });
+});
+
+for (const mutation of ["clear", "replacement import"]) {
+  test(`background rejects an old queued review after ${mutation} without restoring learner data`, async () => {
+    await withBackground({ vocabulary: realVocabulary }, async ({ background, values, calls }) => {
+      await withLocalDay("2026-08-17", async () => {
+        let assigned;
+        await withLocalDay("2026-08-16", async () => {
+          assigned = await background.handleMessage({ type: "assignment.get" });
+          await background.handleMessage({ type: "word.feedback", wordId: assigned.wordId, dateKey: assigned.dateKey, status: "difficult" });
+        });
+        const queue = await background.handleMessage({ type: "review.queue" });
+        assert.equal(queue.words[0].word.id, assigned.wordId);
+        const retainedId = assigned.wordId === 1 ? 2 : 1;
+        if (mutation === "clear") await background.handleMessage({ type: "state.clear" });
+        else {
+          const imported = require("../shared/state.js").recordReview(profile({ favorites: { [retainedId]: true } }), retainedId, "again", "2026-08-16", realVocabulary);
+          await background.handleMessage({ type: "state.import", text: JSON.stringify(imported) });
+        }
+        const before = JSON.stringify(values["kalimat.profile"]);
+        const writes = calls.set;
+        const result = await background.handleMessage({ type: "word.review", wordId: `w${assigned.wordId}`, rating: "good", dateKey: "2026-08-17" });
+        assert.equal(result.kind, "stale");
+        assert.equal(JSON.stringify(values["kalimat.profile"]), before, "deleted history, SRS and wordStates must stay deleted");
+        assert.equal(calls.set, writes, "stale reviews must not persist anything");
+        const currentQueue = await background.handleMessage({ type: "review.queue" });
+        assert.deepEqual(currentQueue.words.map((item) => item.word.id), mutation === "clear" ? [] : [retainedId]);
+      });
+    });
+  });
+}

@@ -6,6 +6,9 @@
 
 @charset "UTF-8";
 
+/* Keep semantic visibility ahead of author layout rules. */
+[hidden] { display: none !important; }
+
 /* Self-hosted fonts (SIL OFL, see assets/fonts/OFL.txt) */
 @font-face {
     font-family: "Amiri";
@@ -30,14 +33,14 @@
 }
 @font-face {
     font-family: "Outfit";
-    src: url("assets/fonts/Outfit-Medium.woff2") format("woff2");
+    src: url("assets/fonts/Outfit-Regular.woff2") format("woff2");
     font-weight: 500;
     font-style: normal;
     font-display: swap;
 }
 @font-face {
     font-family: "Outfit";
-    src: url("assets/fonts/Outfit-SemiBold.woff2") format("woff2");
+    src: url("assets/fonts/Outfit-Regular.woff2") format("woff2");
     font-weight: 600;
     font-style: normal;
     font-display: swap;
@@ -1107,30 +1110,6 @@ html[data-theme="midnight"] .rating-btn:focus-visible {
 .practice-cta-btn:hover {
     transform: translateY(-2px);
 }
-
-
-/* Legacy practice fallback classes */
-.practice-card { padding: 20px 0 10px; }
-
-.practice-progress { display: flex; justify-content: space-between; align-items: center; color: var(--ink-soft); font: 600 .8rem var(--sans); margin-bottom: 16px; }
-
-.practice-prompt { font-size: clamp(1.4rem, 3vw, 2.1rem); margin: 0 0 24px; line-height: 1.4; font-weight: 400; }
-
-.practice-options { display: grid; gap: 10px; margin-bottom: 20px; }
-
-.practice-option-btn { width: 100%; min-height: 52px; padding: 14px 18px; border: 1px solid var(--line-dark); background: var(--paper); color: var(--ink); font-size: 1.1rem; text-align: start; border-radius: 8px; transition: all .2s ease; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
-
-.practice-option-btn:hover:not(:disabled) { border-color: var(--ink); background: var(--paper-light); transform: translateX(-4px); }
-
-.practice-option-btn.correct { background: #15803d !important; color: #ffffff !important; border-color: #15803d !important; }
-
-.practice-option-btn.wrong { background: #b91c1c !important; color: #ffffff !important; border-color: #b91c1c !important; }
-
-.practice-feedback { padding: 16px; border-radius: 8px; background: var(--paper); border-inline-start: 4px solid var(--lime); font-size: .95rem; line-height: 1.6; margin-bottom: 16px; }
-
-.practice-next-btn { width: 100%; min-height: 46px; background: var(--ink); color: var(--paper-light); font: 600 .85rem var(--sans); border-radius: 6px; border: 0; cursor: pointer; transition: transform .2s; }
-
-.practice-next-btn:hover { opacity: .9; transform: translateY(-1px); }
 
 
 /* ==========================================================================

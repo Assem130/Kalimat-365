@@ -307,10 +307,10 @@
                 audioBtn.setAttribute("aria-label", `استمع إلى نطق ${word && word.word != null ? String(word.word) : ""}`);
                 audioBtn.setAttribute("title", "استمع إلى النطق");
                 audioBtn.title = "استمع إلى النطق";
-                const audioIcon = document.createElement("svg");
-                audioIcon.className = "icon";
+                const audioIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                audioIcon.setAttribute("class", "icon");
                 audioIcon.setAttribute("aria-hidden", "true");
-                const audioUse = document.createElement("use");
+                const audioUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
                 audioUse.setAttribute("href", "#i-volume-high");
                 audioIcon.appendChild(audioUse);
                 audioBtn.appendChild(audioIcon);
@@ -370,9 +370,9 @@
                 setData(readBtn, "wordId", wordId);
                 const readLabel = document.createElement("span");
                 setText(readLabel, "اقرأ الكلمة كاملة");
-                const readIcon = document.createElement("svg");
-                readIcon.className = "icon";
-                const readUse = document.createElement("use");
+                const readIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                readIcon.setAttribute("class", "icon");
+                const readUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
                 readUse.setAttribute("href", "#i-arrow");
                 readIcon.appendChild(readUse);
                 readBtn.append(readLabel, readIcon);

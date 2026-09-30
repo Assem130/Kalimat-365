@@ -235,22 +235,6 @@
         return id;
     }
 
-    function resolveWordSelection(searchParams, wordsDb, todayDateKey) {
-        if (!Array.isArray(wordsDb) || wordsDb.length === 0) return null;
-        const requestedId = parseWordIdFromQuery(searchParams, wordsDb.length);
-
-        if (requestedId !== null) {
-            const found = wordsDb.find(item => item.id === requestedId);
-            if (found) {
-                return { word: found, isDeepLink: true, requestedId };
-            }
-        }
-
-        const dateKey = isDateKey(todayDateKey) ? todayDateKey : getLocalDateKey(new Date());
-        const index = getDailyWordIndex(dateKey, wordsDb.length);
-        return { word: wordsDb[index], isDeepLink: false, requestedId: null };
-    }
-
     function createDefaultState() {
         return {
             version: SCHEMA_VERSION,
@@ -441,93 +425,6 @@
         return `«${word.word}» (${word.vocalization})\nالوزن: ${word.weight} | الجذر: ${word.root}\nالمعنى: ${word.meaning}\nالشاهد: ${word.example}\n— عبر كَلِمات`;
     }
 
-    function generateQuizQuestions(historyOrIds, wordsDb, questionCount = 3) {
-        if (!Array.isArray(wordsDb) || wordsDb.length === 0) return [];
-        const count = Math.min(questionCount, wordsDb.length);
-        const targetWordIds = [];
-
-        if (Array.isArray(historyOrIds)) {
-            for (const item of historyOrIds) {
-                const id = typeof item === "object" && item !== null ? item.id : Number(item);
-                if (Number.isInteger(id) && wordsDb.some(w => w.id === id) && !targetWordIds.includes(id)) {
-                    targetWordIds.push(id);
-                }
-            }
-        } else if (historyOrIds && typeof historyOrIds === "object") {
-            for (const key of Object.keys(historyOrIds)) {
-                const id = Number(key);
-                if (Number.isInteger(id) && wordsDb.some(w => w.id === id) && !targetWordIds.includes(id)) {
-                    targetWordIds.push(id);
-                }
-            }
-        }
-
-        // Shuffle candidate IDs
-        const shuffledTargets = [...targetWordIds].sort(() => 0.5 - Math.random());
-
-        // Fallback: Pad targets with other words from DB if count < requested count
-        if (shuffledTargets.length < count) {
-            const remaining = wordsDb.map(w => w.id).filter(id => !shuffledTargets.includes(id));
-            remaining.sort(() => 0.5 - Math.random());
-            shuffledTargets.push(...remaining.slice(0, count - shuffledTargets.length));
-        }
-
-        const selectedIds = shuffledTargets.slice(0, count);
-        const questionTypes = ["meaning", "root", "weight"];
-        const questions = [];
-
-        for (let i = 0; i < selectedIds.length; i++) {
-            const targetId = selectedIds[i];
-            const target = wordsDb.find(w => w.id === targetId);
-            if (!target) continue;
-
-            const qType = questionTypes[i % questionTypes.length];
-            let prompt = "";
-            let correctAnswer = "";
-            let getOptionValue = w => "";
-
-            if (qType === "root") {
-                prompt = `ما جذر كلمة «${target.word}»؟`;
-                correctAnswer = target.root;
-                getOptionValue = w => w.root;
-            } else if (qType === "weight") {
-                prompt = `ما الوزن الصرفي لكلمة «${target.word}»؟`;
-                correctAnswer = target.weight;
-                getOptionValue = w => w.weight;
-            } else {
-                prompt = `ما معنى كلمة «${target.word}»؟`;
-                correctAnswer = target.meaning;
-                getOptionValue = w => w.meaning;
-            }
-
-            // Gather distinct distractors
-            const distractors = [];
-            const otherWords = wordsDb.filter(w => w.id !== target.id).sort(() => 0.5 - Math.random());
-            for (const other of otherWords) {
-                const val = getOptionValue(other);
-                if (val && val !== correctAnswer && !distractors.includes(val)) {
-                    distractors.push(val);
-                    if (distractors.length >= 3) break;
-                }
-            }
-
-            const allOptions = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
-            const correctIndex = allOptions.indexOf(correctAnswer);
-
-            questions.push({
-                wordId: target.id,
-                word: target.word,
-                vocalization: target.vocalization,
-                type: qType,
-                prompt,
-                options: allOptions,
-                correctIndex,
-                explanation: `«${target.word}» (${target.vocalization}): ${target.meaning} (الجذر: ${target.root}، الوزن: ${target.weight})`
-            });
-        }
-        return questions;
-    }
-
     function normalizeArabicText(text) {
         if (typeof text !== "string") return "";
         return text
@@ -601,79 +498,6 @@
         }
 
         return { sameRoot, sameWeight };
-    }
-
-    function isArabicVoice(voice) {
-        if (!voice || typeof voice !== "object") return false;
-        if (typeof voice.lang !== "string") return false;
-        const lang = voice.lang.trim().toLowerCase().replace(/_/g, "-");
-        return lang === "ar" || lang.startsWith("ar-")
-            || lang === "ara" || lang.startsWith("ara-")
-            || lang === "arb" || lang.startsWith("arb-");
-    }
-
-    function scoreArabicVoice(voice) {
-        if (!isArabicVoice(voice)) return -1;
-
-        let score = 100;
-        const lang = (voice.lang || "").trim().toLowerCase().replace(/_/g, "-");
-        const name = String(voice.name || "").toLowerCase();
-        const uri = String(voice.voiceURI || "").toLowerCase();
-        const combined = `${name} ${uri}`;
-
-        if (lang === "ar-sa" || lang === "ara-sa" || lang === "arb-sa" || lang === "ar-001" || lang === "ara-001" || lang === "arb-001") {
-            score += 30;
-        } else if (lang === "ar-xa" || lang === "ara-xa" || lang === "arb-xa") {
-            score += 28;
-        } else if (lang === "ar-eg" || lang === "ara-eg") {
-            score += 25;
-        } else if (lang === "ar-ae" || lang === "ara-ae") {
-            score += 25;
-        } else if (lang === "ar-kw" || lang === "ar-qa" || lang === "ar-bh" || lang === "ar-om" || lang === "ar-jo" || lang === "ar-lb") {
-            score += 20;
-        } else if (lang.startsWith("ar-") || lang.startsWith("ara-") || lang.startsWith("arb-")) {
-            score += 15;
-        } else {
-            score += 5;
-        }
-
-        if (combined.includes("natural") || /طبيعي|طبيعية|عصبي/.test(combined)) score += 60;
-        if (combined.includes("neural")) score += 60;
-        if (combined.includes("online") || combined.includes("سحابي") || voice.localService === false) score += 40;
-        if (combined.includes("enhanced") || combined.includes("premium") || combined.includes("studio") || combined.includes("wavenet") || combined.includes("neural2") || /محسن|مطور|فائق|احترافي/.test(combined)) {
-            score += 50;
-        }
-
-        if (/naayf|hoda|shakir|fatima|hamed|salma|zariyah|zeina|نايف|هدى|شاكر|فاطمة|حامد|سلمى|زرية|زينة/.test(combined)) {
-            score += 35;
-        }
-        if (/maged|majid|tarik|tariq|laila|layla|mariam|maryam|siri|ماجد|طارق|ليلى|مريم|سيري/.test(combined)) {
-            score += 35;
-        }
-        if (combined.includes("google") || /جوجل|غوغل/.test(combined)) {
-            score += 30;
-        }
-        if (combined.includes("samsung") || /سامسونج|سامسونغ/.test(combined)) {
-            score += 20;
-        }
-
-        if (voice.default === true) {
-            score += 2;
-        }
-
-        return score;
-    }
-
-    function filterArabicVoices(voices) {
-        if (!Array.isArray(voices)) return [];
-        return voices
-            .filter(isArabicVoice)
-            .sort((a, b) => scoreArabicVoice(b) - scoreArabicVoice(a));
-    }
-
-    function findBestArabicVoice(voices) {
-        const sorted = filterArabicVoices(voices);
-        return sorted.length > 0 ? sorted[0] : null;
     }
 
     function addDaysToDateKey(dateKey, days) {
@@ -1078,21 +902,6 @@
         };
     }
 
-    function scheduleDailyWordSrs(state, wordId, dateKey) {
-        const todayKey = isDateKey(dateKey) ? dateKey : getLocalDateKey(new Date());
-        const id = Number(wordId);
-        const nextState = migrateState(state, todayKey);
-
-        if (!nextState.history[id]) {
-            nextState.history[id] = { firstSeen: todayKey };
-        }
-        if (!nextState.srs[id]) {
-            nextState.srs[id] = createDefaultSrsItem(id, todayKey);
-        }
-
-        return nextState;
-    }
-
     function getLexiconRoots(wordsDb) {
         if (!Array.isArray(wordsDb)) return [];
         const rootMap = new Map();
@@ -1208,7 +1017,6 @@
         serializeAnkiCSV,
         generateAnkiCsv,
         parseWordIdFromQuery,
-        resolveWordSelection,
         createDefaultState,
         normalizeState,
         inspectStoredState,
@@ -1218,14 +1026,9 @@
         serializeBackup,
         extractSpokenText,
         formatWordCitation,
-        generateQuizQuestions,
         normalizeArabicText,
         searchLexicon,
         findRelatedWords,
-        isArabicVoice,
-        scoreArabicVoice,
-        filterArabicVoices,
-        findBestArabicVoice,
         // SM-2 & Schema v2 Exports
         addDaysToDateKey,
         getDaysDifference,
@@ -1238,7 +1041,6 @@
         getDueReviewWords,
         recordReview,
         getReviewStats,
-        scheduleDailyWordSrs,
         // Lexicon & Root Explorer Exports
         getLexiconRoots,
         getLexiconWeights,

@@ -6,7 +6,7 @@ Kalimat (كَلِمات) is a no-build, vanilla HTML/CSS/JavaScript Arabic learn
 
 - The website assigns one universal, date-based daily word, exposes the 365-word lexicon, uses browser speech, schedules local review, and offers an opt-in browser notification reminder while a Kalimat tab is open.
 - The Chrome and Firefox MV3 extension is an optional personalized companion with challenge level, interests, its own alarms/notifications reminder setting, Atlas exploration, and the shared review policy.
-- Website and extension assignments, reviews, and learner data remain separate. There is no account, sync, backend, telemetry, analytics, gamification, or corpus expansion.
+- Website and extension assignments, reviews, and learner data remain separate. There is no account, sync, backend, telemetry, analytics, points, competitive rewards, or corpus expansion. Reading streaks remain available.
 
 ## Storage and privacy contracts
 
@@ -21,7 +21,8 @@ Kalimat (كَلِمات) is a no-build, vanilla HTML/CSS/JavaScript Arabic learn
 - `app.js` owns the word permalink; `revamp.js` owns the home/lexicon surface; `web-ui.js` contains shared website UI helpers.
 - `extension/shared/review-policy.js` and `extension/shared/speech.js` are shared by the website and extension adapters.
 - `sw.js` precaches the same-origin app shell, including the hosted privacy page; local WOFF2 assets are served from the app origin with no Google Fonts request.
-- `extension/tools/package.ps1` emits the version `0.3.0` Chrome and Firefox archives from the validated runtime allowlist.
+- `extension/tools/package.py` emits the version `0.3.0` Chrome and Firefox archives from the validated runtime allowlist using Python 3 standard library ZIP tooling. `verify.py` runs the same fail-fast checks on Linux and Windows.
+- `extension/tools/convert-vocabulary.js --check` compares the derived vocabulary against the canonical corpus and reviewed metadata without writing; omit `--check` only for intentional regeneration and review the diff.
 
 ## Beta protocol and gates
 

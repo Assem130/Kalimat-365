@@ -10,7 +10,8 @@ const words = require("../words.js");
 
 // Mock Element for VM sandbox testing
 class MockElement {
-    constructor(tagName = "div") {
+    constructor(tagName = "div", namespaceURI = "http://www.w3.org/1999/xhtml") {
+        this.namespaceURI = namespaceURI;
         this.tagName = tagName.toUpperCase();
         this.children = [];
         this.listeners = new Map();
@@ -42,6 +43,9 @@ class MockElement {
     }
 
     set className(val) {
+        if (this.namespaceURI === "http://www.w3.org/2000/svg") {
+            throw new TypeError("SVG className is an animated, read-only property; use setAttribute");
+        }
         this._className = val;
         this.classList.values.clear();
         if (typeof val === "string") {
@@ -113,7 +117,13 @@ class MockElement {
         }
     }
 
-    setAttribute(name, value) { this.attributes.set(name, String(value)); }
+    setAttribute(name, value) {
+        this.attributes.set(name, String(value));
+        if (name === "class") {
+            this.classList.values.clear();
+            String(value).trim().split(/\s+/).forEach(token => { if (token) this.classList.values.add(token); });
+        }
+    }
     getAttribute(name) { return this.attributes.get(name); }
     hasAttribute(name) { return this.attributes.has(name); }
     removeAttribute(name) { this.attributes.delete(name); }
@@ -198,6 +208,7 @@ function setupLexiconSandbox(wordsDb = words) {
     const documentMock = {
         getElementById: (id) => elements[id] || null,
         createElement: (tagName) => new MockElement(tagName),
+        createElementNS: (namespace, tagName) => new MockElement(tagName, namespace),
         createDocumentFragment: () => new MockElement("fragment"),
         querySelectorAll: (sel) => {
             const list = [];
@@ -509,6 +520,12 @@ test("5. Lexicon cards render hostile corpus fields as literal text", () => {
         assert.equal(pronunciation.dir, "ltr", "Pronunciation dir property must remain ltr");
         assert.equal(audioBtn.getAttribute("type"), "button", "Audio control type must remain button");
         assert.equal(audioBtn.getAttribute("title"), "استمع إلى النطق", "Audio title must remain present");
+        for (const button of [audioBtn, readBtn]) {
+            for (const tag of ["svg", "use"]) {
+                assert.equal(button.querySelector(tag).namespaceURI, "http://www.w3.org/2000/svg", `${tag} must render in the SVG namespace`);
+                if (tag === "svg") assert.equal(button.querySelector(tag).getAttribute("class"), "icon", "SVG styling must use the class attribute");
+            }
+        }
         assert.equal(audioBtn.querySelector("svg").getAttribute("aria-hidden"), "true", "Audio icon must remain hidden from assistive technology");
         assert.equal(audioBtn.querySelector("use").getAttribute("href"), "#i-volume-high", "Audio icon reference must remain present");
         assert.equal(categoryPill.textContent, payload, "Category text must remain literal");

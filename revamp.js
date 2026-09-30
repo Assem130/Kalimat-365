@@ -10,56 +10,53 @@ document.addEventListener("DOMContentLoaded", () => {
     if (typeof installFn === "function") installFn();
 
     const Core = window.KalimatCore;
-    const today = Core ? Core.getLocalDateKey(new Date()) : "";
-    let rawState = null;
-    try {
-        rawState = JSON.parse(localStorage.getItem("arabic_words_state") || "null");
-    } catch {}
-
     const qsa = (typeof document.querySelectorAll === "function") ? document.querySelectorAll.bind(document) : () => [];
     const streakBadges = qsa(".streak-badge");
-    if (streakBadges.length > 0 && Core && rawState && rawState.history) {
-        try {
-            const streak = Core.calculateStreak(rawState.history, today);
-            const count = streak.currentStreak;
-            if (count > 0) {
-                streakBadges.forEach(badge => {
-                    badge.replaceChildren();
-                    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                    icon.setAttribute("class", "icon");
-                    icon.setAttribute("aria-hidden", "true");
-                    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-                    use.setAttribute("href", "#i-flame");
-                    icon.appendChild(use);
-                    badge.append(icon, ` ${Core.formatStreakText(count)}`);
-                });
-            }
-        } catch {}
-    }
-
     const dueBadges = qsa(".due-review-badge");
-    if (dueBadges.length > 0 && Core) {
+    const wordsList = (typeof WORDS_DB !== "undefined" && Array.isArray(WORDS_DB)) ? WORDS_DB : (typeof WORDS !== "undefined" && Array.isArray(WORDS) ? WORDS : []);
+    const validIds = new Set(wordsList.map(word => word.id));
+
+    function refreshLearningBadges() {
+        if (!Core || (streakBadges.length === 0 && dueBadges.length === 0)) return;
+        const today = Core.getLocalDateKey(new Date());
+        let state = Core.createDefaultState();
         try {
-            const wordsList = (typeof WORDS_DB !== "undefined" && Array.isArray(WORDS_DB)) ? WORDS_DB : (typeof WORDS !== "undefined" && Array.isArray(WORDS) ? WORDS : null);
-            const stats = Core.getReviewStats(rawState || {}, today, wordsList);
-            const dueCount = stats.dueToday || 0;
-            dueBadges.forEach(badge => {
-                const countEl = badge.querySelector(".due-count");
-                if (countEl) countEl.textContent = String(dueCount);
-                badge.setAttribute("aria-label", `المراجعات المستحقة اليوم: ${dueCount} كلمات`);
-                if (dueCount > 0) {
-                    badge.classList.add("has-due", "pulse");
-                } else {
-                    badge.classList.remove("has-due", "pulse");
-                }
-            });
-            dueBadges.forEach(badge => {
-                badge.addEventListener("click", () => {
-                    window.location.href = "word.html?action=practice";
-                });
-            });
+            const raw = JSON.parse(localStorage.getItem("arabic_words_state") || "null");
+            state = Core.inspectStoredState(raw, validIds, today).state;
         } catch {}
+        const count = Core.calculateStreak(state.history, today).currentStreak;
+        streakBadges.forEach(badge => {
+            badge.replaceChildren();
+            const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            icon.setAttribute("class", "icon");
+            icon.setAttribute("aria-hidden", "true");
+            const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+            use.setAttribute("href", "#i-flame");
+            icon.appendChild(use);
+            badge.append(icon, ` ${Core.formatStreakText(count)}`);
+            badge.setAttribute("aria-label", Core.formatStreakText(count));
+        });
+        const dueCount = Core.getReviewStats(state, today, wordsList).dueToday || 0;
+        dueBadges.forEach(badge => {
+            const countEl = badge.querySelector(".due-count");
+            if (countEl) countEl.textContent = String(dueCount);
+            badge.setAttribute("aria-label", `المراجعات المستحقة اليوم: ${dueCount} كلمات`);
+            if (dueCount > 0) badge.classList.add("has-due", "pulse");
+            else badge.classList.remove("has-due", "pulse");
+        });
     }
+    refreshLearningBadges();
+    if (typeof window.addEventListener === "function") {
+        window.addEventListener("storage", event => {
+            if (event.storageArea && event.storageArea !== localStorage) return;
+            if (event.key === "arabic_words_state" || event.key === null) refreshLearningBadges();
+        });
+    }
+    dueBadges.forEach(badge => {
+        badge.addEventListener("click", () => {
+            window.location.href = "word.html?action=practice";
+        });
+    });
 
     // Hero countdown to tomorrow's word
     const heroCountdown = document.getElementById("hero-countdown");
@@ -115,14 +112,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         menu.querySelectorAll("a[href]").forEach(link => {
             link.addEventListener("click", () => setMenuOpen(false));
-        });
-    }
-
-    const btnClosePractice = document.getElementById("btn-close-practice");
-    const practiceDialog = document.getElementById("practice-dialog");
-    if (btnClosePractice && practiceDialog) {
-        btnClosePractice.addEventListener("click", () => {
-            if (typeof practiceDialog.close === "function") practiceDialog.close();
         });
     }
 

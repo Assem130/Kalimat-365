@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (foundWord.id === todayWord.id && !queryDateKey) {
                 renderTodayWord();
             } else {
-                if (!appState.history[foundWord.id]) {
+                if (refreshStateForMutation() && !appState.history[foundWord.id]) {
                     appState.history[foundWord.id] = { firstSeen: archiveDateKey };
                     saveState();
                 }
@@ -170,14 +170,44 @@ function loadState() {
         const stored = Core.inspectStoredState(JSON.parse(raw || "null"), VALID_WORD_IDS, fallbackDate);
         appState = stored.state;
         persistenceBlocked = !stored.canPersist;
+        stateNeedsPersistence = !persistenceBlocked && (raw === null || JSON.stringify(appState) !== raw);
         if (persistenceBlocked) document.getElementById("storage-warning").hidden = false;
-        else stateNeedsPersistence = raw === null || JSON.stringify(appState) !== raw;
     } catch {
         appState = (Core && typeof Core.createDefaultState === "function") ? Core.createDefaultState() : { version: 2, schemaVersion: 2, srs: {}, history: {}, favorites: {}, preferences: {} };
         persistenceBlocked = true;
         stateNeedsPersistence = false;
         document.getElementById("storage-warning").hidden = false;
     }
+}
+
+// Reread immediately before each synchronous mutation. Storage events alone can
+// arrive late in background tabs. This protects interleaved edits, but does not
+// make localStorage read-modify-write atomic for simultaneous writers.
+function refreshStateForMutation() {
+    loadState();
+    return !persistenceBlocked;
+}
+
+function refreshLearningIndicators() {
+    if (currentWord) {
+        renderWord(currentWord, activeArchiveDateKey);
+    } else {
+        updateFavoriteButton(currentWord);
+        updateAudioControlsUI();
+        updateHistoryUI();
+        updateStreakUI();
+        updateDueReviewBadge();
+    }
+}
+
+if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    window.addEventListener("storage", event => {
+        if (event.storageArea && event.storageArea !== localStorage) return;
+        if (event.key !== STORAGE_KEY && event.key !== null) return;
+        loadState();
+        // Rendering the current word does not enroll today's word or save state.
+        refreshLearningIndicators();
+    });
 }
 
 function saveState() {
@@ -187,6 +217,9 @@ function saveState() {
         reviewStatsCache = null;
         return true;
     } catch {
+        // Discard the candidate so failed favorites/preferences/imports cannot
+        // leak into a later successful save. Keep the warning visible.
+        loadState();
         document.getElementById("storage-warning").hidden = false;
         return false;
     }
@@ -210,6 +243,7 @@ function getCachedReviewStats() {
 function determineTodayWord(now = new Date()) {
     const dateKey = Core.getLocalDateKey(now);
     const word = WORDS_DB[Core.getDailyWordIndex(dateKey, WORDS_DB.length)];
+    if (!refreshStateForMutation()) return word;
     let changed = false;
     if (!appState.history) appState.history = {};
     if (!appState.history[word.id]) {
@@ -310,6 +344,7 @@ function renderRelatedWords(word) {
         pill.append(wordSpan, " ", badgeSpan);
         pill.title = `استعرض «${relWord.word}» (${relWord.meaning})`;
         pill.addEventListener("click", () => {
+            if (!refreshStateForMutation()) return;
             if (!appState.history[relWord.id]) {
                 appState.history[relWord.id] = { firstSeen: activeDateKey || Core.getLocalDateKey(new Date()) };
                 saveState();
@@ -380,17 +415,16 @@ function updateFavoriteButton(word) {
 }
 
 function toggleFavorite() {
-    if (!currentWord) return;
+    if (!currentWord || !refreshStateForMutation()) return;
     if (!appState.favorites) appState.favorites = {};
     const isFav = Boolean(appState.favorites[currentWord.id]);
     if (isFav) {
         delete appState.favorites[currentWord.id];
-        showToast("تمت الإزالة من المفضلة.");
     } else {
         appState.favorites[currentWord.id] = true;
-        showToast("تمت الإضافة إلى المفضلة ⭐");
     }
-    saveState();
+    const saved = saveState();
+    showToast(saved ? (isFav ? "تمت الإزالة من المفضلة." : "تمت الإضافة إلى المفضلة ⭐") : "تعذّر حفظ التغيير. حاول مجددًا.");
     updateFavoriteButton(currentWord);
     updateHistoryUI();
 }
@@ -665,6 +699,7 @@ function setupSpeech() {
 
     if (btnAudioSpeed) {
         btnAudioSpeed.addEventListener("click", () => {
+            if (!refreshStateForMutation()) return;
             const speeds = [0.70, 0.85, 1.0];
             const currentSpeed = appState.preferences.speechRate || 0.85;
             const nextIdx = (speeds.indexOf(currentSpeed) + 1) % speeds.length;
@@ -678,6 +713,7 @@ function setupSpeech() {
 
     if (btnAudioRepeat) {
         btnAudioRepeat.addEventListener("click", () => {
+            if (!refreshStateForMutation()) return;
             const currentRep = appState.preferences.speechRepeat || 1;
             appState.preferences.speechRepeat = currentRep === 1 ? 3 : 1;
             saveState();
@@ -1192,12 +1228,18 @@ async function importHistory(file) {
     try {
         if (file.size > MAX_BACKUP_BYTES) throw new Error("Backup file is too large.");
         const incoming = Core.parseBackup(await file.text(), VALID_WORD_IDS);
+        // file.text() yields to other tabs, so refresh only after it completes.
+        if (!refreshStateForMutation()) {
+            showToast("تعذّر دمج المخزون. أعد ضبط التخزين التالف أولاً.");
+            return;
+        }
         appState = Core.mergeStates(appState, incoming, VALID_WORD_IDS);
-        persistenceBlocked = false;
         const saved = saveState();
         updateHistoryUI();
         updateStreakUI();
-        showToast(saved ? "تم دمج المخزون بنجاح." : "تم دمج المخزون لهذه الجلسة، لكن تعذّر حفظه.");
+        updateDueReviewBadge();
+        updateFavoriteButton(currentWord);
+        showToast(saved ? "تم دمج المخزون بنجاح." : "تعذّر حفظ المخزون. حاول مجددًا.");
     } catch (error) {
         showToast(error.message === "Unsupported backup version."
             ? "إصدار ملف المخزون غير مدعوم."
@@ -1472,6 +1514,7 @@ function setupEventListeners() {
         }
     });
     btnToggleEnglish.addEventListener("click", () => {
+        if (!refreshStateForMutation()) return;
         appState.preferences.showEnglish = !appState.preferences.showEnglish;
         saveState();
         renderWord(currentWord, activeArchiveDateKey);
@@ -1523,13 +1566,16 @@ function setupEventListeners() {
         btnResetStorage.addEventListener("click", () => {
             try {
                 localStorage.removeItem(STORAGE_KEY);
-            } catch {}
+            } catch {
+                document.getElementById("storage-warning").hidden = false;
+                return;
+            }
             const recovered = Core.resetCorruptedStorage
                 ? Core.resetCorruptedStorage()
                 : { state: Core.createDefaultState(), canPersist: true };
             appState = recovered.state;
             persistenceBlocked = !recovered.canPersist;
-            saveState();
+            if (!saveState()) return;
             const warningEl = document.getElementById("storage-warning");
             if (warningEl) warningEl.hidden = true;
             updateHistoryUI();
@@ -1571,6 +1617,7 @@ function startSpacedRepetitionReview(limitOverride = null, mode = "due") {
     stopSpeech();
     if (!practiceDialog || !practiceBody) return;
 
+    loadState();
     practiceDialogInvoker = document.activeElement;
     const todayKey = activeDateKey || (Core ? Core.getLocalDateKey(new Date()) : "");
     activeReviewMode = mode === "all" ? "all" : "due";
@@ -1621,10 +1668,6 @@ function startSpacedRepetitionReview(limitOverride = null, mode = "due") {
     announceAudioStatus(`بدأت جلسة المراجعة. متبقي ${activeReviewQueue.length} بطاقات مستحقة. اضغط مسافة لكشف البطاقة.`);
     if (typeof practiceDialog.showModal === "function") practiceDialog.showModal();
     renderFlashcardStep();
-}
-
-function startPracticeQuiz() {
-    startSpacedRepetitionReview();
 }
 
 function renderEmptyReviewQueue() {
@@ -1978,6 +2021,14 @@ function handleRatingSubmission(rating) {
     const currentItem = activeReviewQueue[activeReviewIndex];
     if (!currentItem || !currentItem.word) return;
 
+    if (!refreshStateForMutation()) return;
+    // A card queued before another tab cleared/replaced learning must not
+    // reenroll its deleted word. Refresh the queue instead of submitting it.
+    if (!appState.history[currentItem.word.id]) {
+        startSpacedRepetitionReview(null, activeReviewMode);
+        updateDueReviewBadge();
+        return;
+    }
     const todayKey = activeDateKey || (Core ? Core.getLocalDateKey(new Date()) : "");
     const previousState = appState;
     let candidateState;
@@ -2201,7 +2252,13 @@ function clearLearningData() {
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(REMINDER_KEY);
         localStorage.removeItem(ONBOARDED_KEY);
-    } catch {}
+    } catch {
+        loadState();
+        document.getElementById("storage-warning").hidden = false;
+        showToast("تعذّر مسح المخزون. حاول مجددًا.");
+        return;
+    }
+    loadState();
     if (window.location && typeof window.location.reload === "function") window.location.reload();
 }
 
