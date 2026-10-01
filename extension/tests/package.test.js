@@ -148,7 +148,14 @@ function assertNoUnsafePayload(browser) {
     assert.equal(forbiddenPath.test(relative), false, `${browser}/${relative} is development-only`);
   }
   for (const { relative, text } of files) {
-    const urls = text.match(remoteUrlRegex) || [];
+    let urlScanText = text;
+    if (relative === "data/vocabulary.json") {
+      const { validateVocabulary } = require("../shared/vocabulary.js");
+      // Exempt only the validated source field, never URLs elsewhere in a record.
+      urlScanText = JSON.stringify(validateVocabulary(JSON.parse(text)).map((record) =>
+        record.exampleSource ? { ...record, exampleSource: { ...record.exampleSource, url: "" } } : record));
+    }
+    const urls = urlScanText.match(remoteUrlRegex) || [];
     for (const url of urls) {
       const isAllowed =
         (relative === "manifest.json" && browser === "chrome" && allowedRemoteUrl.test(url)) ||
@@ -213,7 +220,8 @@ test("privacy document states local learning storage, online-query scope, analyt
   assert.match(privacy, /Wikimedia servers|ar\.wiktionary\.org/i);
   assert.match(privacy, /unreviewed/i);
   assert.match(privacy, /cannot be saved/i);
-  assert.match(privacy, /Firefox remains local-only/i);
+  assert.match(privacy, /Firefox dictionary lookup is local/i);
+  assert.match(privacy, /opt.in remote browser speech/i);
   assert.doesNotMatch(privacy, /No backend or server receives your data/i);
   assert.match(privacy, /no (?:analytics|tracking)|without (?:analytics|tracking)/i);
   assert.match(privacy, /optional reminder|reminder.{0,24}optional/i);
@@ -414,4 +422,23 @@ test("packager rejects invalid manifests, Firefox disclosures, and over-budget p
       assert.equal(fs.readFileSync(path.join(copy, "dist/chrome/sentinel"), "utf8"), "keep");
     });
   }
+});
+
+
+test("vocabulary source URL exception preserves the outbound URL guard", () => {
+  ensurePackages();
+  const file = path.join(distRoot, "chrome/data/vocabulary.json");
+  const original = fs.readFileSync(file);
+  try {
+    const records = JSON.parse(original);
+    const source = records.find((record) => record.exampleSource);
+    assert.ok(source);
+    source.meaningEn = source.exampleSource.url;
+    fs.writeFileSync(file, JSON.stringify(records));
+    assert.throws(() => assertNoUnsafePayload("chrome"), /unauthorized remote URL/);
+    records.splice(0, records.length, ...JSON.parse(original));
+    records.find((record) => record.exampleSource).exampleSource.url = "https://user:pass@example.org/";
+    fs.writeFileSync(file, JSON.stringify(records));
+    assert.throws(() => assertNoUnsafePayload("chrome"), /exampleSource.url/);
+  } finally { fs.writeFileSync(file, original); }
 });

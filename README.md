@@ -1,78 +1,27 @@
-<p align="center">
-  <img src="assets/readme-hero.svg" alt="كَلِمات" width="720">
-</p>
+# كَلِمات · Kalimat
 
-<h1 align="center" dir="rtl">كَلِمات</h1>
+كلمة عربية واحدة كل يوم، بمعناها وسياقها، لمن يتحدث العربية ويحب اكتشافها.
 
-<p align="center" dir="rtl">كلمة عربية فصيحة واحدة كل يوم: اسمعها، افهم معناها، وراجعها حتى تثبت.</p>
+Kalimat is Arabic-first enrichment for people who already speak Arabic. The extension offers one daily encounter; Atlas supports deeper exploration, voluntary recall and settings. English is optional. Literary and uncommon words are welcome on editorial merit.
 
-<p align="center">
-  <a href="https://assem130.github.io/Kalimat-365/">الموقع</a>
-  ·
-  <a href="https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe">متجر كروم</a>
-  ·
-  <a href="https://assem130.github.io/Kalimat-365/privacy.html">الخصوصية</a>
-</p>
+## Install and test the extension
 
-<p align="center">
-  <a href="https://github.com/Assem130/Kalimat-365/actions/workflows/verify.yml?query=branch%3Amain"><img src="https://github.com/Assem130/Kalimat-365/actions/workflows/verify.yml/badge.svg?branch=main" alt="Verify Kalimat on main"></a>
-</p>
+The first milestone is a **source candidate**. Run `python3 verify.py`, then follow [local Chrome/Firefox installation and packaging](docs/DEVELOPMENT.md#extension-installation-and-packaging). The [Chrome Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe) is an existing public channel; its current version and contents are unverified. Prior `0.3.0` publication statements are historical repository records. [beta.2 archives](https://github.com/Assem130/Kalimat-365/releases/tag/v0.3.0-beta.2) describe that snapshot only.
 
-Kalimat is a local-first Arabic learning experience for intermediate and advanced learners: one daily word, meaning, context, browser speech, and local review from a focused **365-word corpus**.
+Manifest version `0.3.0` does not establish a new release. `Kalimat-365` is the repository slug, not a 365-day course promise. Actual popup/Atlas layout, keyboard and audio acceptance remain unverified because available automation blocks `chrome://extensions`. No current popup screenshots are claimed.
 
-## Try Kalimat
+## Privacy and help
 
-- **Website:** open [Kalimat](https://assem130.github.io/Kalimat-365/).
-- **Chrome companion:** install from the [Chrome Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe).
-- **Status:** public beta. Chrome `0.3.0` is published; Firefox store submission is postponed.
-- **Source and archives:** `main` contains ongoing work. The [beta.2 release](https://github.com/Assem130/Kalimat-365/releases/tag/v0.3.0-beta.2) contains historical `0.3.0` downloads and does not track current `main` or subsequent store updates. See [local installation and packaging](docs/DEVELOPMENT.md#extension-installation-and-packaging) for testing the current source.
+Profile data stays in browser `storage.local`; no accounts, telemetry, analytics, sync or backend are provided. Pronunciation uses a browser-reported local Arabic voice by default; optional remote speech may send text to the browser's speech provider. Chrome's explicit dictionary lookup separately requests Wiktionary permission; Firefox dictionary lookup stays local. Clear-data attempts profile deletion and reminder disabling independently and reports partial or unknown outcomes.
 
-## Website and extension
+- [Extension privacy](extension/PRIVACY.md), [candidate policy source](privacy.html) and [published policy](https://assem130.github.io/Kalimat-365/privacy.html). The local policy correction must be published alongside any approved release; deployment has not changed here.
+- [Report a bug](https://github.com/Assem130/Kalimat-365/issues/new?template=bug-report.yml) or [get help](https://github.com/Assem130/Kalimat-365/issues).
+- [Product context](CONTEXT.md), [documentation](docs/README.md) and [contributing](CONTRIBUTING.md).
 
-These are separate local experiences. They do not sync.
+## Existing website
 
-| | Website | Chrome / Firefox extension |
-| --- | --- | --- |
-| Daily word | Universal, date-based selection | Personalized by challenge level and interests |
-| Explore and review | Full lexicon and local spaced review | Atlas and the same review policy |
-| Reminder | Opt-in notification while a Kalimat tab is open | Separate opt-in browser alarms and notifications |
-| Learning data | Browser `localStorage` | Browser `storage.local` |
-
-No account, backend, telemetry, analytics, points, competitive rewards, or vocabulary expansion. Reading streaks remain available. Kalimat is not a beginner course.
-
-## Screenshots
-
-<table>
-  <tr>
-    <td align="center"><img src="docs/store/screenshots/01-daily-word.png" alt="Website daily word with meaning, context, and speech control" width="260"><br><strong>Daily word</strong><br>Website meaning, context, and pronunciation.</td>
-    <td align="center"><img src="docs/store/screenshots/02-review.png" alt="Website review dialog with recall controls" width="260"><br><strong>Local review</strong><br>Website recall and review controls.</td>
-    <td align="center"><img src="docs/store/screenshots/03-atlas.png" alt="Extension daily word in Atlas" width="260"><br><strong>Atlas</strong><br>Extension daily word in Atlas.</td>
-  </tr>
-</table>
-
-## Privacy
-
-Learning data stays on-device until you delete it. Both surfaces offer JSON export and deletion. Website fonts are bundled locally.
-
-Chrome can make an explicit, read-only Arabic Wiktionary lookup when you submit a search, sending only the normalized term. Firefox stays local-only. Read the [website privacy policy](https://assem130.github.io/Kalimat-365/privacy.html) and [extension privacy details](extension/PRIVACY.md).
-
-## Development and documentation
-
-Run the website locally with Python 3:
-
-```sh
-git clone https://github.com/Assem130/Kalimat-365.git
-cd Kalimat-365
-python3 server.py
-```
-
-Open <http://localhost:8000/>. On Windows, use `python` instead of `python3`.
-
-- [Development guide](docs/DEVELOPMENT.md): verification, local extension installation, packaging, corpus maintenance, and project map.
-- [Documentation index](docs/README.md): product context, privacy, store material, beta study, and historical release notes.
-- [Contributing](CONTRIBUTING.md): focused bug reports and pull requests.
-- [Report a bug](https://github.com/Assem130/Kalimat-365/issues/new?template=bug-report.yml).
+The [website](https://assem130.github.io/Kalimat-365/) retains its word, home, permalink and offline experience. To run locally, use `python3 server.py` and open <http://localhost:8000/> (`python` on Windows). Website data uses separate `localStorage`; website and extension JSON formats do not automatically migrate. The [website transition proposal](docs/WEBSITE-TRANSITION.md) describes a future support site and preservation plan; it is not implemented.
 
 ## License status
 
-This repository does not include a source-code license. The bundled Amiri and Outfit fonts have their own [website font license](assets/fonts/OFL.txt) and [extension font license](extension/assets/fonts/OFL.txt); those licenses cover the fonts.
+This repository has no source-code license. Bundled fonts have their own [website](assets/fonts/OFL.txt) and [extension](extension/assets/fonts/OFL.txt) licenses, which cover the fonts.

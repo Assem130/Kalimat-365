@@ -124,11 +124,13 @@ test("Corpus Suite — 365-Day Classical Arabic Vocabulary Invariants", async (t
         assert.equal(5 * 31 + 7 * 30, 365, "5*31 + 7*30 must equal 365");
     });
 
-    await t.test("6. Literary Citations & Audio Extraction Invariants", () => {
+    await t.test("6. Example Provenance & Audio Extraction Invariants", () => {
+        const metadata = require("../extension/data/vocabulary-metadata.json");
+        const originals = new Set(metadata.filter((record) => record.exampleKind === "original").map((record) => record.sourceId));
         for (const w of words) {
-            // Example quote must have valid literary attribution
+            // Historical quotations retain attribution; declared original examples need none.
             const hasAttribution = /[—–―‒]/.test(w.example) || /﴿[^﴾]+﴾/.test(w.example) || /«[^»]+»/.test(w.example);
-            assert.ok(hasAttribution, `Word #${w.id} example quote must have an attribution dash or scripture brackets: '${w.example}'`);
+            assert.ok(originals.has(w.id) || hasAttribution, `Word #${w.id} example quote must have an attribution dash or scripture brackets: '${w.example}'`);
 
             // Audio extractor must produce clean spoken text
             const spoken = Core.extractSpokenText(w.example);

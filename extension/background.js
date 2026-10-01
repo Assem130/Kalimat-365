@@ -481,7 +481,7 @@ function handleMessage(message) {
       const updatedProfile = dependencies.state.recordReview(loaded.profile, targetId, message.rating, dateKey, vocabulary);
       const alreadyApplied = sameProfile(updatedProfile, loaded.profile);
       const warningResult = alreadyApplied
-        ? false
+        ? loaded.warning === true
         : (loaded.recoveryRaw !== undefined ? await saveProfile(updatedProfile) : await persistProfile(updatedProfile, loaded));
       if (warningResult) throw new Error("Review was not persisted.");
       await updateBadge(updatedProfile, vocabulary);
@@ -537,9 +537,10 @@ function handleMessage(message) {
       return { wordId, saved: profile.wordStates[String(wordId)]?.saved === true };
     });
     if (message.type === "settings.update") return updateProfile((profile, vocabulary) => {
-      if (!exactMessage(message, new Set(["type", "level", "interests", "showEnglish", "speechRate", "speechRepeat"])) || (message.showEnglish !== undefined && typeof message.showEnglish !== "boolean")) throw new TypeError("Invalid settings.");
+      if (!exactMessage(message, new Set(["type", "level", "interests", "showEnglish", "speechRate", "speechRepeat", "allowRemoteSpeech"])) || (message.showEnglish !== undefined && typeof message.showEnglish !== "boolean")) throw new TypeError("Invalid settings.");
       const showEnglish = message.showEnglish ?? profile.preferences.showEnglish ?? profile.showEnglish;
       const preferences = { ...profile.preferences, showEnglish };
+      if (message.allowRemoteSpeech !== undefined) preferences.allowRemoteSpeech = message.allowRemoteSpeech;
       if (message.speechRate !== undefined) preferences.speechRate = message.speechRate;
       if (message.speechRepeat !== undefined) preferences.speechRepeat = message.speechRepeat;
       const candidate = {
@@ -573,11 +574,12 @@ function handleMessage(message) {
       const profile = dependencies.state.createProfile({ seedHex: randomSeed() });
       const profileWarning = loaded.recoveryRaw !== undefined ? await saveProfile(profile) : await persistProfile(profile, loaded);
       let reminderWarning = false;
-      let reminderTime = DEFAULT_REMINDER.time;
-      try { reminderTime = (await readReminder()).time; } catch (_) { reminderWarning = true; }
-      const reminder = await disableReminder(reminderTime);
-      reminderWarning ||= reminder.storageWarning === true;
-      return warning({ kind: "ok", reminderWarning }, profileWarning || reminderWarning);
+      let currentReminder = null;
+      try { currentReminder = await readReminder(); } catch (_) { reminderWarning = true; }
+      // An unreadable snapshot cannot establish a disabled outcome. Leave it untouched.
+      const reminder = currentReminder ? await disableReminder(currentReminder.time, currentReminder) : null;
+      reminderWarning ||= reminder?.storageWarning === true;
+      return warning({ kind: "ok", profilePersisted: !profileWarning, reminder: reminder ? { enabled: reminder.enabled, time: reminder.time } : null, reminderWarning }, profileWarning || reminderWarning);
     }
     if (message.type === "reminder.configure") return configureReminder(message);
     if (message.type === "online.lookup") {

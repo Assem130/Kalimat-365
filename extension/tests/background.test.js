@@ -314,7 +314,7 @@ test("an existing assignment survives feedback and settings changes", async () =
     await background.handleMessage({ type: "word.feedback", dateKey: "2026-07-30", wordId: "w1", status: "known" });
     await background.handleMessage({ type: "settings.update", level: 2, interests: ["travel"] });
     await withLocalDay("2026-07-30", async () => {
-      assert.deepEqual(await background.handleMessage({ type: "assignment.get" }), { kind: "assigned", wordId: "w1", dateKey: "2026-07-30", word: word("w1"), status: "known" });
+      assert.deepEqual(await background.handleMessage({ type: "assignment.get" }), { kind: "assigned", wordId: "w1", dateKey: "2026-07-30", word: word("w1"), status: "known", showEnglish: false });
     });
   });
 });
@@ -339,7 +339,7 @@ test("read-only messages reject unknown fields", async () => {
 test("Atlas can read a retained date without creating an assignment for another day", async () => {
   const existing = profile({ assignments: { "2026-07-28": { wordId: "w2" } }, assignmentOrdinal: 1 });
   await withBackground({ profile: existing }, async ({ background, values }) => {
-    assert.deepEqual(await background.handleMessage({ type: "assignment.get", dateKey: "2026-07-28" }), { kind: "assigned", wordId: "w2", dateKey: "2026-07-28", word: word("w2") });
+    assert.deepEqual(await background.handleMessage({ type: "assignment.get", dateKey: "2026-07-28" }), { kind: "assigned", wordId: "w2", dateKey: "2026-07-28", word: word("w2"), showEnglish: false });
     assert.deepEqual(await background.handleMessage({ type: "assignment.get", dateKey: "2026-07-29" }), { kind: "no-new-word", dateKey: "2026-07-29" });
     assert.deepEqual(values["kalimat.profile"].assignments, existing.assignments);
   });
@@ -413,15 +413,18 @@ test("settings update persists valid speech preferences and rejects invalid fiel
   });
 });
 
-test("legacy stored profile missing showEnglish is persisted with the safe default", async () => {
-  const legacy = profile({ assignments: { "2026-07-30": { wordId: "w1" } }, assignmentOrdinal: 1 });
-  delete legacy.showEnglish;
-  await withBackground({ profile: legacy }, async ({ background, values }) => {
-    await withLocalDay("2026-07-30", async () => background.handleMessage({ type: "assignment.get" }));
-    assert.equal(values["kalimat.profile"].showEnglish, true);
-  });
+test("legacy stored profile missing top-level English flag retains explicit preferences", async () => {
+  for (const showEnglish of [false, true]) {
+    const legacy = profile({ assignments: { "2026-07-30": { wordId: "w1" } }, assignmentOrdinal: 1 });
+    legacy.preferences.showEnglish = showEnglish;
+    delete legacy.showEnglish;
+    await withBackground({ profile: legacy }, async ({ background, values }) => {
+      await withLocalDay("2026-07-30", async () => background.handleMessage({ type: "assignment.get" }));
+      assert.equal(values["kalimat.profile"].showEnglish, showEnglish);
+      assert.equal(values["kalimat.profile"].preferences.showEnglish, showEnglish);
+    });
+  }
 });
-
 test("assignment response restores validated feedback, save, and English visibility", async () => {
   const existing = profile({
     showEnglish: false,
@@ -767,7 +770,7 @@ test("a new valid-date assignment prunes 5,001 records while lifetime cadence co
   const existing = profile({ assignments, assignmentOrdinal: 5004 });
   await withBackground({ profile: existing, vocabulary: [word("interest"), word("outside", { topics: ["food"], usefulnessBand: "low" })] }, async ({ background, values }) => {
     await withLocalDay("2026-07-30", async () => {
-      assert.deepEqual(await background.handleMessage({ type: "assignment.get" }), { kind: "assigned", wordId: "outside", dateKey: "2026-07-30", word: word("outside", { topics: ["food"], usefulnessBand: "low" }) });
+      assert.deepEqual(await background.handleMessage({ type: "assignment.get" }), { kind: "assigned", wordId: "outside", dateKey: "2026-07-30", word: word("outside", { topics: ["food"], usefulnessBand: "low" }), showEnglish: false });
     });
     assert.equal(Object.keys(values["kalimat.profile"].assignments).length, 5000);
     assert.equal(values["kalimat.profile"].assignmentOrdinal, 5005);
@@ -991,3 +994,72 @@ for (const mutation of ["clear", "replacement import"]) {
     });
   });
 }
+
+
+test("repeated failed review writes never become durable success", async () => {
+  const fixture = loadBackground({ profile: profile() });
+  try {
+    const assigned = await fixture.background.handleMessage({ type: "assignment.get" });
+    await fixture.background.handleMessage({ type: "word.feedback", wordId: assigned.wordId, dateKey: assigned.dateKey, status: "known" });
+    const count = fixture.values["kalimat.profile"].srs[assigned.wordId].reviewCount;
+    const set = fixture.extension.storage.local.set;
+    fixture.extension.storage.local.set = async () => { throw new Error("write rejected"); };
+    const message = { type: "word.review", wordId: assigned.wordId, dateKey: assigned.dateKey, rating: "good" };
+    await assert.rejects(fixture.background.handleMessage(message), /not persisted/);
+    await assert.rejects(fixture.background.handleMessage(message), /not persisted/);
+    assert.equal(fixture.values["kalimat.profile"].srs[assigned.wordId].reviewCount, count);
+    fixture.extension.storage.local.set = set;
+    const recovered = await fixture.background.handleMessage(message);
+    assert.equal(recovered.storageWarning, false);
+    assert.equal(recovered.srs.reviewCount, count + 1);
+    assert.equal((await fixture.background.handleMessage(message)).srs.reviewCount, count + 1);
+  } finally { fixture.restore(); }
+});
+
+
+test("remote speech consent validates and survives settings export import", async () => {
+  await withBackground({ profile: profile() }, async ({ background, values }) => {
+    assert.equal(JSON.parse((await background.handleMessage({ type: "state.export" })).text).preferences.allowRemoteSpeech, false);
+    await assert.rejects(background.handleMessage({ type: "settings.update", allowRemoteSpeech: "true" }), /Invalid settings/);
+    await background.handleMessage({ type: "settings.update", allowRemoteSpeech: true });
+    const exported = await background.handleMessage({ type: "state.export" });
+    await background.handleMessage({ type: "settings.update", allowRemoteSpeech: false });
+    await background.handleMessage({ type: "state.import", text: exported.text });
+    assert.equal(values["kalimat.profile"].preferences.allowRemoteSpeech, true);
+  });
+});
+
+test("clear reports profile persistence separately and returns actual reminder", async () => {
+  await withBackground({ profile: profile(), reminder: { enabled: true, time: "10:30" }, alarmClearFailures: 1 }, async ({ background }) => {
+    const result = await background.handleMessage({ type: "state.clear" });
+    assert.equal(result.profilePersisted, true);
+    assert.equal(result.reminderWarning, true);
+    assert.equal(result.storageWarning, true);
+    assert.deepEqual(result.reminder, { enabled: true, time: "10:30" });
+  });
+});
+
+
+test("clear returns unknown reminder when its snapshot cannot be read without disabling an active alarm", async () => {
+  await withBackground({ profile: profile(), reminder: { enabled: true, time: "10:30" }, alarm: { name: "kalimat.reminder", scheduledTime: Date.now() + 60000 } }, async ({ background, extension, values, calls, alarms }) => {
+    await background.ensureReminder();
+    const clearsBefore = calls.clear;
+    const alarmBefore = alarms.get("kalimat.reminder");
+    const get = extension.storage.local.get;
+    let reads = 0;
+    extension.storage.local.get = async (key) => {
+      if (key === "kalimat.reminder") { reads++; throw new Error("reminder unreadable"); }
+      return get(key);
+    };
+    const result = await background.handleMessage({ type: "state.clear" });
+    assert.equal(result.profilePersisted, true);
+    assert.equal(result.reminder, null);
+    assert.equal(result.reminderWarning, true);
+    assert.equal(result.storageWarning, true);
+    assert.equal(reads, 1);
+    assert.equal(calls.clear, clearsBefore);
+    assert.equal(alarms.get("kalimat.reminder"), alarmBefore);
+    assert.equal(values["kalimat.reminder"].enabled, true);
+    assert.equal(Object.keys(values["kalimat.profile"].assignments).length, 0);
+  });
+});

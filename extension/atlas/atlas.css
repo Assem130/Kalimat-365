@@ -308,7 +308,7 @@ nav button[aria-pressed="true"] {
   font-family: var(--serif);
   font-size: clamp(2.2rem, 9vw, 4.8rem);
   margin: 0 0 12px;
-  line-height: 1.1;
+  line-height: 1.65;
 }
 
 .word-card p {
@@ -698,3 +698,6 @@ hr {
     outline: 3px solid Highlight;
   }
 }
+
+.word-card .english, .word-card .pronunciation { unicode-bidi: isolate; }
+.word-card summary { min-height: 44px; cursor: pointer; padding: 8px 0; }

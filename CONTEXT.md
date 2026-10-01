@@ -1,40 +1,29 @@
 # Kalimat product context
 
-Kalimat (كَلِمات) is a no-build, vanilla HTML/CSS/JavaScript Arabic learning experience for self-identified intermediate-and-advanced learners. It is a public beta, not a beginner course and not an unlimited vocabulary product.
+This is the authoritative direction for the first milestone candidate. Kalimat (كَلِمات) is Arabic-first enrichment for people who already speak Arabic: one excellent daily encounter with a word, its meaning and a useful context. English is optional, secondary support. Literary and uncommon words belong when their meaning, context and editorial merit justify the encounter.
 
 ## Product boundary
 
-- The website assigns one universal, date-based daily word, exposes the 365-word lexicon, uses browser speech, schedules local review, and offers an opt-in browser notification reminder while a Kalimat tab is open.
-- The Chrome and Firefox MV3 extension is an optional personalized companion with challenge level, interests, its own alarms/notifications reminder setting, Atlas exploration, and the shared review policy.
-- Website and extension assignments, reviews, and learner data remain separate. There is no account, sync, backend, telemetry, analytics, points, competitive rewards, or corpus expansion. Reading streaks remain available.
+- The Chrome/Firefox MV3 extension is the primary product. Its popup presents the daily encounter, optional pronunciation, saving and a route to Atlas. It does not require an initial setup detour.
+- Atlas provides deeper exploration, voluntary recall practice and administration: preferences, reminders, export, import and deletion.
+- The legacy level field remains only for stored-schema compatibility and no longer gates or ranks daily selection. Optional Atlas interests still influence selection. Neither is a proficiency measurement. Reading history, saving, feedback and recall are observations, not proof of learning or mastery.
+- The existing website remains available with its universal date-based word, lexicon, permalinks, browser speech, local review and reminder. Its runtime is frozen for this milestone. The [supporting website proposal](docs/WEBSITE-TRANSITION.md) requires separate approval.
+- No accounts, sync, backend, telemetry, analytics, corpus expansion, points, competitive rewards or new learning machinery. Reading streaks remain only in the frozen legacy website and stored compatibility data; the extension does not display them. No proficiency gates or inferred-learning claims.
 
-## Storage and privacy contracts
+## Storage and privacy
 
-- Website learning state is in `localStorage` under `arabic_words_state`; website clear-data removes learning state, onboarding (`kalimat_onboarded`), and reminder settings (`kalimat_reminder`) while preserving the separate `kalimat_theme` preference.
-- Extension learner state is in browser `storage.local` and is never merged with website state.
-- Both surfaces provide JSON export and explicit deletion controls. Data is retained locally until the learner deletes it.
-- The website uses self-hosted local WOFF2 assets and makes no external font request. Chrome may send only an explicitly submitted, normalized dictionary term to Arabic Wiktionary; Firefox remains local-only.
+Website state is separately stored in `localStorage` under `arabic_words_state`; website clear-data removes that state, onboarding (`kalimat_onboarded`) and reminders (`kalimat_reminder`), retaining `kalimat_theme`. Extension profile and reminder state use browser `storage.local`. They do not sync or automatically migrate. The JSON formats are distinct; Atlas imports extension JSON only.
 
-## Runtime seams
+Both surfaces provide export and deletion controls. Extension clear-data attempts profile deletion and reminder disabling independently. It reports temporary, partial or unknown results when persistence or reminder state cannot be confirmed; profile deletion can succeed while reminders remain enabled or unreadable.
 
-- `app-core.js` owns deterministic date selection, state migration, and review-policy adapters.
-- `app.js` owns the word permalink; `revamp.js` owns the home/lexicon surface; `web-ui.js` contains shared website UI helpers.
-- `extension/shared/review-policy.js` and `extension/shared/speech.js` are shared by the website and extension adapters.
-- `sw.js` precaches the same-origin app shell, including the hosted privacy page; local WOFF2 assets are served from the app origin with no Google Fonts request.
-- `extension/tools/package.py` emits the version `0.3.0` Chrome and Firefox archives from the validated runtime allowlist using Python 3 standard library ZIP tooling. `verify.py` runs the same fail-fast checks on Linux and Windows.
-- `extension/tools/convert-vocabulary.js --check` compares the derived vocabulary against the canonical corpus and reviewed metadata without writing; omit `--check` only for intentional regeneration and review the diff.
+Extension speech selects a browser-reported local Arabic voice by default. Informed remote-speech opt-in in Atlas may send spoken text to the browser's speech provider on either browser. Website speech retains browser/OS-dependent behavior. Chrome dictionary lookup is separately gated by explicit submission and optional Wiktionary permission; Firefox dictionary lookup is local. See [extension privacy](extension/PRIVACY.md) and the [candidate policy source](privacy.html). Publish the corrected policy alongside any approved release; the deployed policy has not been updated by this milestone.
 
-## Beta protocol and gates
+## Runtime and distribution facts
 
-Recruit 12–18 self-identified intermediate/advanced Arabic learners. Collect only participant-provided check-in notes; do not add telemetry or infer proficiency from usage.
+The app uses vanilla HTML/CSS/JavaScript. `app-core.js`, `app.js`, `revamp.js`, `web-ui.js` and `sw.js` retain the website runtime. Shared review and speech adapters remain compatible with website callers. `words.js` is the canonical 365-entry set; stable IDs and separate stores are preserved. See [editorial scope and provenance](docs/EDITORIAL.md).
 
-Check in on days 0, 7, 14, and 21. Record baseline exposure and an unseen-sentence comprehension check; at later check-ins, ask learners to export their existing data and report days used, context usefulness, and difficulty fit.
+`Kalimat-365` is the repository slug, not a promise of a 365-day course. Manifest version `0.3.0` and package names are compatibility/distribution facts, not a new release. The Chrome Web Store link is an existing channel; historical publication records do not establish its current contents. A read-only store lookup was inaccessible, so deployed version and listing remain unverified. The earlier [beta protocol](docs/beta/2026-08-10-kalimat-21-day-beta.md) is historical and does not govern current direction.
 
-Promote to 1.0 only when all four gates hold:
+## Candidate verification boundary
 
-1. At least half of participants report using Kalimat on 12 of 21 days or more.
-2. Each learner band has at least two consistent users.
-3. Median practical-context usefulness is at least 4/5.
-4. Day-21 unseen-sentence comprehension reaches at least 70%.
-
-If the gate fails, revise content or positioning before adding words, surfaces, telemetry, or new review behavior.
+Source tests and package checks can verify contracts, not actual extension usability. Native popup/Atlas layout, keyboard interaction and audio acceptance remain unverified: the available browser automation blocks `chrome://extensions`. Website previews and mocks do not substitute for that acceptance. Installation and manual checks are in the [development guide](docs/DEVELOPMENT.md).

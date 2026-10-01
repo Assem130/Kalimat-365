@@ -76,7 +76,8 @@ test("supplied preference fields validate while missing fields use defaults", ()
   const partial = validateStoredProfile({ ...base, preferences: { speechRate: 1.25 } }, vocabulary);
   assert.equal(partial.canPersist, true);
   assert.deepEqual(partial.profile.preferences, {
-    showEnglish: true,
+    allowRemoteSpeech: false,
+    showEnglish: false,
     speechRate: 1.25,
     speechRepeat: 1,
     dailyReviewLimit: 20,
@@ -243,8 +244,9 @@ test("legacy profiles migrate a bounded lifetime assignment ordinal without reco
   assert.equal(validateStoredProfile({ ...legacy, assignmentOrdinal: -1 }, vocabulary).canPersist, false);
 });
 
-test("legacy profiles and imports missing showEnglish migrate to Arabic-first defaults", () => {
+test("legacy profiles and imports retain explicit English preferences", () => {
   const legacy = profileWithAssignment("2026-07-30");
+  legacy.preferences.showEnglish = true;
   delete legacy.showEnglish;
   const stored = validateStoredProfile(legacy, vocabulary);
   assert.equal(stored.canPersist, true);
@@ -417,4 +419,11 @@ test("saved-only entries synchronize favorites without creating learning records
   assert.equal(unsaved.srs.w1, undefined);
   const legacy = { ...profile, wordStates: {}, favorites: { w1: true } };
   assert.equal(parseImport(JSON.stringify(legacy), vocabulary).favorites.w1, true);
+});
+
+
+test("only newly created profiles default to Arabic-first English visibility", () => {
+  assert.equal(createProfile().showEnglish, false);
+  assert.equal(createProfile().preferences.showEnglish, false);
+  assert.equal(createProfile({ showEnglish: true }).showEnglish, true);
 });

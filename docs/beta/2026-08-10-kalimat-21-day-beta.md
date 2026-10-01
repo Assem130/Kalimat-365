@@ -1,4 +1,6 @@
-# Kalimat 21-Day Public Beta Protocol
+# Historical Kalimat 21-Day Public Beta Protocol
+
+This preserves the earlier study plan, not completed results or evidence of learning. Its learner bands and promotion gates are superseded by the current [Arabic-first enrichment direction](../../CONTEXT.md) and do not govern the first milestone candidate. No cohort completion or gate passage is established here.
 
 ## Purpose
 

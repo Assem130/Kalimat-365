@@ -107,3 +107,15 @@ test("converter check accepts CRLF and detects metadata drift without rewriting 
     fs.rmSync(temporary, { recursive: true, force: true });
   }
 });
+
+
+test("converter carries only supplied metadata provenance into the runtime corpus", () => {
+  const metadata = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "extension/data/vocabulary-metadata.json"), "utf8"));
+  const byId = new Map(metadata.map((record) => [record.sourceId, record]));
+  for (const word of extensionVocabulary) {
+    for (const field of ["exampleKind", "exampleSource", "usageNote"]) {
+      assert.equal(Object.hasOwn(word, field), Object.hasOwn(byId.get(word.id), field), `${word.id}.${field} presence drift`);
+      assert.deepEqual(word[field], byId.get(word.id)[field], `${word.id}.${field} value drift`);
+    }
+  }
+});

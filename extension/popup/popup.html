@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>كلمة اليوم</title>
+  <title>كَلِمات · كلمة اليوم</title>
   <script src="../shared/theme-init.js"></script>
   <link rel="stylesheet" href="../shared/theme.css">
   <link rel="stylesheet" href="popup.css">
@@ -11,190 +11,30 @@
 <body>
   <a class="skip-link" href="#main">تجاوز إلى المحتوى</a>
   <main id="main" tabindex="-1">
-    <header class="masthead">
-      <div class="masthead-controls">
-        <select id="theme-select" aria-label="اختر السمة">
-          <option value="paper">ورقي</option>
-          <option value="emerald">زمردي</option>
-          <option value="midnight">ليلي</option>
-        </select>
-        <span id="streak-badge" class="streak-badge" title="تتابع القراءة والزيارة" aria-label="تتابع القراءة والزيارة" role="status">🔥 لا يوجد تتابع بعد</span>
-        <button id="due-review-badge" class="due-review-badge" aria-label="المراجعات المستحقة" type="button" hidden>0 مستحقة</button>
-      </div>
-      <h1>كلمة اليوم</h1>
-      <p>تعلّم كلمة فصيحة واحدة كل يوم: اسمعها، افهم معناها، وراجعها.</p>
-      <p class="local-data-note">لا حسابات؛ تبقى بيانات تعلّمك على هذا الجهاز.</p>
-      <p class="channel-boundary">الموقع والامتداد تجربتان محليتان منفصلتان؛ لا تتزامن التعيينات أو المراجعات بينهما.</p>
-      <p><a href="https://assem130.github.io/Kalimat-365/privacy.html" target="_blank" rel="noopener noreferrer">سياسة الخصوصية</a></p>
-    </header>
+    <header class="masthead"><h1>كَلِمات</h1><p>كلمة تثري تعبيرك كل يوم</p><p id="assignment-date" class="assignment-date" hidden></p></header>
     <p id="status" class="status" aria-live="polite"></p>
-    <p id="warning" class="warning" role="status" hidden>تُعرض بياناتك، لكن تعذّر حفظ آخر تغيير.</p>
-    <section id="onboarding" aria-labelledby="onboarding-title" hidden>
-      <h2 id="onboarding-title" tabindex="-1">اختر ما يناسبك</h2>
-      <fieldset class="level-set">
-        <legend>المستوى <span>(واحد فقط)</span></legend>
-        <div class="levels" role="radiogroup" aria-label="المستوى">
-          <label>
-            <span class="level-mark">١</span>
-            <input type="radio" name="level" value="1" checked>
-            <strong>أيسر</strong>
-          </label>
-          <label>
-            <span class="level-mark">٢</span>
-            <input type="radio" name="level" value="2">
-            <strong>متوازن</strong>
-          </label>
-          <label>
-            <span class="level-mark">٣</span>
-            <input type="radio" name="level" value="3">
-            <strong>أعمق</strong>
-          </label>
-        </div>
-      </fieldset>
-      <fieldset class="interests">
-        <legend>اهتماماتك <span>(حتى ثلاثة)</span></legend>
-        <p id="interest-count" aria-live="polite">0/3</p>
-        <label><input type="checkbox" name="interest" value="daily-life"> الحياة اليومية</label>
-        <label><input type="checkbox" name="interest" value="classical-arabic"> العربية الكلاسيكية</label>
-        <label><input type="checkbox" name="interest" value="language"> اللغة والأدب</label>
-        <label><input type="checkbox" name="interest" value="family"> العائلة والمجتمع</label>
-        <label><input type="checkbox" name="interest" value="food"> الطعام والضيافة</label>
-        <label><input type="checkbox" name="interest" value="travel"> السفر والطبيعة</label>
-      </fieldset>
-      <div class="actions">
-        <button id="onboarding-submit" class="continue" type="button">ابدأ التعلم</button>
-        <button id="onboarding-skip" class="quiet" type="button">تخطي الآن</button>
-      </div>
-    </section>
-    <section id="assigned" aria-labelledby="assigned-title" hidden>
-      <h2 id="assigned-title" class="visually-hidden" tabindex="-1">كلمتك اليومية</h2>
+    <p id="warning" class="warning" hidden>تُعرض بياناتك، لكن تعذّر حفظ آخر تغيير.</p>
+    <section id="assigned" aria-label="كلمتك اليومية" hidden>
       <article class="word-card">
-        <p id="fixed-label" class="fixed">ثابتة لليوم</p>
-        <p id="assignment-date" class="assignment-date" aria-live="polite" hidden></p>
-        <h2 id="word" tabindex="-1" lang="ar"></h2>
+        <p id="register" class="register" hidden></p>
+        <h2 id="word" lang="ar"></h2>
         <p id="meaning-ar" class="meaning" lang="ar"></p>
-        <p id="meaning-en" class="english" lang="en" dir="ltr"></p>
-        <p id="pronunciation" class="pronunciation" dir="ltr"></p>
-        <button id="speak" class="speak" type="button" aria-label="استمع للنطق">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="currentColor" d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zm-2 0L7 7H3v10h4l5 3.77V3.23zM16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-          </svg>
-        </button>
+        <section class="example-card" aria-label="في الاستعمال"><h3>في الاستعمال</h3><p id="example" lang="ar"></p></section>
+        <div class="actions"><button id="speak" type="button">استمع للنطق المحلي</button><button id="save" type="button" aria-pressed="false">حفظ</button></div>
       </article>
-      <section class="example-card">
-        <p>في سياق عملي</p>
-        <p id="example" lang="ar"></p>
-        <p id="example-en" class="english" lang="en" dir="ltr"></p>
-      </section>
-      <p class="feedback-prompt">كيف كانت الكلمة اليوم؟</p>
-      <div class="feedback" role="group" aria-label="تقييم الكلمة وحفظها">
-        <button id="known" type="button" aria-pressed="false">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-          معروف
-        </button>
-        <button id="difficult" type="button" aria-pressed="false">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-          صعب
-        </button>
-        <button id="save" type="button" aria-pressed="false">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
-          حفظ
-        </button>
-      </div>
-      <div class="export-actions" role="group" aria-label="أدوات التصدير">
-        <button id="btn-export-anki" type="button" aria-label="تصدير إلى Anki CSV">تصدير إلى Anki</button>
-        <button id="btn-export-card" type="button" aria-label="توليد بطاقة للمشاركة">بطاقة للمشاركة</button>
-      </div>
       <p id="action-status" class="action-status" role="status" aria-live="polite"></p>
-      <button id="explore" class="explore" type="button">استكشف</button>
-      <div class="reminder-row">
-        <label for="reminder-time">تذكير يومي</label>
-        <input id="reminder-time" type="time" value="09:00">
-        <button id="reminder" type="button" role="switch" aria-checked="false" aria-label="تفعيل التذكير اليومي"></button>
-      </div>
+      <button id="explore" class="atlas-link" type="button">فتح الأطلس</button>
+      <details id="vocalization-details"><summary>ضبط الكلمة</summary><p id="vocalization" lang="ar" hidden></p></details>
+      <details id="translation" hidden><summary>شرح بالإنجليزية والنطق اللاتيني</summary><p id="meaning-en" class="english" lang="en" dir="ltr"></p><p id="pronunciation" class="pronunciation" lang="en" dir="ltr"></p><p id="example-en" class="english" lang="en" dir="ltr"></p></details>
     </section>
-    <section id="empty" aria-labelledby="empty-title" hidden>
-      <h2 id="empty-title" tabindex="-1">انتهت كلمات اليوم</h2>
-      <p>زُر الأطلس لمراجعة الكلمات السابقة.</p>
-      <button id="explore-empty" class="explore" type="button">استكشف</button>
-    </section>
-    <section id="error" aria-labelledby="error-title" hidden>
-      <h2 id="error-title" tabindex="-1">تعذّر تحميل الكلمة</h2>
-      <p>حاول مجددًا أو أعد فتح الإضافة.</p>
-      <button id="error-retry" class="continue" type="button">إعادة المحاولة</button>
-    </section>
-    <section id="recovery" aria-labelledby="recovery-title" hidden>
-      <h2 id="recovery-title" tabindex="-1">إعادة ضبط البيانات</h2>
-      <p>يبدو أن هناك مشكلة في البيانات المحفوظة. يمكنك البدء من جديد.</p>
-      <button id="recovery-reset" class="continue" type="button">إعادة البدء</button>
-    </section>
+    <section id="empty" aria-labelledby="empty-title" hidden><h2 id="empty-title" tabindex="-1">لا توجد كلمة جديدة الآن</h2><p>كلماتك السابقة والمحفوظة في الأطلس.</p><button id="explore-empty" type="button">فتح الأطلس</button></section>
+    <section id="error" aria-labelledby="error-title" hidden><h2 id="error-title" tabindex="-1">تعذّر تحميل الكلمة</h2><p>حاول مجددًا أو افتح الأطلس للوصول إلى بياناتك.</p><button id="error-retry" type="button">إعادة المحاولة</button><button id="error-atlas" type="button">فتح إعدادات الأطلس</button></section>
+    <section id="recovery" aria-labelledby="recovery-title" hidden><h2 id="recovery-title" tabindex="-1">نحتاج إلى استعادة بياناتك</h2><p>لم نغيّر بياناتك المحلية. افتح الأطلس لتصدير النسخة الخام أو استيراد نسخة صالحة أو مسحها بنفسك.</p><button id="recovery-atlas" type="button">فتح الأطلس لاستعادة البيانات</button></section>
   </main>
-  <dialog id="practice-dialog" class="practice-dialog" aria-modal="true" aria-labelledby="practice-title">
-    <div class="practice-container">
-      <header class="practice-header">
-        <h2 id="practice-title" class="practice-title">مراجعة البطاقات</h2>
-        <span id="practice-progress" class="practice-progress" aria-live="polite"></span>
-        <button id="practice-close" class="practice-close" type="button" aria-label="إغلاق">✕</button>
-      </header>
-      <div id="practice-body" class="practice-body">
-        <div id="practice-error" class="practice-error" role="alert" hidden>
-          <p id="practice-error-message">تعذّر تحميل المراجعات. حاول مجددًا.</p>
-          <button id="practice-retry" class="continue" type="button">إعادة المحاولة</button>
-        </div>
-        <div class="flashcard-scene">
-          <button id="card-front-flip" class="card-front-flip" type="button" aria-pressed="false" aria-label="اقلب البطاقة">اقلب البطاقة</button>
-          <div id="flashcard-card" class="flashcard-card" role="group">
-            <div id="card-front-face" class="flashcard-front" aria-hidden="false">
-              <div id="card-front-word" class="card-word" lang="ar"></div>
-              <div id="card-front-vocalization" class="card-vocalization" lang="ar"></div>
-              <div id="card-front-weight" class="card-weight" lang="ar"></div>
-              <div id="card-front-root" class="card-root" lang="ar"></div>
-              <button id="card-front-speak" class="card-speak" type="button" aria-label="استمع للنطق">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path fill="currentColor" d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zm-2 0L7 7H3v10h4l5 3.77V3.23zM16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-                </svg>
-              </button>
-              <p class="flip-hint">اقلب البطاقة، ثم اختر مدى تذكّرك؛ سنحدد موعد عودتها.</p>
-            </div>
-            <div id="card-back-face" class="flashcard-back" aria-hidden="true">
-              <div id="card-back-meaning-ar" class="card-meaning-ar" lang="ar"></div>
-              <div id="card-back-meaning-en" class="card-meaning-en" lang="en" dir="ltr"></div>
-              <div id="card-back-example-ar" class="card-example-ar" lang="ar"></div>
-              <div id="card-back-context" class="card-context" lang="ar"></div>
-            </div>
-          </div>
-        </div>
-        <div id="practice-ratings" class="practice-ratings" role="group" aria-label="تقييم التذكر" hidden>
-          <button id="rate-again" class="rate-btn rate-again" data-rating="again" type="button" disabled>
-            <span class="rate-title">أعد (1)</span>
-            <small class="rate-interval">—</small>
-          </button>
-          <button id="rate-hard" class="rate-btn rate-hard" data-rating="hard" type="button" disabled>
-            <span class="rate-title">صعب (2)</span>
-            <small class="rate-interval">—</small>
-          </button>
-          <button id="rate-good" class="rate-btn rate-good" data-rating="good" type="button" disabled>
-            <span class="rate-title">جيد (3)</span>
-            <small class="rate-interval">—</small>
-          </button>
-          <button id="rate-easy" class="rate-btn rate-easy" data-rating="easy" type="button" disabled>
-            <span class="rate-title">سهل (4)</span>
-            <small class="rate-interval">—</small>
-          </button>
-        </div>
-      </div>
-      <div id="practice-finished" class="practice-finished" hidden>
-        <p id="practice-finished-message">🎉 أحسنت! أنهيت جميع مراجعات اليوم.</p>
-        <button id="practice-finish-btn" class="continue" type="button">إتمام</button>
-      </div>
-    </div>
-  </dialog>
   <script src="../shared/date.js"></script>
-  <script src="../shared/review-session.js"></script>
   <script src="../shared/speech.js"></script>
+  <script src="../shared/vocabulary.js"></script>
   <script src="../shared/theme.js"></script>
-  <script src="../shared/streak.js"></script>
-  <script src="../shared/export.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

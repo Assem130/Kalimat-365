@@ -90,33 +90,6 @@ test("forward clock jumps and rollback keep the original local-day assignment", 
   assert.deepEqual(await selected(vocabulary, persistedJump, originalDate), { kind: "assigned", wordId: "w1" });
 });
 
-test("exact ability beats more useful farther difficulty", async () => {
-  const result = await selected([
-    word("beginner", { usefulnessBand: "low" }),
-    word("advanced", { difficultyBand: "advanced", usefulnessBand: "high" }),
-  ]);
-  assert.deepEqual(result, { kind: "assigned", wordId: "beginner" });
-});
-
-test("widens exactly one ability band before farther bands", async () => {
-  const result = await selected([
-    word("advanced", { difficultyBand: "advanced" }),
-    word("intermediate", { difficultyBand: "intermediate" }),
-  ], profile({ level: 1 }));
-  assert.deepEqual(result, { kind: "assigned", wordId: "intermediate" });
-});
-
-test("level 4 selects advanced and reports zero ability distance", async () => {
-  const result = await selectDaily({
-    vocabulary: [word("beginner"), word("advanced", { difficultyBand: "advanced" })],
-    profile: profile({ level: 4 }),
-    dateKey,
-    explain: true,
-  });
-  assert.equal(result.wordId, "advanced");
-  assert.equal(result.explanation.abilityDistance, 0);
-});
-
 test("level 4 selection remains deterministic across corpus order", async () => {
   const vocabulary = [word("beginner"), word("advanced", { difficultyBand: "advanced" })];
   const a = await selected(vocabulary, profile({ level: 4 }));
@@ -135,10 +108,12 @@ test("cooldown is min(14, floor(eligible / 3)) and relaxes only after all bands 
 
   const digest = async (value) => value.endsWith("\u001frecent-2") ? "0".repeat(64) : "f".repeat(64);
   const floorVocabulary = [word("recent-1"), word("recent-2"), word("available"), ...Array.from({ length: 5 }, (_, index) => word(`advanced-${index}`, { difficultyBand: "advanced" }))];
-  assert.deepEqual(await selectDaily({ vocabulary: floorVocabulary, profile: profile({ recentIds: ["recent-1", "recent-2"] }), dateKey, digestHex: digest }), { kind: "assigned", wordId: "available" });
+  const floorResult = await selectDaily({ vocabulary: floorVocabulary, profile: profile({ recentIds: ["recent-1", "recent-2"] }), dateKey, digestHex: digest });
+  assert.ok(!["recent-1", "recent-2"].includes(floorResult.wordId));
 
   const cappedVocabulary = [...Array.from({ length: 15 }, (_, index) => word(`recent-${index}`)), ...Array.from({ length: 30 }, (_, index) => word(`advanced-cap-${index}`, { difficultyBand: "advanced" }))];
-  assert.deepEqual(await selectDaily({ vocabulary: cappedVocabulary, profile: profile({ recentIds: Array.from({ length: 15 }, (_, index) => `recent-${index}`) }), dateKey, digestHex: digest }), { kind: "assigned", wordId: "recent-14" });
+  const capResult = await selectDaily({ vocabulary: cappedVocabulary, profile: profile({ recentIds: Array.from({ length: 15 }, (_, index) => `recent-${index}`) }), dateKey, digestHex: digest });
+  assert.ok(!Array.from({ length: 14 }, (_, index) => `recent-${index}`).includes(capResult.wordId));
 });
 
 test("skips known, unreviewed, and malformed candidates", async () => {
@@ -151,7 +126,7 @@ test("skips known, unreviewed, and malformed candidates", async () => {
   assert.deepEqual(result, { kind: "assigned", wordId: "usable" });
 });
 
-test("diversifies root, topic, register, and part of speech before usefulness", async () => {
+test("diversifies root, topic, register, and part of speech across eligible bands", async () => {
   const vocabulary = [
     word("recent", { root: "k-t-b", topics: ["travel"], register: "classical", partOfSpeech: "verb" }),
     word("same", { root: "k-t-b", topics: ["travel"], register: "classical", partOfSpeech: "verb", usefulnessBand: "high" }),
@@ -166,28 +141,21 @@ test("known recent words still diversify the next assignment", async () => {
   assert.deepEqual(await selected(vocabulary, profile({ interests: [], recentIds: ["known"], wordStates: { known: { status: "known", dateKey } } })), { kind: "assigned", wordId: "varied" });
 });
 
-test("every seventh new assignment broadens beyond the learner interests", async () => {
-  const vocabulary = [
-    word("interest", { topics: ["language"], usefulnessBand: "high" }),
-    word("outside", { topics: ["food"], usefulnessBand: "low" }),
-  ];
-  assert.deepEqual(await selected(vocabulary), { kind: "assigned", wordId: "interest" });
-  const assignments = Object.fromEntries(Array.from({ length: 6 }, (_, index) => [`2026-07-${String(index + 1).padStart(2, "0")}`, { wordId: "interest" }]));
-  assert.deepEqual(await selected(vocabulary, profile({ assignments })), { kind: "assigned", wordId: "outside" });
+test("every seventh new assignment broadens beyond optional interests", async () => {
+  const vocabulary = [word("interest", { topics: ["language"] }), word("outside", { topics: ["food"] }), word("prior")];
+  const assignments = Object.fromEntries(Array.from({ length: 6 }, (_, index) => [`2026-07-${String(index + 1).padStart(2, "0")}`, { wordId: "prior" }]));
+  const equallyUnseen = { assignments, wordStates: { prior: { status: "known", dateKey: "2026-07-06" } } };
+  assert.deepEqual(await selected(vocabulary, profile({ ...equallyUnseen, assignmentOrdinal: 7 })), { kind: "assigned", wordId: "interest" });
+  assert.deepEqual(await selected(vocabulary, profile({ ...equallyUnseen, assignmentOrdinal: 6 })), { kind: "assigned", wordId: "outside" });
 });
 
 test("lifetime assignment ordinal keeps every-seventh broadening after assignment pruning", async () => {
-  const vocabulary = [word("interest", { topics: ["language"], usefulnessBand: "high" }), word("outside", { topics: ["food"], usefulnessBand: "low" })];
-  const assignments = Object.fromEntries(Array.from({ length: 5000 }, (_, index) => [`2026-01-${String((index % 28) + 1).padStart(2, "0")}-${index}`, { wordId: "interest" }]));
-  assert.deepEqual(await selected(vocabulary, profile({ assignments, assignmentOrdinal: 5004 })), { kind: "assigned", wordId: "outside" });
-});
-
-test("usefulness orders otherwise equal candidates and optional metadata is optional", async () => {
-  const result = await selected([
-    word("low", { usefulnessBand: "low", root: undefined }),
-    word("high", { usefulnessBand: "high", root: undefined, pattern: undefined, relatedIds: undefined }),
-  ], profile({ interests: [] }));
-  assert.deepEqual(result, { kind: "assigned", wordId: "high" });
+  const vocabulary = [word("interest", { topics: ["language"] }), word("outside", { topics: ["food"] }), word("prior")];
+  const assignments = Object.fromEntries(Array.from({ length: 5000 }, (_, index) => [new Date(Date.UTC(2000, 0, index + 1)).toISOString().slice(0, 10), { wordId: "prior" }]));
+  const pruned = { assignments, wordStates: { prior: { status: "known", dateKey: "2026-01-28" } } };
+  assert.equal(Object.keys(assignments).length, 5000);
+  assert.deepEqual(await selected(vocabulary, profile({ ...pruned, assignmentOrdinal: 5003 })), { kind: "assigned", wordId: "interest" });
+  assert.deepEqual(await selected(vocabulary, profile({ ...pruned, assignmentOrdinal: 5004 })), { kind: "assigned", wordId: "outside" });
 });
 
 test("SHA-256 uses UTF-8 bytes and ranks Unicode IDs deterministically", async () => {
@@ -207,11 +175,11 @@ test("SHA-256 uses UTF-8 bytes and ranks Unicode IDs deterministically", async (
 
 test("explain mode exposes the winning tuple without changing default results", async () => {
   const result = await selectDaily({ vocabulary: [word("w1")], profile: profile(), dateKey, digestHex: async () => "0".repeat(64), explain: true });
-  assert.deepEqual(result, { kind: "assigned", wordId: "w1", explanation: { cooldown: 0, cooldownRelaxed: false, abilityDistance: 0, broaden: false, tuple: [0, 0, 0, 0, 0, 1, "0".repeat(64)] } });
+  assert.deepEqual(result, { kind: "assigned", wordId: "w1", explanation: { cooldown: 0, cooldownRelaxed: false, broaden: false, tuple: [0, 0, 0, 0, 0, "0".repeat(64)] } });
   assert.deepEqual(await selected([word("w1")]), { kind: "assigned", wordId: "w1" });
 });
 
-test("fixed learner profiles select an assigned word for every local day in a leap year", async () => {
+test("legacy profiles select an assigned word for every local day in a leap year", async () => {
   const vocabulary = Array.from({ length: 60 }, (_, index) => word(`w${index}`, {
     difficultyBand: ["beginner", "intermediate", "advanced"][index % 3],
     usefulnessBand: ["high", "medium", "low"][index % 3],
@@ -233,4 +201,35 @@ test("fixed learner profiles select an assigned word for every local day in a le
       };
     }
   }
+});
+
+
+test("literary advanced words compete regardless of legacy level and usefulness", async () => {
+  const vocabulary = [word("beginner", { usefulnessBand: "high" }), word("literary", { difficultyBand: "advanced", usefulnessBand: "low", register: "classical" })];
+  const digestHex = async (value) => value.endsWith("literary") ? "0".repeat(64) : "f".repeat(64);
+  for (const level of [1, 2, 3, 4]) assert.equal((await selectDaily({ vocabulary, profile: profile({ level }), dateKey, digestHex })).wordId, "literary");
+});
+
+test("same-day assignment survives changed interests and legacy proficiency", async () => {
+  const vocabulary = [word("first"), word("second", { difficultyBand: "advanced" })];
+  const saved = profile({ assignments: { [dateKey]: { wordId: "first" } }, interests: ["food"], level: 4 });
+  assert.deepEqual(await selected(vocabulary, saved), { kind: "assigned", wordId: "first" });
+});
+
+test("unrated encounters reach all bands unseen first, then least recent outside cooldown", async () => {
+  const vocabulary = Array.from({ length: 18 }, (_, index) => word(`entry-${index}`, { difficultyBand: ["beginner", "intermediate", "advanced"][index % 3] }));
+  const current = profile({ interests: [] });
+  const sequence = [];
+  for (let index = 0; index < 36; index += 1) {
+    const date = `2026-${index < 30 ? "09" : "10"}-${String(index < 30 ? index + 1 : index - 29).padStart(2, "0")}`;
+    const result = await selected(vocabulary, current, date);
+    assert.ok(!sequence.slice(-6).includes(result.wordId));
+    sequence.push(result.wordId);
+    current.assignments[date] = { wordId: result.wordId };
+    current.assignmentOrdinal += 1;
+    current.recentIds = [result.wordId, ...current.recentIds.filter((id) => id !== result.wordId)].slice(0, 16);
+  }
+  assert.equal(new Set(sequence.slice(0, 18)).size, 18);
+  assert.deepEqual(sequence.slice(18), sequence.slice(0, 18));
+  assert.deepEqual(new Set(sequence.slice(0, 18).map((id) => vocabulary.find((entry) => entry.id === id).difficultyBand)), new Set(["beginner", "intermediate", "advanced"]));
 });
