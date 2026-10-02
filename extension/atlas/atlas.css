@@ -73,6 +73,10 @@ html[data-theme="midnight"] {
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0 auto;
   max-width: 880px;

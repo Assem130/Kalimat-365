@@ -4,7 +4,7 @@
 
 ## Current direction and development
 
-- [Product context](../CONTEXT.md): authoritative Arabic-first extension direction, boundaries and candidate limitations.
+- [Product context](../CONTEXT.md): authoritative Arabic-first extension direction, boundaries and verification limits.
 - [Editorial corrections](EDITORIAL.md): five-entry scope, provenance and limits.
 - [Development](DEVELOPMENT.md): verification, local installation, packaging and corpus maintenance.
 - [Contributing](../CONTRIBUTING.md): focused bug reports and pull requests.
@@ -12,8 +12,9 @@
 
 ## Privacy and distribution
 
-- [Candidate policy source](../privacy.html), [published policy](https://assem130.github.io/Kalimat-365/privacy.html) and [extension privacy](../extension/PRIVACY.md). The source correction is not deployed; policy publication is required alongside any approved release.
-- [Draft store listing kit](store/listing.md): candidate copy, permissions and historical screenshot limitations.
+- [Policy source](../privacy.html), [published policy](https://assem130.github.io/Kalimat-365/privacy.html) and [extension privacy](../extension/PRIVACY.md). Verify that the public policy matches the source before store submission.
+- [Store listing kit](store/listing.md): Arabic/English copy, permissions and submission steps.
+- [0.4.0 release notes](store/release-notes-v0.4.0-beta.1.md) and [verification evidence](VERIFICATION.md).
 - [Existing Chrome Web Store channel](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe): current contents unverified.
 
 ## Historical records

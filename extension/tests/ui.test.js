@@ -92,11 +92,16 @@ class FakeCanvasElement {
   }
 }
 
-function element() {
+function setConnected(node, connected) {
+  node.isConnected = connected;
+  for (const child of node.children ?? []) setConnected(child, connected);
+}
+
+function element(connected = true) {
   const attributes = Object.create(null);
   const classes = new Set();
   return {
-    textContent: "", hidden: false, disabled: false, checked: false, value: "", dataset: {}, attributes, focuses: 0, children: [], open: false, className: "",
+    textContent: "", hidden: false, disabled: false, checked: false, value: "", dataset: {}, attributes, focuses: 0, children: [], open: false, className: "", isConnected: connected,
     classList: {
       add(...names) { names.forEach((name) => classes.add(name)); },
       remove(...names) { names.forEach((name) => classes.delete(name)); },
@@ -112,7 +117,15 @@ function element() {
     hasAttribute(name) { return Object.hasOwn(this.attributes, name); },
     removeAttribute(name) { delete this.attributes[name]; },
     addEventListener(type, listener) { this.listeners[type] = listener; }, listeners: {}, focus() { this.focuses += 1; activeElement = this; },
-    append(...nodes) { this.children.push(...nodes); }, replaceChildren(...nodes) { this.children = nodes; }, get childElementCount() { return this.children.length; },
+    append(...nodes) {
+      for (const node of nodes) { this.children.push(node); setConnected(node, this.isConnected); }
+    },
+    replaceChildren(...nodes) {
+      for (const node of this.children) setConnected(node, false);
+      this.children = [];
+      this.append(...nodes);
+    },
+    get childElementCount() { return this.children.length; },
     querySelector(selector) {
       if (selector === ".rate-interval") return this.children.find((child) => child?.className === "rate-interval") || null;
       return null;
@@ -310,6 +323,14 @@ function popupApi(responses = {}, options = {}) {
 function atlasApi(responses = {}, options = {}) {
   activeElement = null;
   const elements = new Map();
+  const dynamicById = (id, nodes = [...elements.values()]) => {
+    for (const node of nodes) {
+      if (node.id === id) return node;
+      const found = dynamicById(id, node.children ?? []);
+      if (found) return found;
+    }
+    return null;
+  };
   const ids = [
     "status", "today-action-status", "warning", "today", "explore", "history", "settings",
     "today-view", "explore-view", "history-view", "settings-view", "onboarding", "recovery",
@@ -404,7 +425,7 @@ function atlasApi(responses = {}, options = {}) {
     documentElement,
     body,
     fonts: { ready: Promise.resolve() },
-    getElementById(id) { return elements.get(id); },
+    getElementById(id) { return elements.get(id) ?? dynamicById(id); },
     createElement(tag) {
       if (tag === "canvas") return new FakeCanvasElement();
       if (tag === "a") {
@@ -417,7 +438,7 @@ function atlasApi(responses = {}, options = {}) {
         a.remove = function () {};
         return a;
       }
-      return element();
+      return element(false);
     },
     querySelector(selector) {
       const level = selector.match(/input\[name="atlas-level"\]\[value="(\d)"\]/);
@@ -1106,15 +1127,17 @@ test("Atlas Today actions expose adjacent pending, success, failure, and focus s
   assert.equal(fixture.elements.get("today-difficult").getAttribute("aria-pressed"), "true");
   assert.equal(fixture.elements.get("today-difficult").focuses, 1);
 
-  const savePending = fixture.api.toggleSave();
-  await new Promise(setImmediate);
   const save = fixture.elements.get("today-save");
+  save.focus();
+  const savePending = fixture.api.toggleSave();
+  activeElement = fixture.context.document.body;
+  await new Promise(setImmediate);
   assert.equal(save.disabled, true);
   assert.equal(save.getAttribute("aria-busy"), "true");
   releaseSave({ kind: "ok", wordId: "w1", saved: true });
   await savePending;
   assert.equal(save.getAttribute("aria-pressed"), "true");
-  assert.equal(save.focuses, 1);
+  assert.equal(fixture.context.document.activeElement, save);
   assert.equal(fixture.elements.get("today-action-status").textContent, "حُفظت الكلمة.");
 
   const failed = atlasApi({
@@ -1131,7 +1154,7 @@ test("Atlas Today actions expose adjacent pending, success, failure, and focus s
   assert.equal(failed.elements.get("today-action-status").getAttribute("role"), "alert");
   await failed.api.toggleSave();
   assert.equal(failed.elements.get("today-save").getAttribute("aria-pressed"), "false");
-  assert.equal(failed.elements.get("today-save").focuses, 1);
+  assert.equal(failed.context.document.activeElement, failed.elements.get("today-difficult"), "a direct Save call must not pull focus from another control");
   assert.equal(failed.elements.get("today-action-status").textContent, "تعذّر الحفظ.");
 });
 
@@ -1751,11 +1774,12 @@ test("failed profile mutations retain durable controls and retry explicit save i
     if (surface === "popup") await fixture.api.renderAssigned({ word: { id: "w1", word: "كلمة" }, dateKey: "2026-07-30" });
     else await fixture.api.initialize();
     const save = fixture.elements.get(surface === "popup" ? "save" : "today-save");
+    save.focus();
     await fixture.api.toggleSave();
     assert.notEqual(save.getAttribute("aria-pressed"), "true");
     assert.match(fixture.elements.get(surface === "popup" ? "action-status" : "status").textContent, /مؤقت.*لم يُحفظ/);
     assert.equal(save.disabled, false);
-    assert.ok(save.focuses > 0);
+    assert.equal(fixture.context.document.activeElement, save);
     fail = false;
     await fixture.api.toggleSave();
     const saves = fixture.calls.filter((message) => message.type === "word.save");
@@ -2234,5 +2258,353 @@ test("Atlas post-clear continuation keeps recovery precedence and rejects tempor
       assert.doesNotMatch(fixture.elements.get("today-card").children.find((node) => node.className === "word-speak").textContent, /الإنترنت/);
       assert.equal(fixture.elements.get("warning").hidden, false);
     }
+  }
+});
+
+const exploreSaveVocabulary = [
+  { id: "w1", word: "كلمة", meaningAr: "معنى", reviewed: true },
+  { id: "w2", word: "ثانية", meaningAr: "شرح", reviewed: true },
+];
+
+test("Atlas generated Explore Save keeps non-today intent, blocks pending duplicates, and announces both states", async () => {
+  let profile = atlasProfile();
+  const releases = [];
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "word.save": () => new Promise((resolve) => { releases.push(resolve); }),
+  }, { vocabulary: exploreSaveVocabulary });
+  await fixture.api.initialize();
+  fixture.elements.get("explore").listeners.click();
+  fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+  const save = fixture.context.document.getElementById("explore-save");
+  save.focus();
+  const saving = save.listeners.click();
+  await save.listeners.click();
+  assert.equal(fixture.calls.filter((call) => call.type === "word.save").length, 1);
+  assert.equal(save.disabled, true);
+  assert.equal(save.getAttribute("aria-busy"), "true");
+  assert.equal(fixture.elements.get("status").textContent, "جارٍ تحديث الحفظ…");
+
+  profile = atlasProfile({ wordStates: { w2: { saved: true } } });
+  for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+  await new Promise(setImmediate);
+  assert.equal(fixture.context.document.getElementById("explore-save"), save, "refresh must preserve the pending control");
+  assert.equal(save.disabled, true);
+  assert.equal(save.getAttribute("aria-pressed"), "false", "the response confirms the submitted intent");
+  releases[0]({ kind: "ok", wordId: "w2", saved: true });
+  await saving;
+  assert.equal(save.disabled, false);
+  assert.equal(save.getAttribute("aria-busy"), "false");
+  assert.equal(save.getAttribute("aria-pressed"), "true");
+  assert.equal(fixture.elements.get("today-save").getAttribute("aria-pressed"), "false");
+  assert.equal(fixture.elements.get("status").textContent, "حُفظت الكلمة.");
+  assert.equal(fixture.elements.get("status").getAttribute("aria-live"), "polite");
+  assert.equal(fixture.elements.get("today-action-status").textContent, "");
+
+  const removing = save.listeners.click();
+  releases[1]({ kind: "ok", wordId: "w2", saved: false });
+  await removing;
+  assert.deepEqual(fixture.calls.filter((call) => call.type === "word.save").map((call) => [call.wordId, call.saved]), [["w2", true], ["w2", false]]);
+  assert.equal(save.getAttribute("aria-pressed"), "false");
+  assert.equal(fixture.elements.get("status").textContent, "أزيل الحفظ.");
+  assert.equal(fixture.elements.get("status").getAttribute("role"), "status");
+});
+
+test("Atlas generated Explore Save retains confirmed state after warning or failure and retries the same intent", async () => {
+  for (const outcome of ["warning", "failure"]) {
+    let failed = true;
+    const fixture = atlasApi({
+      "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+      "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+      "word.save": (message) => failed && outcome === "failure" ? new Error("storage unavailable") : { kind: "ok", wordId: "w2", saved: message.saved, storageWarning: failed },
+    }, { vocabulary: exploreSaveVocabulary });
+    await fixture.api.initialize();
+    fixture.elements.get("explore").listeners.click();
+    fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+    const save = fixture.context.document.getElementById("explore-save");
+    await save.listeners.click();
+    assert.equal(save.getAttribute("aria-pressed"), "false", outcome);
+    assert.equal(save.disabled, false);
+    assert.equal(save.getAttribute("aria-busy"), "false");
+    assert.match(fixture.elements.get("status").textContent, outcome === "warning" ? /مؤقت.*لم يُحفظ/ : /تعذّر الحفظ/);
+    assert.doesNotMatch(fixture.elements.get("status").textContent, /حُفظت الكلمة/);
+    assert.equal(fixture.elements.get("status").getAttribute("aria-live"), "polite");
+    failed = false;
+    await save.listeners.click();
+    assert.deepEqual(fixture.calls.filter((call) => call.type === "word.save").map((call) => call.saved), [true, true]);
+    assert.equal(save.getAttribute("aria-pressed"), "true");
+    assert.equal(fixture.elements.get("status").textContent, "حُفظت الكلمة.");
+  }
+});
+
+test("Atlas pending Save restores lost focus only in the original view and connected card", async () => {
+  for (const surface of ["today", "explore"]) {
+    const outcomes = ["lost", "new-control", "navigate", "leave-return", ...(surface === "explore" ? ["replace-card"] : [])];
+    for (const outcome of outcomes) {
+      let release;
+      const fixture = atlasApi({
+        "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+        "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+        "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+        "word.save": () => new Promise((resolve) => { release = resolve; }),
+      }, { vocabulary: exploreSaveVocabulary });
+      await fixture.api.initialize();
+      const openExplore = () => {
+        fixture.elements.get("explore").listeners.click();
+        fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+      };
+      if (surface === "explore") openExplore();
+      const save = fixture.context.document.getElementById(`${surface}-save`);
+      save.focus();
+      const pending = save.listeners.click();
+      activeElement = fixture.context.document.body; // A disabled focused button can leave focus on the document.
+      if (outcome === "new-control") fixture.elements.get(surface === "today" ? "today-known" : "atlas-search").focus();
+      if (outcome === "navigate" || outcome === "leave-return") fixture.elements.get(surface === "today" ? "explore" : "settings").listeners.click();
+      if (outcome === "leave-return") {
+        if (surface === "today") await fixture.elements.get("today").listeners.click();
+        else openExplore();
+        activeElement = fixture.context.document.body;
+      }
+      if (outcome === "replace-card") {
+        fixture.elements.get("atlas-search").listeners.input();
+        fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+        activeElement = fixture.context.document.body;
+      }
+      const destination = fixture.context.document.activeElement;
+      const focuses = save.focuses;
+      release({ kind: "ok", wordId: surface === "today" ? "w1" : "w2", saved: true });
+      await pending;
+      assert.equal(save.focuses, focuses + (outcome === "lost" ? 1 : 0), `${surface}/${outcome}`);
+      assert.equal(fixture.context.document.activeElement, outcome === "lost" ? save : destination, `${surface}/${outcome}`);
+      assert.equal(save.disabled, surface === "today" && outcome === "navigate");
+      if (outcome === "replace-card") assert.equal(save.isConnected, false);
+    }
+  }
+});
+
+test("Atlas external profile changes synchronize an open Explore Save and the next click intent", async () => {
+  let profile = atlasProfile();
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "word.save": (message) => ({ kind: "ok", wordId: "w2", saved: message.saved }),
+  }, { vocabulary: exploreSaveVocabulary });
+  await fixture.api.initialize();
+  fixture.elements.get("explore").listeners.click();
+  fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+  const save = fixture.context.document.getElementById("explore-save");
+  save.focus();
+  profile = atlasProfile({ wordStates: { w2: { saved: true } } });
+  for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+  await new Promise(setImmediate);
+  assert.equal(fixture.context.document.getElementById("explore-save"), save);
+  assert.equal(save.getAttribute("aria-pressed"), "true");
+  assert.equal(fixture.context.document.activeElement, save);
+  await save.listeners.click();
+  assert.deepEqual(fixture.calls.filter((call) => call.type === "word.save").map((call) => [call.wordId, call.saved]), [["w2", false]]);
+  assert.equal(save.getAttribute("aria-pressed"), "false");
+  assert.equal(fixture.elements.get("status").textContent, "أزيل الحفظ.");
+});
+
+test("Atlas external changes update visible saved History and preserve or recover its focused row", async () => {
+  let profile = atlasProfile({
+    assignments: { "2026-07-30": { wordId: "w1" }, "2026-07-29": { wordId: "w2" } }, assignmentOrdinal: 2,
+    wordStates: { w1: { saved: true }, w2: { saved: true } },
+  });
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+  });
+  const refresh = async () => {
+    for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+    await new Promise(setImmediate);
+  };
+  await fixture.api.initialize();
+  const filter = fixture.elements.get("history-filter");
+  filter.value = "saved";
+  fixture.elements.get("history").listeners.click();
+  const rows = () => fixture.elements.get("history-list").children;
+  const row = () => rows().find((item) => item.textContent.includes("ثانية"));
+  const original = row();
+  original.focus();
+  profile.assignments["2026-07-29"].status = "known";
+  await refresh();
+  assert.match(row().textContent, /معروف/);
+  assert.notEqual(row(), original);
+  assert.equal(original.isConnected, false);
+  assert.equal(fixture.context.document.activeElement, row(), "a surviving row keeps focus after refresh");
+
+  filter.focus();
+  profile.assignments["2026-07-29"].status = "difficult";
+  await refresh();
+  assert.match(row().textContent, /صعب/);
+  assert.equal(fixture.context.document.activeElement, filter, "refresh preserves a different focused target");
+
+  row().focus();
+  profile.wordStates.w2.saved = false;
+  await refresh();
+  assert.equal(rows().length, 1);
+  assert.equal(row(), undefined);
+  assert.equal(fixture.context.document.activeElement, filter, "a removed row returns focus to the filter");
+});
+
+test("Atlas ordinary import after Clear confirms success and restores history and preferences", async () => {
+  let profile = atlasProfile();
+  const imported = atlasProfile({
+    interests: ["food", "travel"], showEnglish: false,
+    preferences: { showEnglish: false, allowRemoteSpeech: true, speechRate: 1.15, speechRepeat: 3 },
+    assignments: { "2026-07-30": { wordId: "w1", status: "known" }, "2026-07-29": { wordId: "w2", status: "difficult" } }, assignmentOrdinal: 2,
+    wordStates: { w1: { status: "known" }, w2: { status: "difficult", saved: true } },
+  });
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "state.clear": () => { profile = atlasProfile(); return { kind: "ok", profilePersisted: true, reminder: { enabled: false, time: "09:00" } }; },
+    "state.import": (message) => { profile = JSON.parse(message.text); return { kind: "ok" }; },
+  });
+  await fixture.api.initialize();
+  await fixture.elements.get("clear").listeners.click();
+  assert.equal(fixture.elements.get("onboarding").hidden, false);
+  const input = fixture.elements.get("import-file");
+  const text = JSON.stringify(imported);
+  input.files = [{ size: text.length, text: async () => text }];
+  input.value = "backup.json";
+  await input.listeners.change();
+  assert.equal(input.value, "");
+  assert.equal(fixture.elements.get("status").textContent, "تم استيراد الملف.");
+  assert.equal(fixture.elements.get("status").getAttribute("aria-live"), "polite");
+  assert.equal(fixture.elements.get("onboarding").hidden, true);
+  assert.equal(fixture.elements.get("today-view").hidden, false);
+  assert.equal(fixture.elements.get("settings-english").checked, false);
+  assert.equal(fixture.elements.get("settings-remote-speech").checked, true);
+  assert.equal(fixture.elements.get("settings-speech-rate").value, "1.15");
+  assert.equal(fixture.elements.get("settings-speech-repeat").value, "3");
+  assert.deepEqual(fixture.interests.filter((interest) => interest.checked).map((interest) => interest.value), ["food", "travel"]);
+  assert.equal(fixture.elements.get("today-card").children.some((node) => node.children?.some((child) => child.textContent === "شرح بالإنجليزية والنطق اللاتيني")), false);
+  fixture.elements.get("history-filter").value = "saved";
+  fixture.elements.get("history").listeners.click();
+  const rows = fixture.elements.get("history-list").children;
+  assert.equal(rows.length, 1);
+  assert.match(rows[0].textContent, /2026-07-29.*ثانية.*صعب/);
+  assert.equal(fixture.calls.filter((call) => call.type === "settings.update").length, 0, "import restores preferences without a settings submission");
+});
+
+test("Atlas pending import file reading blocks competing mutations and releases the lock after a read failure", async () => {
+  let failRead;
+  const reading = new Promise((_, reject) => { failRead = reject; });
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "word.save": { kind: "ok", wordId: "w1", saved: true },
+    "settings.update": { kind: "ok" },
+    "state.clear": { kind: "ok", profilePersisted: true },
+  }, { vocabulary: exploreSaveVocabulary });
+  await fixture.api.initialize();
+  const input = { files: [{ size: 10, text: () => reading }], value: "backup.json" };
+  const importing = fixture.api.importState(input);
+  await fixture.api.clearState();
+  await fixture.api.toggleSave();
+  await fixture.api.feedback("known");
+  fixture.elements.get("explore").listeners.click();
+  fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+  await fixture.context.document.getElementById("explore-save").listeners.click();
+  fixture.elements.get("settings").listeners.click();
+  await fixture.api.saveSettings();
+  assert.equal(fixture.calls.some((call) => ["state.clear", "state.import", "word.save", "word.feedback", "settings.update"].includes(call.type)), false);
+  assert.match(fixture.elements.get("status").textContent, /جارٍ.*اكتمالها/);
+
+  failRead(new Error("file unreadable"));
+  await importing;
+  assert.equal(input.value, "");
+  assert.match(fixture.elements.get("status").textContent, /تعذّر استيراد الملف/);
+  await fixture.elements.get("today").listeners.click();
+  assert.equal(fixture.elements.get("today-save").disabled, false);
+  await fixture.elements.get("today-save").listeners.click();
+  assert.equal(fixture.calls.filter((call) => call.type === "word.save").length, 1);
+  await fixture.api.clearState();
+  assert.equal(fixture.calls.filter((call) => call.type === "state.clear").length, 1);
+  assert.equal(fixture.elements.get("onboarding").hidden, false);
+});
+
+test("Atlas pending Clear blocks cached Today, generated Explore, settings, and import until failure recovery", async () => {
+  let release;
+  let clears = 0;
+  let fileReads = 0;
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "word.save": { kind: "ok", wordId: "w1", saved: true },
+    "settings.update": { kind: "ok" },
+    "state.clear": () => ++clears === 1 ? new Promise((resolve) => { release = resolve; }) : { kind: "ok", profilePersisted: true },
+  }, { vocabulary: exploreSaveVocabulary });
+  await fixture.api.initialize();
+  const clearing = fixture.elements.get("clear").listeners.click();
+  await fixture.elements.get("today").listeners.click();
+  assert.equal(fixture.elements.get("today-save").disabled, true);
+  await fixture.elements.get("today-save").listeners.click();
+  await fixture.api.feedback("known");
+  fixture.elements.get("explore").listeners.click();
+  fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+  await fixture.context.document.getElementById("explore-save").listeners.click();
+  fixture.elements.get("settings").listeners.click();
+  await fixture.api.saveSettings();
+  const input = { files: [{ size: 10, text: async () => { fileReads += 1; return JSON.stringify(atlasProfile()); } }], value: "backup.json" };
+  await fixture.api.importState(input);
+  await fixture.api.clearState();
+  assert.equal(input.value, "");
+  assert.equal(fileReads, 0, "a blocked import must not start reading its file");
+  assert.deepEqual(fixture.calls.filter((call) => ["state.clear", "state.import", "word.save", "word.feedback", "settings.update"].includes(call.type)).map((call) => call.type), ["state.clear"]);
+
+  release({ kind: "error" });
+  await clearing;
+  assert.match(fixture.elements.get("status").textContent, /تعذّر مسح البيانات/);
+  await fixture.elements.get("today").listeners.click();
+  assert.equal(fixture.elements.get("today-save").disabled, false);
+  await fixture.elements.get("today-save").listeners.click();
+  await fixture.api.saveSettings();
+  assert.equal(fixture.calls.filter((call) => call.type === "word.save").length, 1);
+  assert.equal(fixture.calls.filter((call) => call.type === "settings.update").length, 1);
+  await fixture.api.clearState();
+  assert.equal(fixture.calls.filter((call) => call.type === "state.clear").length, 2);
+  assert.equal(fixture.elements.get("onboarding").hidden, false);
+});
+
+test("Atlas pending Save or settings prevents profile replacement and allows retry after commit", async () => {
+  for (const mutation of ["word.save", "settings.update"]) {
+    let release;
+    let fileReads = 0;
+    const fixture = atlasApi({
+      "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+      "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+      [mutation]: () => new Promise((resolve) => { release = resolve; }),
+      "state.import": { kind: "ok" },
+      "state.clear": { kind: "ok", profilePersisted: true },
+    });
+    await fixture.api.initialize();
+    if (mutation === "settings.update") fixture.elements.get("settings").listeners.click();
+    const pending = mutation === "word.save" ? fixture.api.toggleSave() : fixture.api.saveSettings();
+    const input = { files: [{ size: 10, text: async () => { fileReads += 1; return JSON.stringify(atlasProfile()); } }], value: "backup.json" };
+    await fixture.api.clearState();
+    await fixture.api.importState(input);
+    assert.equal(fixture.calls.some((call) => call.type === "state.clear" || call.type === "state.import"), false, mutation);
+    assert.equal(fileReads, 0);
+    assert.equal(input.value, "");
+    assert.match(fixture.elements.get("status").textContent, /جارٍ.*اكتمالها/);
+    release({ kind: "ok", wordId: "w1", saved: true });
+    await pending;
+    await fixture.api.importState(input);
+    await fixture.api.clearState();
+    assert.equal(fileReads, 1);
+    assert.equal(fixture.calls.filter((call) => call.type === "state.import").length, 1);
+    assert.equal(fixture.calls.filter((call) => call.type === "state.clear").length, 1);
   }
 });

@@ -24,7 +24,7 @@ python3 verify.py
 
 It runs the root and combined tests, including package safety and deterministic rebuilds; checks tracked JavaScript syntax and Python compilation; checks generated vocabulary; builds both archives; and checks whitespace. It stops on any failed command. The workflow is [Verify Kalimat](../.github/workflows/verify.yml).
 
-For UI changes, also inspect the affected website or extension flow in its intended browser. Check relevant layout, keyboard behavior, loading and error states, and local data after reload. Automated checks alone do not establish browser behavior. For this first milestone candidate, actual popup/Atlas layout, keyboard and audio acceptance are unverified because available automation blocks `chrome://extensions`. Mocks and website previews do not substitute for native extension acceptance.
+For UI changes, also inspect the affected website or extension flow in its intended browser. Check relevant layout, keyboard behavior, loading and error states, and local data after reload. Automated checks alone do not establish browser behavior. See [verification evidence](VERIFICATION.md) for the installed Chrome checks already performed and the remaining native-device checks. Mocks and website previews do not substitute for native extension acceptance.
 
 ## Extension installation and packaging
 
@@ -34,7 +34,7 @@ For the current source, run verification first. To package separately:
 python3 extension/tools/package.py
 ```
 
-Outputs are `extension/dist/kalimat-chrome-0.3.0.zip`, `extension/dist/kalimat-firefox-0.3.0.zip`, and unpacked `extension/dist/chrome` and `extension/dist/firefox` folders. These names reflect the existing manifest version; they do not identify the source commit or establish a new release. Keep generated packages out of Git.
+Outputs are `extension/dist/kalimat-chrome-0.4.0.zip`, `extension/dist/kalimat-firefox-0.4.0.zip`, and unpacked `extension/dist/chrome` and `extension/dist/firefox` folders. The packager takes the version from both manifests and rejects mismatches before replacing output. Keep generated packages out of Git. GitHub release notes identify the source revision; store submission is a separate step.
 
 - **Chrome:** open `chrome://extensions`, enable Developer mode, select **Load unpacked**, and choose `extension/dist/chrome`.
 - **Firefox:** open `about:debugging#/runtime/this-firefox`, select **Load Temporary Add-on**, and choose `extension/dist/firefox/manifest.json`.

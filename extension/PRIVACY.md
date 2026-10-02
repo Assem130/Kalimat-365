@@ -20,4 +20,4 @@ Daily reminders are optional and use alarms/notifications permissions after you 
 
 Atlas clear-data attempts to delete the profile and disable reminders independently. Profile deletion can succeed while reminder disabling fails or the reminder state is unreadable. The interface reports partial or unknown outcomes and asks you to check reminder settings; a temporary, unpersisted clear is also reported. Export before deletion if you need a backup.
 
-This is candidate source. The [public policy](https://assem130.github.io/Kalimat-365/privacy.html) must be updated alongside any approved release; this milestone has not published the local policy correction.
+The [public policy](https://assem130.github.io/Kalimat-365/privacy.html) describes both the extension and the separate legacy website. Store updates must link to the current policy.

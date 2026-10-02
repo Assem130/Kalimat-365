@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import stat
 import sys
@@ -87,6 +88,14 @@ RUNTIME_FILES = (
     'shared/theme.js',
     'shared/vocabulary.js',
 )
+RELEASE_VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\Z")
+
+
+def is_release_version(value):
+    if not isinstance(value, str) or not RELEASE_VERSION.fullmatch(value):
+        return False
+    components = [int(component) for component in value.split(".")]
+    return any(components) and all(component <= 65535 for component in components)
 
 
 def reject_link(path):
@@ -117,7 +126,7 @@ def scan_files(root, skip_dist=False):
     return files
 
 
-def validate_output(dist):
+def validate_output(dist, version):
     if not os.path.lexists(dist):
         return
     if not stat.S_ISDIR(reject_link(dist).st_mode):
@@ -128,14 +137,15 @@ def validate_output(dist):
             if not stat.S_ISDIR(reject_link(target).st_mode):
                 raise ValueError(f"Refusing unvalidated package target: {target}")
             scan_files(target)
-        archive = dist / f"kalimat-{browser}-0.3.0.zip"
+        archive = dist / f"kalimat-{browser}-{version}.zip"
         if os.path.lexists(archive) and not stat.S_ISREG(reject_link(archive).st_mode):
             raise ValueError(f"Refusing unvalidated package archive: {archive}")
 
 
 def package():
     dist = EXTENSION_ROOT / "dist"
-    validate_output(dist)
+    if os.path.lexists(dist) and not stat.S_ISDIR(reject_link(dist).st_mode):
+        raise ValueError(f"Refusing unsafe dist target: {dist}")
     sources = scan_files(EXTENSION_ROOT, skip_dist=True)
     unexpected = sources - set(SOURCE_ALLOWLIST)
     missing = set(SOURCE_ALLOWLIST) - sources
@@ -143,18 +153,24 @@ def package():
         raise ValueError(f"Unexpected extension source file(s): {', '.join(sorted(unexpected))}")
     if missing:
         raise ValueError(f"Missing extension source file(s): {', '.join(sorted(missing))}")
-    payloads = {relative: (EXTENSION_ROOT / relative).read_bytes() for relative in RUNTIME_FILES}
     manifests = {}
+    release_version = None
     for browser in ("chrome", "firefox"):
         content = (EXTENSION_ROOT / f"manifest.{browser}.json").read_bytes()
         manifest = json.loads(content)
-        if manifest.get("manifest_version") != 3 or manifest.get("version") != "0.3.0" or not manifest.get("content_security_policy", {}).get("extension_pages"):
+        version = manifest.get("version")
+        if manifest.get("manifest_version") != 3 or not is_release_version(version) or not manifest.get("content_security_policy", {}).get("extension_pages"):
             raise ValueError(f"Invalid {browser} manifest.")
+        if release_version is not None and version != release_version:
+            raise ValueError("Chrome and Firefox manifest versions must match.")
+        release_version = version
         if browser == "firefox":
             gecko = manifest.get("browser_specific_settings", {}).get("gecko", {})
             if gecko.get("id") != "kalimat@assem130.github.io" or gecko.get("data_collection_permissions", {}).get("required") != ["none"]:
                 raise ValueError("Invalid Firefox store disclosure.")
         manifests[browser] = content
+    validate_output(dist, release_version)
+    payloads = {relative: (EXTENSION_ROOT / relative).read_bytes() for relative in RUNTIME_FILES}
     vocabulary_bytes = len(payloads["data/vocabulary.json"])
     popup_bytes = sum(len(content) for name, content in payloads.items() if name.startswith("popup/"))
     if vocabulary_bytes >= 2097152 or popup_bytes >= 102400:
@@ -170,7 +186,7 @@ def package():
             destination = target / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(content)
-        archive = dist / f"kalimat-{browser}-0.3.0.zip"
+        archive = dist / f"kalimat-{browser}-{release_version}.zip"
         if archive.exists():
             archive.unlink()
         with zipfile.ZipFile(archive, "x", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as output:

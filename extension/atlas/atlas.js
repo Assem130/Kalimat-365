@@ -14,6 +14,8 @@
     reminderWarning: false,
     storageWarning: false,
     settingsBusy: false,
+    profileReplacing: false,
+    pendingSaves: 0,
     recoveryRaw: null,
     view: "",
     viewRevision: 0,
@@ -99,7 +101,7 @@
 
   function setTodayActions(enabled) {
     for (const id of ["today-save", "today-known", "today-difficult"]) {
-      if (elements[id]) elements[id].disabled = !enabled;
+      if (elements[id]) elements[id].disabled = !enabled || state.profileReplacing;
     }
   }
 
@@ -206,6 +208,16 @@
       if (related.childElementCount) container.append(related);
     }
     if (container === elements?.["explore-card"]) {
+      const wordState = state.profile?.wordStates?.[String(word.id)] || state.profile?.wordStates?.[`w${word.id}`];
+      const saved = wordState?.saved === true || (wordState?.saved === undefined && state.profile?.favorites?.[String(word.id)] === true);
+      const saveBtn = document.createElement("button");
+      saveBtn.id = "explore-save";
+      saveBtn.type = "button";
+      saveBtn.textContent = "حفظ";
+      saveBtn.disabled = state.profileReplacing;
+      saveBtn.setAttribute("aria-pressed", String(saved));
+      saveBtn.addEventListener("click", () => toggleSave(word, saveBtn).catch(() => status("تعذّر الحفظ.")));
+      container.append(saveBtn);
       const cardExportBtn = document.createElement("button");
       cardExportBtn.id = "explore-export-card";
       cardExportBtn.type = "button";
@@ -413,6 +425,8 @@
   }
 
   function renderHistory() {
+    const focusedKey = [...elements["history-list"].children]
+      .find((row) => row === document.activeElement)?.dataset.historyKey;
     const filter = elements["history-filter"].value;
     const wordStates = state.profile?.wordStates ?? {};
     const entries = Object.entries(state.profile?.assignments ?? {})
@@ -428,6 +442,7 @@
       const label = responseStatus === "known" ? "معروف" : responseStatus === "difficult" ? "صعب" : "غير مقيّمة";
       const button = document.createElement("button");
       button.type = "button";
+      button.dataset.historyKey = `day:${dateKey}`;
       button.textContent = `${dateKey} — ${word.word} — ${label}`;
       button.addEventListener("click", () => loadAssignment(dateKey));
       elements["history-list"].append(button);
@@ -439,6 +454,7 @@
         if (wordState?.saved !== true || assignedIds.has(String(word.id))) continue;
         const button = document.createElement("button");
         button.type = "button";
+        button.dataset.historyKey = `saved:${word.id}`;
         button.textContent = `${word.word} · محفوظة`;
         button.addEventListener("click", () => { viewWord(word); show("explore"); });
         elements["history-list"].append(button);
@@ -446,6 +462,11 @@
     }
     if (!elements["history-list"].childElementCount) {
       elements["history-list"].textContent = "لا توجد كلمات في هذا العرض.";
+    }
+    if (focusedKey) {
+      const retained = [...elements["history-list"].children]
+        .find((row) => row.dataset.historyKey === focusedKey);
+      (retained ?? elements["history-filter"]).focus({ preventScroll: true });
     }
   }
 
@@ -468,7 +489,7 @@
   }
 
   async function saveSettings() {
-    if (state.settingsBusy) return;
+    if (state.settingsBusy || state.profileReplacing) return;
     const readDraft = () => ({
       level: state.profile?.level ?? 1,
       interests: selectedInterests(),
@@ -636,9 +657,39 @@
     download(result.text, "kalimat-data.json");
   }
 
+  function beginProfileReplacement() {
+    if (state.profileReplacing || state.pendingSaves || state.settingsBusy
+      || ReviewSession.isSubmitting(reviewSession)
+      || ["today-known", "today-difficult"].some((id) => elements[id]?.getAttribute("aria-busy") === "true")) {
+      status("جارٍ حفظ التغييرات. حاول مجددًا بعد اكتمالها.");
+      return false;
+    }
+    state.profileReplacing = true;
+    profileRefreshRevision += 1;
+    status("جارٍ تحديث البيانات…");
+    for (const id of ["clear", "import-file", "recovery-clear", "recovery-import", "settings-save"]) {
+      if (elements[id]) elements[id].disabled = true;
+    }
+    setTodayActions(false);
+    const exploreSave = byId("explore-save");
+    if (exploreSave) exploreSave.disabled = true;
+    return true;
+  }
+
+  function endProfileReplacement() {
+    state.profileReplacing = false;
+    for (const id of ["clear", "import-file", "recovery-clear", "recovery-import", "settings-save"]) {
+      if (elements[id]) elements[id].disabled = false;
+    }
+    setTodayActions(state.view === "today" && !!state.today?.word);
+    const exploreSave = byId("explore-save");
+    if (exploreSave) exploreSave.disabled = false;
+  }
+
   async function importState(input) {
     const file = input.files?.[0];
     if (!file) return;
+    if (!beginProfileReplacement()) { input.value = ""; return; }
     let committed = false;
     try {
       if (file.size > 2 * 1024 * 1024) return status("ملف الاستيراد كبير جدًا.");
@@ -654,35 +705,43 @@
       state.recoveryRaw = null;
       warning(result.storageWarning === true || state.reminderWarning);
       await load();
+      if (state.view !== "error" && state.view !== "recovery") status("تم استيراد الملف.");
     } catch (_) {
       status(committed ? "استوردنا الملف، لكن تعذّر تحديث العرض. افتح الأطلس مجددًا." : "تعذّر استيراد الملف. لم نغيّر بياناتك.");
     } finally {
       input.value = "";
+      endProfileReplacement();
     }
   }
 
   async function clearState() {
+    if (state.profileReplacing) return status("جارٍ حفظ التغييرات. حاول مجددًا بعد اكتمالها.");
     if (!globalThis.confirm("هل تريد مسح بيانات كلمات؟ لا يمكن التراجع عن ذلك.")) return;
-    const result = await ExtApi.runtime.sendMessage({ type: "state.clear" });
-    if (result?.kind !== "ok") throw new Error("Clear failed.");
-    state.reminderWarning = result.reminderWarning === true;
-    state.storageWarning = result.storageWarning === true;
-    if (result.reminder !== null) state.reminder = result.reminder ?? { ...state.reminder, enabled: false };
-    warning(result.storageWarning === true || state.reminderWarning);
-    hydrateSettings();
-    if (result.profilePersisted === false) {
-      return status("المسح مؤقت ولم يُحفظ. حاول مجددًا." + (state.reminder.enabled ? " التذكير ما زال مفعّلًا." : ""));
+    if (!beginProfileReplacement()) return;
+    try {
+      const result = await ExtApi.runtime.sendMessage({ type: "state.clear" });
+      if (result?.kind !== "ok") throw new Error("Clear failed.");
+      state.reminderWarning = result.reminderWarning === true;
+      state.storageWarning = result.storageWarning === true;
+      if (result.reminder !== null) state.reminder = result.reminder ?? { ...state.reminder, enabled: false };
+      warning(result.storageWarning === true || state.reminderWarning);
+      hydrateSettings();
+      if (result.profilePersisted === false) {
+        return status("المسح مؤقت ولم يُحفظ. حاول مجددًا." + (state.reminder.enabled ? " التذكير ما زال مفعّلًا." : ""));
+      }
+      state.profile = null;
+      state.today = null;
+      state.exploreWord = null;
+      state.recoveryRaw = null;
+      show("onboarding");
+      status(state.reminderWarning ? "مُسحت البيانات. تعذّر تأكيد إيقاف التذكير؛ تحقق من إعداداته." : "مُسحت البيانات.");
+    } finally {
+      endProfileReplacement();
     }
-    state.profile = null;
-    state.today = null;
-    state.exploreWord = null;
-    state.recoveryRaw = null;
-    show("onboarding");
-    status(state.reminderWarning ? "مُسحت البيانات. تعذّر تأكيد إيقاف التذكير؛ تحقق من إعداداته." : "مُسحت البيانات.");
   }
 
   async function feedback(statusName) {
-    if (!state.today?.word) return;
+    if (!state.today?.word || state.profileReplacing) return;
     const btn = elements[statusName === "known" ? "today-known" : "today-difficult"];
     const feedbackButtons = [elements["today-known"], elements["today-difficult"]];
     if (feedbackButtons.some((feedbackButton) => feedbackButton.disabled)) return;
@@ -728,22 +787,28 @@
     }
   }
 
-  async function toggleSave() {
-    if (!state.today?.word) return;
-    const currentState = state.profile?.wordStates?.[String(state.today.word.id)] || state.profile?.wordStates?.[`w${state.today.word.id}`];
-    const current = currentState?.saved === true;
-    const btn = elements["today-save"];
+  async function toggleSave(targetWord, targetBtn) {
+    if (state.profileReplacing) return;
+    const word = targetWord ?? state.today?.word;
+    if (!word) return;
+    const currentState = state.profile?.wordStates?.[String(word.id)] || state.profile?.wordStates?.[`w${word.id}`];
+    const current = currentState?.saved === true || (currentState?.saved === undefined && state.profile?.favorites?.[String(word.id)] === true);
+    const btn = targetBtn ?? elements["today-save"];
+    const todayAction = btn === elements["today-save"];
+    const viewRevision = state.viewRevision;
     let restoreFocus = true;
     if (btn?.disabled) return;
+    state.pendingSaves += 1;
     if (btn) {
       btn.setAttribute("aria-busy", "true");
       btn.disabled = true;
     }
-    actionStatus("جارٍ تحديث الحفظ…");
+    if (todayAction) actionStatus("جارٍ تحديث الحفظ…");
+    else status("جارٍ تحديث الحفظ…");
     try {
       const result = await ExtApi.runtime.sendMessage({
         type: "word.save",
-        wordId: state.today.word.id,
+        wordId: word.id,
         saved: !current,
       });
       if (result?.kind === "recovery") { restoreFocus = false; return renderRecovery(result.recoveryRaw); }
@@ -751,32 +816,45 @@
       state.storageWarning = result.storageWarning === true;
       if (state.storageWarning) {
         warning(true);
-        status("التغيير مؤقت ولم يُحفظ. حاول مجددًا.", false);
-        actionStatus("التغيير مؤقت ولم يُحفظ. حاول مجددًا.", true);
+        status("التغيير مؤقت ولم يُحفظ. حاول مجددًا.", !todayAction);
+        if (todayAction) actionStatus("التغيير مؤقت ولم يُحفظ. حاول مجددًا.", true);
         return;
       }
       warning(result.storageWarning === true || state.reminderWarning);
       const saved = typeof result.saved === "boolean" ? result.saved : !current;
-      const wordId = result.wordId ?? state.today.word.id;
+      const wordId = result.wordId ?? word.id;
       state.profile.wordStates ??= {};
       state.profile.wordStates[wordId] = { ...state.profile.wordStates[wordId], saved };
-      renderToday();
-      updateStreakBadge();
-      status(saved ? "حُفظت الكلمة." : "أزيل الحفظ.", false);
-      actionStatus(saved ? "حُفظت الكلمة." : "أزيل الحفظ.");
+      if (state.profile.favorites) {
+        if (saved) state.profile.favorites[String(wordId)] = true;
+        else delete state.profile.favorites[String(wordId)];
+      }
+      if (state.today?.word && String(state.today.word.id) === String(wordId)) {
+        renderToday();
+        updateStreakBadge();
+      }
+      if (state.exploreWord && String(state.exploreWord.id) === String(wordId)) {
+        byId("explore-save")?.setAttribute("aria-pressed", String(saved));
+      }
+      status(saved ? "حُفظت الكلمة." : "أزيل الحفظ.", !todayAction);
+      if (todayAction) actionStatus(saved ? "حُفظت الكلمة." : "أزيل الحفظ.");
     } catch (_) {
-      status("تعذّر الحفظ.", false);
-      actionStatus("تعذّر الحفظ.", true);
+      status("تعذّر الحفظ.", !todayAction);
+      if (todayAction) actionStatus("تعذّر الحفظ.", true);
     } finally {
+      state.pendingSaves -= 1;
       if (btn) {
         btn.setAttribute("aria-busy", "false");
         btn.disabled = false;
-        if (restoreFocus) btn.focus();
+        if (todayAction && state.view !== "today") btn.disabled = true;
+        if (restoreFocus && btn.isConnected !== false && state.viewRevision === viewRevision
+          && (!document.activeElement || document.activeElement === btn || document.activeElement === document.body)) btn.focus();
       }
     }
   }
 
   async function loadAssignment(dateKey) {
+    if (state.profileReplacing) return;
     const result = await ExtApi.runtime.sendMessage({ type: "assignment.get", dateKey });
     if (result?.kind === "recovery") return renderRecovery(result.recoveryRaw);
     if (result?.kind !== "assigned") {
@@ -1007,10 +1085,11 @@
 
   let profileRefreshRevision = 0;
   async function refreshProfile() {
+    if (state.profileReplacing) return;
     const revision = ++profileRefreshRevision;
     try {
       const exported = await ExtApi.runtime.sendMessage({ type: "state.export" });
-      if (revision !== profileRefreshRevision) return;
+      if (revision !== profileRefreshRevision || state.profileReplacing) return;
       if (exported?.kind === "recovery") return renderRecovery(exported.recoveryRaw);
       if (exported?.kind !== "export") return;
       if (exported.storageWarning === true) { warning(true); return; }
@@ -1031,8 +1110,18 @@
         const wordState = state.profile.wordStates?.[String(state.today.word.id)] || state.profile.wordStates?.[`w${state.today.word.id}`];
         elements["today-known"].setAttribute("aria-pressed", String(assignment?.status === "known"));
         elements["today-difficult"].setAttribute("aria-pressed", String(assignment?.status === "difficult"));
-        elements["today-save"].setAttribute("aria-pressed", String(wordState?.saved === true || (wordState?.saved === undefined && state.profile.favorites?.[String(state.today.word.id)] === true)));
+        if (elements["today-save"].getAttribute("aria-busy") !== "true") {
+          elements["today-save"].setAttribute("aria-pressed", String(wordState?.saved === true || (wordState?.saved === undefined && state.profile.favorites?.[String(state.today.word.id)] === true)));
+        }
       }
+      const exploreSave = byId("explore-save");
+      if (state.exploreWord && exploreSave && exploreSave.getAttribute("aria-busy") !== "true") {
+        const wordId = state.exploreWord.id;
+        const wordState = state.profile.wordStates?.[String(wordId)] || state.profile.wordStates?.[`w${wordId}`];
+        exploreSave.setAttribute("aria-pressed", String(wordState?.saved === true
+          || (wordState?.saved === undefined && state.profile.favorites?.[String(wordId)] === true)));
+      }
+      if (state.view === "history") renderHistory();
       updateStreakBadge();
     } catch (_) { warning(true); }
   }
@@ -1227,6 +1316,7 @@
   }
 
   async function submitRating(rating) {
+    if (state.profileReplacing) return;
     const currentItem = ReviewSession.beginSubmission(reviewSession);
     if (!currentItem) return;
     const wordId = currentItem.word?.id ?? currentItem.wordId ?? currentItem.id;

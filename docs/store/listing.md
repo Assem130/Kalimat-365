@@ -1,8 +1,8 @@
-# Kalimat draft store listing kit
+# Kalimat store listing kit
 
-Candidate copy for review, not a published listing or release. Product: **Kalimat / كَلِمات**. Audience: people who already speak Arabic and want enrichment. Manifest `0.3.0` is retained for compatibility; matching versions do not prove identical archives or store contents.
+Prepared copy for the **0.4.0** update. Product: **Kalimat / كَلِمات**. Audience: people who already speak Arabic and want enrichment. Store submission is separate from GitHub publication; this file does not claim approval or a live store update.
 
-## Draft purpose and descriptions
+## Purpose and descriptions
 
 **Arabic purpose:** يقدّم كَلِمات لقاءً يومياً مع كلمة عربية ومعناها وسياقها لمن يتحدث العربية ويحب اكتشافها.
 
@@ -37,12 +37,12 @@ Firefox has no dictionary host permission; dictionary lookup is local. Its curre
 
 Speech uses a browser-reported local Arabic voice by default. Atlas can enable remote browser speech after disclosure; spoken text may then reach the browser speech provider on Chrome or Firefox. Website speech retains browser/OS-dependent behavior. Dictionary results from Wiktionary are visibly unreviewed, cannot be saved and are not retained in profile history. Network providers may process connection metadata.
 
-Website state uses `localStorage`; extension state uses `storage.local`, with distinct JSON formats and no automatic migration. Atlas clear-data attempts profile deletion and reminder disabling independently and reports partial or unknown outcomes. See [extension privacy](../../extension/PRIVACY.md) and [candidate policy source](../../privacy.html). Publish that correction alongside any approved release; no policy deployment occurs here.
+Website state uses `localStorage`; extension state uses `storage.local`, with distinct JSON formats and no automatic migration. Atlas clear-data attempts profile deletion and reminder disabling independently and reports partial or unknown outcomes. See [extension privacy](../../extension/PRIVACY.md) and [policy source](../../privacy.html). Confirm that the public policy reflects this disclosure before submission.
 
 ## Distribution and historical material
 
 - [Existing Chrome Web Store channel](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe): current contents unverified because the read-only lookup was inaccessible. Prior Chrome `0.3.0` publication statements are historical repository records.
-- [beta.2 snapshot](https://github.com/Assem130/Kalimat-365/releases/tag/v0.3.0-beta.2): historical `kalimat-chrome-0.3.0.zip` and `kalimat-firefox-0.3.0.zip`, not this candidate.
+- [beta.2 snapshot](https://github.com/Assem130/Kalimat-365/releases/tag/v0.3.0-beta.2): historical `kalimat-chrome-0.3.0.zip` and `kalimat-firefox-0.3.0.zip`, not version 0.4.0.
 - Firefox submission postponement is an earlier repository record, not verified current store status.
 - [Published privacy](https://assem130.github.io/Kalimat-365/privacy.html) and [support](https://github.com/Assem130/Kalimat-365/issues).
 
@@ -54,4 +54,12 @@ Existing screenshots are historical assets. They do not demonstrate the current 
 | [02-review.png](screenshots/02-review.png) | Website recall dialog |
 | [03-atlas.png](screenshots/03-atlas.png) | Earlier extension Atlas |
 
-Current native popup/Atlas layout, keyboard and audio acceptance are unverified because available automation blocks `chrome://extensions`. Capture actual extension screenshots only after that acceptance. Retain historical assets and font licenses. See [development](../DEVELOPMENT.md) for source installation and [product context](../../CONTEXT.md) for the binding direction.
+The recent installed Chrome popup/Atlas evidence is recorded in [verification](../VERIFICATION.md). Keep the historical screenshots separate and use actual extension screenshots for this update. Retain font licenses. See [development](../DEVELOPMENT.md) for installation and [product context](../../CONTEXT.md) for the binding direction.
+
+## Submit the 0.4.0 update
+
+Update existing item `dlfllbncnbfpnocdaeddejjjldohmefe`; do not create a duplicate listing. Upload `kalimat-chrome-0.4.0.zip` from the matching GitHub release or verified local build. Confirm that the dashboard's current version is lower than 0.4.0.
+
+Use the Arabic purpose and description above as the main listing. Set the privacy URL to `https://assem130.github.io/Kalimat-365/privacy.html` and support URL to `https://github.com/Assem130/Kalimat-365/issues`. Keep existing distribution unchanged. Review the privacy declarations against the explicit dictionary query and opt-in remote speech described above; no new extension permissions are requested.
+
+Replace screenshots that show the old parallel learning website with actual daily-popup and Atlas screenshots. Google requires at least one 1280 by 800 screenshot and permits up to five. Submit the update for review after package, listing and privacy fields are complete. Record submission status separately from approval and publication. [Google's update instructions](https://developer.chrome.com/docs/webstore/update/) and [listing requirements](https://developer.chrome.com/docs/webstore/cws-dashboard-listing) describe these steps.

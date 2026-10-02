@@ -10,10 +10,8 @@ const python = process.env.PYTHON || (process.platform === "win32" ? "python" : 
 const extensionRoot = path.join(__dirname, "..");
 const distRoot = path.join(extensionRoot, "dist");
 const browsers = ["chrome", "firefox"];
-const archiveNames = {
-  chrome: "kalimat-chrome-0.3.0.zip",
-  firefox: "kalimat-firefox-0.3.0.zip",
-};
+const releaseVersion = JSON.parse(fs.readFileSync(path.join(extensionRoot, "manifest.chrome.json"), "utf8")).version;
+const archiveNames = Object.fromEntries(browsers.map((browser) => [browser, `kalimat-${browser}-${releaseVersion}.zip`]));
 const runtimeFiles = [
   "assets/fonts/Amiri-Bold.woff2",
   "assets/fonts/Amiri-Regular.woff2",
@@ -176,7 +174,7 @@ function assertNoUnsafePayload(browser) {
 test("Chrome manifest uses a MV3 service worker with fixed optional ar.wiktionary.org host permission", () => {
   const chrome = manifest("chrome");
   assertSafeManifest(chrome, "chrome");
-  assert.equal(chrome.version, "0.3.0");
+  assert.equal(chrome.version, "0.4.0");
   assert.deepEqual(Object.keys(chrome.background), ["service_worker"]);
   assert.equal(chrome.background.service_worker, "background.js");
 });
@@ -184,7 +182,7 @@ test("Chrome manifest uses a MV3 service worker with fixed optional ar.wiktionar
 test("Firefox manifest uses ordered event-page scripts with no host permissions", () => {
   const firefox = manifest("firefox");
   assertSafeManifest(firefox, "firefox");
-  assert.equal(firefox.version, "0.3.0");
+  assert.equal(firefox.version, "0.4.0");
   assert.deepEqual(firefox.browser_specific_settings, {
     gecko: {
       id: "kalimat@assem130.github.io",
@@ -248,7 +246,7 @@ test("both packages contain exactly the runtime allowlist and selected manifest"
     assert.deepEqual(new Set(listFiles(path.join(distRoot, browser))), expectedPackageFiles, `${browser} package drifted from the allowlist`);
     assert.doesNotThrow(() => assertSafeManifest(packageManifest(browser), browser));
     assert.deepEqual(packageManifest(browser), manifest(browser));
-    assert.equal(manifest(browser).version, "0.3.0");
+    assert.equal(manifest(browser).version, "0.4.0");
     assert.equal(packageManifest(browser).background.service_worker ?? undefined, browser === "chrome" ? "background.js" : undefined);
     if (browser === "firefox") assert.deepEqual(packageManifest(browser).background.scripts, manifest("firefox").background.scripts);
   }
@@ -347,7 +345,7 @@ test("packager rejects unexpected sources and missing runtime files before outpu
 });
 
 test("packager rejects unsafe dist, browser, and archive targets without touching unrelated data", () => {
-  for (const relative of ["dist", "dist/chrome", "dist/firefox", "dist/kalimat-chrome-0.3.0.zip", "dist/kalimat-firefox-0.3.0.zip"]) {
+  for (const relative of ["dist", "dist/chrome", "dist/firefox", `dist/${archiveNames.chrome}`, `dist/${archiveNames.firefox}`]) {
     packageFixture((copy, temporary) => {
       const target = path.join(copy, relative);
       fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -372,7 +370,7 @@ test("packager refuses source and output symlinks including nested cleanup targe
       throw error;
     }
   } finally { fs.rmSync(probe, { recursive: true, force: true }); }
-  for (const relative of ["background.js", "shared", "dist", "dist/chrome", "dist/firefox/nested", "dist/kalimat-chrome-0.3.0.zip"]) {
+  for (const relative of ["background.js", "shared", "dist", "dist/chrome", "dist/firefox/nested", `dist/${archiveNames.chrome}`]) {
     packageFixture((copy, temporary) => {
       const external = path.join(temporary, "external");
       fs.mkdirSync(external);
@@ -418,7 +416,7 @@ test("packager rejects invalid manifests, Firefox disclosures, and over-budget p
       fs.writeFileSync(path.join(copy, "dist/chrome/sentinel"), "keep");
       change(copy);
     }, (copy, _, result) => {
-      assert.match(result.stderr, /Invalid chrome manifest|Invalid Firefox store disclosure|Release budget exceeded/);
+      assert.match(result.stderr, /Invalid chrome manifest|Chrome and Firefox manifest versions must match|Invalid Firefox store disclosure|Release budget exceeded/);
       assert.equal(fs.readFileSync(path.join(copy, "dist/chrome/sentinel"), "utf8"), "keep");
     });
   }

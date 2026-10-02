@@ -1,6 +1,6 @@
 # Kalimat product context
 
-This is the authoritative direction for the first milestone candidate. Kalimat (كَلِمات) is Arabic-first enrichment for people who already speak Arabic: one excellent daily encounter with a word, its meaning and a useful context. English is optional, secondary support. Literary and uncommon words belong when their meaning, context and editorial merit justify the encounter.
+This is the authoritative direction for the daily-discovery milestone. Kalimat (كَلِمات) is Arabic-first enrichment for people who already speak Arabic: one excellent daily encounter with a word, its meaning and a useful context. English is optional, secondary support. Literary and uncommon words belong when their meaning, context and editorial merit justify the encounter.
 
 ## Product boundary
 
@@ -16,14 +16,14 @@ Website state is separately stored in `localStorage` under `arabic_words_state`;
 
 Both surfaces provide export and deletion controls. Extension clear-data attempts profile deletion and reminder disabling independently. It reports temporary, partial or unknown results when persistence or reminder state cannot be confirmed; profile deletion can succeed while reminders remain enabled or unreadable.
 
-Extension speech selects a browser-reported local Arabic voice by default. Informed remote-speech opt-in in Atlas may send spoken text to the browser's speech provider on either browser. Website speech retains browser/OS-dependent behavior. Chrome dictionary lookup is separately gated by explicit submission and optional Wiktionary permission; Firefox dictionary lookup is local. See [extension privacy](extension/PRIVACY.md) and the [candidate policy source](privacy.html). Publish the corrected policy alongside any approved release; the deployed policy has not been updated by this milestone.
+Extension speech selects a browser-reported local Arabic voice by default. Informed remote-speech opt-in in Atlas may send spoken text to the browser's speech provider on either browser. Website speech retains browser/OS-dependent behavior. Chrome dictionary lookup is separately gated by explicit submission and optional Wiktionary permission; Firefox dictionary lookup is local. See [extension privacy](extension/PRIVACY.md) and the [policy source](privacy.html). Verify the public policy deployment before submitting a store update.
 
 ## Runtime and distribution facts
 
 The app uses vanilla HTML/CSS/JavaScript. `app-core.js`, `app.js`, `revamp.js`, `web-ui.js` and `sw.js` retain the website runtime. Shared review and speech adapters remain compatible with website callers. `words.js` is the canonical 365-entry set; stable IDs and separate stores are preserved. See [editorial scope and provenance](docs/EDITORIAL.md).
 
-`Kalimat-365` is the repository slug, not a promise of a 365-day course. Manifest version `0.3.0` and package names are compatibility/distribution facts, not a new release. The Chrome Web Store link is an existing channel; historical publication records do not establish its current contents. A read-only store lookup was inaccessible, so deployed version and listing remain unverified. The earlier [beta protocol](docs/beta/2026-08-10-kalimat-21-day-beta.md) is historical and does not govern current direction.
+`Kalimat-365` is the repository slug, not a promise of a 365-day course. The daily-discovery milestone uses manifest version `0.4.0`; GitHub packages and Chrome Web Store publication are separate distribution steps. The Chrome Web Store link is an existing channel; historical publication records do not establish its current contents. A read-only store lookup was inaccessible, so deployed version and listing remain unverified. The earlier [beta protocol](docs/beta/2026-08-10-kalimat-21-day-beta.md) is historical and does not govern current direction.
 
-## Candidate verification boundary
+## Verification boundary
 
-Source tests and package checks can verify contracts, not actual extension usability. Native popup/Atlas layout, keyboard interaction and audio acceptance remain unverified: the available browser automation blocks `chrome://extensions`. Website previews and mocks do not substitute for that acceptance. Installation and manual checks are in the [development guide](docs/DEVELOPMENT.md).
+Installed Chrome evidence covers the actual toolbar popup, daily encounter, Atlas navigation, Explore saving, export/import/clear, close/reopen and extension reload. It does not prove actual worker termination, audible Arabic quality or assistive-technology announcements. Final executable regressions supplement that evidence. See [verification](docs/VERIFICATION.md) for methods and limits and the [development guide](docs/DEVELOPMENT.md) for local installation.
