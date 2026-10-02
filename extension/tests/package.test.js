@@ -10,10 +10,8 @@ const python = process.env.PYTHON || (process.platform === "win32" ? "python" : 
 const extensionRoot = path.join(__dirname, "..");
 const distRoot = path.join(extensionRoot, "dist");
 const browsers = ["chrome", "firefox"];
-const archiveNames = {
-  chrome: "kalimat-chrome-0.3.0.zip",
-  firefox: "kalimat-firefox-0.3.0.zip",
-};
+const releaseVersion = JSON.parse(fs.readFileSync(path.join(extensionRoot, "manifest.chrome.json"), "utf8")).version;
+const archiveNames = Object.fromEntries(browsers.map((browser) => [browser, `kalimat-${browser}-${releaseVersion}.zip`]));
 const runtimeFiles = [
   "assets/fonts/Amiri-Bold.woff2",
   "assets/fonts/Amiri-Regular.woff2",
@@ -148,7 +146,14 @@ function assertNoUnsafePayload(browser) {
     assert.equal(forbiddenPath.test(relative), false, `${browser}/${relative} is development-only`);
   }
   for (const { relative, text } of files) {
-    const urls = text.match(remoteUrlRegex) || [];
+    let urlScanText = text;
+    if (relative === "data/vocabulary.json") {
+      const { validateVocabulary } = require("../shared/vocabulary.js");
+      // Exempt only the validated source field, never URLs elsewhere in a record.
+      urlScanText = JSON.stringify(validateVocabulary(JSON.parse(text)).map((record) =>
+        record.exampleSource ? { ...record, exampleSource: { ...record.exampleSource, url: "" } } : record));
+    }
+    const urls = urlScanText.match(remoteUrlRegex) || [];
     for (const url of urls) {
       const isAllowed =
         (relative === "manifest.json" && browser === "chrome" && allowedRemoteUrl.test(url)) ||
@@ -169,7 +174,7 @@ function assertNoUnsafePayload(browser) {
 test("Chrome manifest uses a MV3 service worker with fixed optional ar.wiktionary.org host permission", () => {
   const chrome = manifest("chrome");
   assertSafeManifest(chrome, "chrome");
-  assert.equal(chrome.version, "0.3.0");
+  assert.equal(chrome.version, "0.4.0");
   assert.deepEqual(Object.keys(chrome.background), ["service_worker"]);
   assert.equal(chrome.background.service_worker, "background.js");
 });
@@ -177,7 +182,7 @@ test("Chrome manifest uses a MV3 service worker with fixed optional ar.wiktionar
 test("Firefox manifest uses ordered event-page scripts with no host permissions", () => {
   const firefox = manifest("firefox");
   assertSafeManifest(firefox, "firefox");
-  assert.equal(firefox.version, "0.3.0");
+  assert.equal(firefox.version, "0.4.0");
   assert.deepEqual(firefox.browser_specific_settings, {
     gecko: {
       id: "kalimat@assem130.github.io",
@@ -213,7 +218,8 @@ test("privacy document states local learning storage, online-query scope, analyt
   assert.match(privacy, /Wikimedia servers|ar\.wiktionary\.org/i);
   assert.match(privacy, /unreviewed/i);
   assert.match(privacy, /cannot be saved/i);
-  assert.match(privacy, /Firefox remains local-only/i);
+  assert.match(privacy, /Firefox dictionary lookup is local/i);
+  assert.match(privacy, /opt.in remote browser speech/i);
   assert.doesNotMatch(privacy, /No backend or server receives your data/i);
   assert.match(privacy, /no (?:analytics|tracking)|without (?:analytics|tracking)/i);
   assert.match(privacy, /optional reminder|reminder.{0,24}optional/i);
@@ -240,7 +246,7 @@ test("both packages contain exactly the runtime allowlist and selected manifest"
     assert.deepEqual(new Set(listFiles(path.join(distRoot, browser))), expectedPackageFiles, `${browser} package drifted from the allowlist`);
     assert.doesNotThrow(() => assertSafeManifest(packageManifest(browser), browser));
     assert.deepEqual(packageManifest(browser), manifest(browser));
-    assert.equal(manifest(browser).version, "0.3.0");
+    assert.equal(manifest(browser).version, "0.4.0");
     assert.equal(packageManifest(browser).background.service_worker ?? undefined, browser === "chrome" ? "background.js" : undefined);
     if (browser === "firefox") assert.deepEqual(packageManifest(browser).background.scripts, manifest("firefox").background.scripts);
   }
@@ -339,7 +345,7 @@ test("packager rejects unexpected sources and missing runtime files before outpu
 });
 
 test("packager rejects unsafe dist, browser, and archive targets without touching unrelated data", () => {
-  for (const relative of ["dist", "dist/chrome", "dist/firefox", "dist/kalimat-chrome-0.3.0.zip", "dist/kalimat-firefox-0.3.0.zip"]) {
+  for (const relative of ["dist", "dist/chrome", "dist/firefox", `dist/${archiveNames.chrome}`, `dist/${archiveNames.firefox}`]) {
     packageFixture((copy, temporary) => {
       const target = path.join(copy, relative);
       fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -364,7 +370,7 @@ test("packager refuses source and output symlinks including nested cleanup targe
       throw error;
     }
   } finally { fs.rmSync(probe, { recursive: true, force: true }); }
-  for (const relative of ["background.js", "shared", "dist", "dist/chrome", "dist/firefox/nested", "dist/kalimat-chrome-0.3.0.zip"]) {
+  for (const relative of ["background.js", "shared", "dist", "dist/chrome", "dist/firefox/nested", `dist/${archiveNames.chrome}`]) {
     packageFixture((copy, temporary) => {
       const external = path.join(temporary, "external");
       fs.mkdirSync(external);
@@ -410,8 +416,27 @@ test("packager rejects invalid manifests, Firefox disclosures, and over-budget p
       fs.writeFileSync(path.join(copy, "dist/chrome/sentinel"), "keep");
       change(copy);
     }, (copy, _, result) => {
-      assert.match(result.stderr, /Invalid chrome manifest|Invalid Firefox store disclosure|Release budget exceeded/);
+      assert.match(result.stderr, /Invalid chrome manifest|Chrome and Firefox manifest versions must match|Invalid Firefox store disclosure|Release budget exceeded/);
       assert.equal(fs.readFileSync(path.join(copy, "dist/chrome/sentinel"), "utf8"), "keep");
     });
   }
+});
+
+
+test("vocabulary source URL exception preserves the outbound URL guard", () => {
+  ensurePackages();
+  const file = path.join(distRoot, "chrome/data/vocabulary.json");
+  const original = fs.readFileSync(file);
+  try {
+    const records = JSON.parse(original);
+    const source = records.find((record) => record.exampleSource);
+    assert.ok(source);
+    source.meaningEn = source.exampleSource.url;
+    fs.writeFileSync(file, JSON.stringify(records));
+    assert.throws(() => assertNoUnsafePayload("chrome"), /unauthorized remote URL/);
+    records.splice(0, records.length, ...JSON.parse(original));
+    records.find((record) => record.exampleSource).exampleSource.url = "https://user:pass@example.org/";
+    fs.writeFileSync(file, JSON.stringify(records));
+    assert.throws(() => assertNoUnsafePayload("chrome"), /exampleSource.url/);
+  } finally { fs.writeFileSync(file, original); }
 });

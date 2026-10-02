@@ -108,7 +108,6 @@
           topicMatch(candidate, recentWords),
           metadataMatch(candidate, recentWords, "register"),
           metadataMatch(candidate, recentWords, "partOfSpeech"),
-          USEFULNESS[candidate.usefulnessBand],
           digest,
         ],
       };
@@ -135,20 +134,6 @@
     return found;
   }
 
-  function normalizeLevel(level) {
-    return Number.isInteger(level) ? Math.min(3, Math.max(1, level)) : 1;
-  }
-
-  function pickBand(candidates, level, recentIds, cooldown) {
-    const blocked = new Set(recentIds.slice(0, cooldown));
-    const available = candidates.filter((candidate) => !blocked.has(candidate.id));
-    for (let distance = 0; distance <= 3; distance += 1) {
-      const band = available.filter((candidate) => Math.abs(DIFFICULTY[candidate.difficultyBand] - level) === distance);
-      if (band.length) return band;
-    }
-    return [];
-  }
-
   async function selectDaily({ vocabulary, profile, dateKey, digestHex = sha256Hex, explain = false }) {
     const index = vocabularyIndex(vocabulary);
     const existing = profile.assignments && profile.assignments[dateKey];
@@ -170,12 +155,24 @@
     const canonicalRecentIds = recentIds.map((id) => canonicalId(id, index));
     const recentWords = canonicalRecentIds.map((id) => byId.get(id)).filter(Boolean);
     const cooldown = Math.min(14, Math.floor(eligible.length / 3));
-    const level = normalizeLevel(profile.level);
-    let candidates = pickBand(eligible, level, canonicalRecentIds, cooldown);
+    const blocked = new Set(canonicalRecentIds.slice(0, cooldown));
+    let candidates = eligible.filter((candidate) => !blocked.has(candidate.id));
     const cooldownRelaxed = !candidates.length;
-    if (cooldownRelaxed) candidates = pickBand(eligible, level, [], 0);
+    if (cooldownRelaxed) candidates = eligible;
     if (!candidates.length) return { kind: "no-new-word" };
 
+    // Existing assignment history is the encounter record; no new stored progress.
+    const lastSeen = new Map();
+    for (const [date, assignment] of Object.entries(profile.assignments || {})) {
+      const id = canonicalId(assignment.wordId, index);
+      if (!lastSeen.has(id) || date > lastSeen.get(id)) lastSeen.set(id, date);
+    }
+    const unseen = candidates.filter((candidate) => !lastSeen.has(candidate.id));
+    if (unseen.length) candidates = unseen;
+    else {
+      const oldest = candidates.reduce((date, candidate) => date === null || lastSeen.get(candidate.id) < date ? lastSeen.get(candidate.id) : date, null);
+      candidates = candidates.filter((candidate) => lastSeen.get(candidate.id) === oldest);
+    }
     const broaden = (assignmentCount(profile) + 1) % 7 === 0;
     const ranked = await rankCandidates({
       candidates,
@@ -189,7 +186,7 @@
     const winner = explain ? ranked[0].candidate : ranked[0];
     const winnerId = canonicalId(winner.id, index);
     if (!explain) return { kind: "assigned", wordId: winnerId };
-    return { kind: "assigned", wordId: winnerId, explanation: { cooldown, cooldownRelaxed, abilityDistance: Math.abs(DIFFICULTY[winner.difficultyBand] - level), broaden, tuple: ranked[0].tuple } };
+    return { kind: "assigned", wordId: winnerId, explanation: { cooldown, cooldownRelaxed, broaden, tuple: ranked[0].tuple } };
   }
 
   return { sha256Hex, rankCandidates, selectDaily, canonicalId, vocabularyIndex };

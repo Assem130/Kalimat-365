@@ -8,7 +8,7 @@
   const REQUIRED_KEYS = ["id", "contentVersion", "word", "normalized", "pronunciation", "difficultyBand", "usefulnessBand", "topics", "partOfSpeech", "register", "reviewed"];
   const V2_KEYS = ["contextAr", "contextEn"];
   const ALIAS_KEYS = ["vocalization", "category", "weight", "pattern", "meaning", "meaningAr", "englishMeaning", "meaningEn", "example", "exampleAr", "context", "contextAr", "contextEnglish", "contextEn", "root", "relatedIds"];
-  const ALLOWED_KEYS = new Set([...REQUIRED_KEYS, ...V2_KEYS, ...ALIAS_KEYS]);
+  const ALLOWED_KEYS = new Set([...REQUIRED_KEYS, ...V2_KEYS, ...ALIAS_KEYS, "exampleKind", "exampleSource", "usageNote"]);
   const ENUMS = {
     difficultyBand: new Set(["beginner", "intermediate", "advanced"]),
     usefulnessBand: new Set(["low", "medium", "high"]),
@@ -70,8 +70,21 @@
       if (Object.hasOwn(record, "relatedIds") && record.relatedIds !== undefined) {
         if (!Array.isArray(record.relatedIds) || record.relatedIds.length > 16 || record.relatedIds.some((id) => !ID.test(String(id)))) fail("relatedIds");
       }
+      if (Object.hasOwn(record, "usageNote")) text(record.usageNote, "usageNote");
+      if (Object.hasOwn(record, "exampleKind") && !["original", "quotation"].includes(record.exampleKind)) fail("exampleKind");
+      if (Object.hasOwn(record, "exampleSource")) {
+        const source = record.exampleSource;
+        if (record.exampleKind !== "quotation" || !source || typeof source !== "object" || Array.isArray(source) || Object.getPrototypeOf(source) !== Object.prototype) fail("exampleSource");
+        if (Object.keys(source).length !== 3 || !["title", "url", "reference"].every((key) => Object.hasOwn(source, key))) fail("exampleSource keys");
+        for (const field of ["title", "reference"]) text(source[field], `exampleSource.${field}`, 512);
+        text(source.url, "exampleSource.url", 2048);
+        let url;
+        try { url = new URL(source.url); } catch { fail("exampleSource.url"); }
+        if (!/^https:\/\//i.test(source.url) || url.protocol !== "https:" || !url.hostname || url.username || url.password || /[\s\\]/.test(source.url)) fail("exampleSource.url");
+      }
       if (JSON.stringify(record).length > 8192) fail("record size");
       const normalized = { ...record };
+      if (normalized.exampleSource) normalized.exampleSource = Object.freeze({ ...normalized.exampleSource });
       if (normalized.relatedIds) normalized.relatedIds = Object.freeze([...normalized.relatedIds]);
       normalized.topics = Object.freeze([...normalized.topics]);
       return Object.freeze(normalized);

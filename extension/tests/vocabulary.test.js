@@ -214,3 +214,30 @@ test("findWord accepts full aliases and prefers exact string IDs", () => {
   assert.equal(findWord(words, "w1junk"), undefined);
   assert.equal(findWord(words, "2junk"), undefined);
 });
+
+
+test("optional example provenance is validated without labelling older entries", () => {
+  const { validateVocabulary } = vocabularyApi();
+  const source = { title: "Source", reference: "42", url: "https://example.org/text:42" };
+  const [legacy, original, quotation] = validateVocabulary([
+    validWord(),
+    validWord({ id: "w2", exampleKind: "original", usageNote: "Literary use." }),
+    validWord({ id: "w3", exampleKind: "quotation", exampleSource: source }),
+  ]);
+  assert.equal(Object.hasOwn(legacy, "exampleKind"), false);
+  assert.equal(Object.hasOwn(original, "exampleSource"), false);
+  assert.deepEqual(quotation.exampleSource, source);
+  assert.ok(Object.isFrozen(quotation.exampleSource));
+  source.title = "Changed";
+  assert.equal(quotation.exampleSource.title, "Source");
+  for (const overrides of [
+    { exampleKind: "verified" }, { usageNote: "" }, { exampleSource: source },
+    { exampleKind: "original", exampleSource: source },
+    { exampleKind: "quotation", exampleSource: { ...source, extra: true } },
+    { exampleKind: "quotation", exampleSource: { ...source, reference: "" } },
+    { exampleKind: "quotation", exampleSource: null },
+  ]) assert.throws(() => validateVocabulary([validWord(overrides)]), /vocabulary/i);
+  for (const url of ["javascript:alert(1)", "http://example.org/", "https://user:pass@example.org/", "https://user@example.org/", "//example.org/", "https://example.org/ bad", "https://", " https://example.org/"]) {
+    assert.throws(() => validateVocabulary([validWord({ exampleKind: "quotation", exampleSource: { ...source, url } })]), /exampleSource.url/);
+  }
+});

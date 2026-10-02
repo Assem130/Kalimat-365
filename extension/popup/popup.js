@@ -1,74 +1,151 @@
 (() => {
   "use strict";
-
   const ExtApi = globalThis.browser ?? globalThis.chrome;
-  const ReviewSession = globalThis.KalimatReviewSession;
   const byId = (id) => document.getElementById(id);
-  const state = {
-    word: null,
-    dateKey: null,
-    profile: null,
-    showEnglish: true,
-    reminder: null,
-    reminderReady: false,
-    reminderWarning: false,
-    storageWarning: false,
-    reminderError: "",
-    reminderBusy: false,
-    speakAvailable: false,
-    view: "",
-  };
+  const state = { word: null, dateKey: null, profile: null, storageWarning: false, speakAvailable: false, view: "" };
   let elements;
-  let reminderQueue = null;
   let themeController = null;
-  let onboardingInFlight = false;
-  const reviewSession = ReviewSession.create();
-  let reviewQueueLoad = null;
-  let reviewQueueRefreshRequested = false;
-  let reviewInvoker = null;
-
-  function toArabicDigits(value) {
-    if (globalThis.KalimatStreak?.toArabicDigits) return globalThis.KalimatStreak.toArabicDigits(value);
-    return String(value ?? "").replace(/[0-9]/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[digit]);
-  }
-
-  function formatReviewCount(count) {
-    const value = Math.max(0, Number(count) || 0);
-    if (value === 1) return "مراجعة واحدة";
-    if (value === 2) return "مراجعتين";
-    if (value >= 3 && value <= 10) return `${toArabicDigits(value)} مراجعات`;
-    return `${toArabicDigits(value)} مراجعة`;
-  }
-
+  let profileRefreshRevision = 0;
   const ARABIC_DATE_OPTIONS = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
-
+  function collectElements() {
+    return Object.fromEntries(Object.entries({
+      assigned: "assigned", empty: "empty", error: "error", recovery: "recovery",
+      emptyTitle: "empty-title", errorTitle: "error-title", recoveryTitle: "recovery-title",
+      status: "status", warning: "warning", actionStatus: "action-status", word: "word",
+      meaningAr: "meaning-ar", meaningEn: "meaning-en", example: "example", contextEn: "example-en",
+      pronunciation: "pronunciation", translation: "translation", vocalization: "vocalization", vocalizationDetails: "vocalization-details", register: "register",
+      save: "save", speak: "speak", explore: "explore", assignmentDate: "assignment-date",
+    }).map(([name, id]) => [name, byId(id)]));
+  }
+  function show(name) {
+    const changed = state.view !== name;
+    state.view = name;
+    for (const section of ["assigned", "empty", "error", "recovery"]) elements[section].hidden = section !== name;
+    for (const control of [elements.save, elements.speak]) control.disabled = name !== "assigned" || (control === elements.speak && !state.speakAvailable);
+    if (changed && name !== "assigned") elements[`${name}Title`]?.focus();
+    updateSpeechLabel();
+  }
+  function updateSpeechLabel() {
+    elements.speak.textContent = state.profile?.preferences?.allowRemoteSpeech === true ? "استمع (قد يستخدم الإنترنت)" : "استمع للنطق المحلي";
+    elements.speak.setAttribute("aria-label", elements.speak.textContent);
+  }
+  function renderTranslation(showEnglish) {
+    elements.translation.hidden = !showEnglish;
+    elements.meaningEn.hidden = !showEnglish || !state.word?.meaningEn;
+    elements.contextEn.hidden = !showEnglish || !state.word?.contextEn;
+  }
+  function renderAssigned(result) {
+    elements ??= collectElements();
+    const word = result.word;
+    state.word = word;
+    state.dateKey = formatDateKey(result.dateKey) ? result.dateKey : null;
+    elements.word.textContent = word.word;
+    elements.meaningAr.textContent = word.meaningAr || "";
+    elements.meaningEn.textContent = word.meaningEn || "";
+    elements.contextEn.textContent = word.contextEn || "";
+    elements.pronunciation.textContent = word.pronunciation || "";
+    elements.example.textContent = word.contextAr || (word.exampleKind === "original" ? word.exampleAr : "") || word.usageNote || "";
+    elements.vocalization.textContent = word.vocalization || "";
+    elements.vocalization.hidden = !word.vocalization || word.vocalization === word.word;
+    elements.vocalizationDetails.hidden = elements.vocalization.hidden;
+    elements.register.textContent = { standard: "فصيح", classical: "أدبي", colloquial: "عامي" }[word.register] || "";
+    elements.register.hidden = !elements.register.textContent;
+    elements.save.setAttribute("aria-pressed", String(result.saved === true));
+    elements.assignmentDate.textContent = formatDateKey(result.dateKey);
+    elements.assignmentDate.hidden = !state.dateKey;
+    renderTranslation(result.showEnglish !== false);
+    show("assigned");
+    actionStatus("");
+    status(state.speakAvailable ? "كلمتك جاهزة." : "كلمتك جاهزة. النطق غير متاح على هذا الجهاز.");
+  }
+  function renderRecovery() {
+    warning(false);
+    show("recovery");
+    status("");
+    actionStatus("");
+  }
+  async function loadAssignment() {
+    status("نحضّر كلمتك…");
+    try {
+      // The background owns assignment/recovery even when a direct read fails.
+      let readWarning = false;
+      try {
+        const stored = await ExtApi.storage.local.get("kalimat.profile");
+        state.profile = stored["kalimat.profile"] ?? null;
+      } catch (_) { readWarning = true; }
+      const result = await ExtApi.runtime.sendMessage({ type: "assignment.get" });
+      if (result?.kind === "recovery") return renderRecovery();
+      state.storageWarning = readWarning || result?.storageWarning === true;
+      warning(state.storageWarning);
+      if (result?.kind === "no-new-word") { show("empty"); status(""); return; }
+      const assignment = await assignedWord(result);
+      if (assignment.kind !== "assigned" || !formatDateKey(assignment.dateKey)) throw new Error("Invalid assignment.");
+      if (state.storageWarning) {
+        const wordState = state.profile?.wordStates?.[String(assignment.word.id)] || state.profile?.wordStates?.[`w${assignment.word.id}`];
+        renderAssigned({ ...assignment, saved: wordState?.saved === true, showEnglish: state.profile?.showEnglish === true });
+      } else renderAssigned(assignment);
+    } catch (_) {
+      show("error");
+      status("تعذّر تحميل الكلمة. حاول مجددًا.");
+    }
+  }
+  async function refreshProfile() {
+    const revision = ++profileRefreshRevision;
+    try {
+      const result = await ExtApi.runtime.sendMessage({ type: "state.export" });
+      if (revision !== profileRefreshRevision) return;
+      if (result?.kind === "recovery") return renderRecovery();
+      if (result?.kind !== "export") return;
+      if (result.storageWarning === true) { warning(true); return; }
+      state.profile = JSON.parse(result.text);
+      warning(result.storageWarning === true || state.storageWarning);
+      updateSpeechLabel();
+      if (state.word) {
+        renderTranslation(state.profile.showEnglish !== false);
+        const wordState = state.profile.wordStates?.[String(state.word.id)] || state.profile.wordStates?.[`w${state.word.id}`];
+        // A pending save owns its indicator until the durable response arrives.
+        if (!elements.save.disabled) elements.save.setAttribute("aria-pressed", String(wordState?.saved === true || (wordState?.saved === undefined && state.profile.favorites?.[String(state.word.id)] === true)));
+      }
+    } catch (_) { warning(true); }
+  }
+  function openAtlas(view = "explore") {
+    const route = view === "settings" ? "view=settings" : `view=explore&id=${encodeURIComponent(state.word?.id ?? "")}&q=${encodeURIComponent(state.word?.word ?? "")}`;
+    return ExtApi.tabs.create({ url: ExtApi.runtime.getURL(`atlas/atlas.html?${route}`) });
+  }
+  async function initialize() {
+    elements = collectElements();
+    elements.assigned.hidden = true;
+    elements.assignmentDate.hidden = true;
+    if (globalThis.KalimatTheme?.initThemeController) themeController = globalThis.KalimatTheme.initThemeController({ storageArea: ExtApi?.storage?.local, targetDoc: document });
+    elements.save.addEventListener("click", toggleSave);
+    elements.speak.addEventListener("click", () => speak());
+    byId("explore").addEventListener("click", () => openAtlas());
+    byId("explore-empty").addEventListener("click", () => openAtlas());
+    byId("recovery-atlas").addEventListener("click", () => openAtlas("settings"));
+    byId("error-atlas").addEventListener("click", () => openAtlas("settings"));
+    byId("error-retry").addEventListener("click", loadAssignment);
+    ExtApi.storage?.onChanged?.addListener((changes, areaName) => {
+      if ((!areaName || areaName === "local") && changes?.["kalimat.profile"]) refreshProfile();
+    });
+    state.speakAvailable = !!globalThis.speechSynthesis && typeof globalThis.SpeechSynthesisUtterance === "function";
+    await loadAssignment();
+  }
   function formatDateKey(dateKey) {
     if (typeof globalThis.KalimatDate?.isDateKey !== "function" || !globalThis.KalimatDate.isDateKey(dateKey)) return "";
     const [year, month, day] = dateKey.split("-").map(Number);
     return new Date(year, month - 1, day).toLocaleDateString("ar-EG", ARABIC_DATE_OPTIONS);
   }
 
-  function show(name) {
-    state.view = name;
-    for (const section of ["onboarding", "assigned", "empty", "error", "recovery"]) {
-      if (elements[section]) elements[section].hidden = section !== name;
-    }
-    const heading = elements[`${name}Title`];
-    if (heading) heading.focus();
-    const active = name === "assigned";
-    for (const control of [elements.known, elements.difficult, elements.save, elements.explore, elements.btnExportAnki, elements.btnExportCard]) {
-      if (control) control.disabled = !active;
-    }
-    if (elements.speak) elements.speak.disabled = !active || !state.speakAvailable;
-    if (elements.reminder) elements.reminder.disabled = !active || !state.reminderReady || state.reminderError !== "";
-    if (elements.reminderTime) elements.reminderTime.disabled = !active || !state.reminderReady || state.reminderError !== "";
-  }
-
-  function status(message) {
+  function status(message, announce = true) {
+    elements.status?.setAttribute("role", announce ? "status" : "none");
+    elements.status?.setAttribute("aria-live", announce ? "polite" : "off");
     if (elements.status) elements.status.textContent = message;
   }
 
   function actionStatus(message, isError = false) {
+    elements.status?.setAttribute("role", "none");
+    elements.status?.setAttribute("aria-live", "off");
+    if (elements.status) elements.status.textContent = "";
     const target = elements.actionStatus;
     if (!target) return;
     target.textContent = message;
@@ -78,490 +155,6 @@
 
   function warning(visible) {
     if (elements.warning) elements.warning.hidden = !visible;
-  }
-
-  function renderReminder(reminder) {
-    if (!reminder || typeof reminder.enabled !== "boolean" || !/^\d{2}:\d{2}$/.test(reminder.time)) return false;
-    state.reminderReady = true;
-    state.reminderError = "";
-    state.reminder = { enabled: reminder.enabled, time: reminder.time };
-    elements.reminderTime.value = reminder.time;
-    elements.reminderTime.disabled = state.view !== "assigned";
-    elements.reminder.disabled = state.view !== "assigned";
-    elements.reminder.setAttribute("aria-checked", String(reminder.enabled));
-    elements.reminder.setAttribute("aria-label", reminder.enabled ? "إيقاف التذكير اليومي" : "تفعيل التذكير اليومي");
-    return true;
-  }
-
-  async function loadReminder() {
-    try {
-      const settings = await ExtApi.runtime.sendMessage({ type: "settings.get" });
-      if (!settings || settings.kind !== "settings" || !renderReminder(settings.reminder)) throw new Error("Invalid settings.");
-      state.reminderWarning = settings.storageWarning === true;
-      warning(state.reminderWarning || state.storageWarning);
-    } catch (_) {
-      state.reminderReady = true;
-      state.reminder = null;
-      state.reminderError = "تعذّر تحميل إعدادات التذكير.";
-      elements.reminderTime.value = "";
-      elements.reminderTime.disabled = true;
-      elements.reminder.disabled = true;
-      elements.reminder.setAttribute("aria-checked", "false");
-      elements.reminder.setAttribute("aria-label", "التذكير غير متاح");
-      status(state.reminderError);
-    }
-  }
-
-  function updateStreak(assignments, todayKey) {
-    if (!elements?.streakBadge) return;
-    const profileAssignments = assignments ?? state.profile?.assignments ?? state.profile;
-    const key = todayKey || state.dateKey || (globalThis.KalimatDate?.todayDateKey ? globalThis.KalimatDate.todayDateKey() : new Date().toISOString().slice(0, 10));
-    const streak = globalThis.KalimatStreak?.calculateStreak
-      ? globalThis.KalimatStreak.calculateStreak(profileAssignments, key)
-      : { currentStreak: 0 };
-    const formattedStreak = globalThis.KalimatStreak?.formatStreakText
-      ? globalThis.KalimatStreak.formatStreakText(streak.currentStreak)
-      : (streak.currentStreak === 1 ? "يوم واحد" : `${streak.currentStreak} أيام`);
-    const digits = globalThis.KalimatStreak?.toArabicDigits
-      ? globalThis.KalimatStreak.toArabicDigits(formattedStreak)
-      : formattedStreak;
-    elements.streakBadge.textContent = `🔥 ${digits}`;
-    elements.streakBadge.setAttribute("aria-label", `تتابع القراءة والزيارة: ${digits}`);
-    elements.streakBadge.title = "تتابع القراءة والزيارة";
-  }
-
-  function hideReviewBadge() {
-    if (elements.dueReviewBadge) elements.dueReviewBadge.hidden = true;
-  }
-
-  function reviewButtons() {
-    return [elements.rateAgain, elements.rateHard, elements.rateGood, elements.rateEasy].filter(Boolean);
-  }
-
-  function syncReviewControls() {
-    const revealed = ReviewSession.isRevealed(reviewSession);
-    if (elements.practiceRatings) elements.practiceRatings.hidden = !revealed;
-    for (const button of reviewButtons()) button.disabled = !revealed || ReviewSession.isSubmitting(reviewSession);
-    if (elements.cardFrontSpeak) elements.cardFrontSpeak.disabled = revealed;
-    if (elements.cardFrontFace) elements.cardFrontFace.setAttribute("aria-hidden", String(revealed));
-    if (elements.cardBackFace) elements.cardBackFace.setAttribute("aria-hidden", String(!revealed));
-    if (elements.flashcardCard) elements.flashcardCard.classList.toggle("flipped", revealed);
-    if (elements.cardFrontFlip) {
-      elements.cardFrontFlip.setAttribute("aria-pressed", String(revealed));
-      const label = revealed ? "أخفِ المعنى" : "اقلب البطاقة";
-      elements.cardFrontFlip.setAttribute("aria-label", label);
-      elements.cardFrontFlip.textContent = label;
-    }
-  }
-
-  function clearPracticeCard() {
-    ReviewSession.resetCard(reviewSession);
-    for (const element of [elements.cardFrontWord, elements.cardFrontVocalization, elements.cardFrontWeight, elements.cardFrontRoot, elements.cardBackMeaningAr, elements.cardBackMeaningEn, elements.cardBackExampleAr, elements.cardBackContext]) {
-      if (element) element.textContent = "";
-    }
-    if (elements.practiceProgress) elements.practiceProgress.textContent = "";
-    for (const button of reviewButtons()) {
-      const interval = button.querySelector?.(".rate-interval");
-      if (interval) interval.textContent = "—";
-      button.setAttribute("aria-busy", "false");
-    }
-    syncReviewControls();
-  }
-
-  function practiceIsActive() {
-    return ReviewSession.isSubmitting(reviewSession) || elements.practiceDialog?.open === true || elements.practiceDialog?.hasAttribute("open");
-  }
-
-  let profileRefreshRevision = 0;
-  async function refreshProfile() {
-    const revision = ++profileRefreshRevision;
-    try {
-      const exported = await ExtApi.runtime.sendMessage({ type: "state.export" });
-      if (revision !== profileRefreshRevision) return;
-      if (exported?.kind === "recovery") return renderRecovery();
-      if (exported?.kind !== "export") return;
-      state.profile = JSON.parse(exported.text);
-      warning(exported.storageWarning === true || state.reminderWarning || state.storageWarning);
-      if (state.word) {
-        const wordState = state.profile.wordStates?.[String(state.word.id)] || state.profile.wordStates?.[`w${state.word.id}`];
-        const assignment = state.profile.assignments?.[state.dateKey];
-        elements.known.setAttribute("aria-pressed", String(assignment?.status === "known"));
-        elements.difficult.setAttribute("aria-pressed", String(assignment?.status === "difficult"));
-        elements.save.setAttribute("aria-pressed", String(wordState?.saved === true || (wordState?.saved === undefined && state.profile.favorites?.[String(state.word.id)] === true)));
-      }
-      updateStreak(state.profile?.assignments, state.dateKey);
-    } catch (_) { warning(true); }
-  }
-
-  function listenForProfileChanges() {
-    ExtApi.storage?.onChanged?.addListener((changes, areaName) => {
-      if ((areaName && areaName !== "local") || !changes?.["kalimat.profile"]) return;
-      refreshProfile().then(() => {
-        if (!practiceIsActive()) return loadDueReviews({ force: true });
-      });
-    });
-  }
-
-  function loadDueReviews({ force = false } = {}) {
-    if (ReviewSession.isSubmitting(reviewSession) || (practiceIsActive() && !ReviewSession.hasError(reviewSession))) return Promise.resolve();
-    if (!force && ReviewSession.isLoaded(reviewSession)) return Promise.resolve();
-    if (reviewQueueLoad) {
-      if (force) reviewQueueRefreshRequested = true;
-      return reviewQueueLoad;
-    }
-
-    hideReviewBadge();
-    reviewQueueLoad = (async () => {
-      let result;
-      do {
-        // A mutation may commit while this request is pending. Keep all callers
-        // waiting until a later request has observed that authoritative state.
-        reviewQueueRefreshRequested = false;
-        result = await ReviewSession.load(reviewSession, () => ExtApi.runtime.sendMessage({ type: "review.queue" }));
-      } while (reviewQueueRefreshRequested && !practiceIsActive());
-      if (result.kind === "recovery") {
-          hideReviewBadge();
-          renderRecovery(result.recoveryRaw);
-          return result;
-      }
-      if (result.kind === "queue") {
-        const queue = result.queue;
-        warning(queue.storageWarning || state.reminderWarning || state.storageWarning);
-        if (elements.dueReviewBadge) {
-          if (queue.dueCount > 0) {
-            elements.dueReviewBadge.hidden = false;
-            elements.dueReviewBadge.textContent = `${queue.dueCount} مستحقة`;
-            elements.dueReviewBadge.setAttribute("aria-label", `المراجعات المستحقة اليوم: ${formatReviewCount(queue.dueCount)}`);
-          } else {
-            elements.dueReviewBadge.hidden = true;
-          }
-        }
-      } else {
-        hideReviewBadge();
-        clearPracticeCard();
-      }
-      return result;
-    })();
-    const pending = reviewQueueLoad;
-    pending.then(() => {
-      if (reviewQueueLoad === pending) reviewQueueLoad = null;
-    }, () => {
-      if (reviewQueueLoad === pending) reviewQueueLoad = null;
-    });
-    return pending;
-  }
-
-  function presentPracticeDialog() {
-    if (!elements.practiceDialog) return;
-    if (typeof elements.practiceDialog.showModal === "function") elements.practiceDialog.showModal();
-    else elements.practiceDialog.setAttribute("open", "");
-  }
-
-  function showPracticeError() {
-    if (elements.practiceBody) elements.practiceBody.hidden = false;
-    if (elements.practiceFinished) elements.practiceFinished.hidden = true;
-    if (elements.practiceError) elements.practiceError.hidden = false;
-    if (elements.practiceErrorMessage) elements.practiceErrorMessage.textContent = ReviewSession.error(reviewSession) || "تعذّر تحميل المراجعات. حاول مجددًا.";
-    clearPracticeCard();
-    status(ReviewSession.error(reviewSession) || "تعذّر تحميل المراجعات. حاول مجددًا.");
-  }
-
-  function showPracticeContent() {
-    if (ReviewSession.isRecovery(reviewSession)) return;
-    if (ReviewSession.hasError(reviewSession)) return showPracticeError();
-    if (ReviewSession.count(reviewSession) === 0) return showPracticeFinished();
-    showPracticeCard(0);
-  }
-
-  async function openPracticeModal() {
-    if (!elements.practiceDialog || practiceIsActive()) return;
-    reviewInvoker = document.activeElement && typeof document.activeElement.focus === "function" ? document.activeElement : null;
-    await refreshProfile();
-    const result = await loadDueReviews({ force: true });
-    if (result?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) return;
-    showPracticeContent();
-    presentPracticeDialog();
-  }
-
-  function restoreReviewFocus() {
-    const invoker = reviewInvoker;
-    reviewInvoker = null;
-    if (invoker && typeof invoker.focus === "function") invoker.focus();
-  }
-
-  function closePracticeModal() {
-    if (!elements.practiceDialog) return;
-    if (typeof elements.practiceDialog.close === "function") elements.practiceDialog.close();
-    else {
-      elements.practiceDialog.removeAttribute("open");
-      restoreReviewFocus();
-    }
-    loadDueReviews({ force: true });
-  }
-
-  function handlePracticeDialogClose() {
-    if (ReviewSession.isRecovery(reviewSession)) {
-      reviewInvoker = null;
-      return;
-    }
-    restoreReviewFocus();
-  }
-
-  function dismissPracticeForRecovery() {
-    if (elements.practiceDialog) {
-      if (typeof elements.practiceDialog.close === "function") elements.practiceDialog.close();
-      else elements.practiceDialog.removeAttribute("open");
-    }
-    if (elements.practiceBody) elements.practiceBody.hidden = true;
-    if (elements.practiceFinished) elements.practiceFinished.hidden = true;
-    if (elements.practiceError) elements.practiceError.hidden = true;
-    clearPracticeCard();
-  }
-
-  function showPracticeCard(index) {
-    if (index < 0 || index >= ReviewSession.count(reviewSession)) {
-      showPracticeFinished();
-      return;
-    }
-    if (elements.practiceBody) elements.practiceBody.hidden = false;
-    if (elements.practiceFinished) elements.practiceFinished.hidden = true;
-
-    const item = ReviewSession.showCard(reviewSession, index);
-    const word = item.word || item;
-    if (elements.practiceError) elements.practiceError.hidden = true;
-    const reviewOptions = item.reviewOptions || {};
-    for (const [key, button] of [["again", elements.rateAgain], ["hard", elements.rateHard], ["good", elements.rateGood], ["easy", elements.rateEasy]]) {
-      const label = reviewOptions[key]?.label;
-      if (!button || !label) continue;
-      const interval = button.querySelector?.(".rate-interval");
-      if (interval) interval.textContent = label;
-    }
-    if (elements.practiceProgress) {
-      elements.practiceProgress.textContent = `${index + 1} / ${ReviewSession.count(reviewSession)}`;
-    }
-    if (elements.cardFrontWord) elements.cardFrontWord.textContent = word.word || "";
-    if (elements.cardFrontVocalization) elements.cardFrontVocalization.textContent = word.vocalization || word.pronunciation || "";
-    if (elements.cardFrontWeight) elements.cardFrontWeight.textContent = word.sarfWeight || word.weight || "";
-    if (elements.cardFrontRoot) elements.cardFrontRoot.textContent = word.root ? `الجذر: ${word.root}` : "";
-    if (elements.cardBackMeaningAr) elements.cardBackMeaningAr.textContent = word.meaningAr || word.meaning || "";
-    if (elements.cardBackMeaningEn) {
-      elements.cardBackMeaningEn.textContent = word.meaningEn || word.englishMeaning || "";
-      elements.cardBackMeaningEn.hidden = !state.showEnglish || !elements.cardBackMeaningEn.textContent;
-    }
-    if (elements.cardBackExampleAr) elements.cardBackExampleAr.textContent = word.exampleAr || word.example || "";
-    if (elements.cardBackContext) elements.cardBackContext.textContent = word.contextAr || word.context || "";
-    syncReviewControls();
-  }
-
-  function showPracticeFinished() {
-    if (elements.practiceBody) elements.practiceBody.hidden = true;
-    if (elements.practiceFinished) elements.practiceFinished.hidden = false;
-    if (elements.practiceError) elements.practiceError.hidden = true;
-    clearPracticeCard();
-    const reviewMeta = ReviewSession.meta(reviewSession);
-    const remainingCount = Math.max(0, reviewMeta.remainingCount);
-    const finishedMessage = elements.practiceFinishedMessage;
-    if (remainingCount > 0) {
-      const message = `أتممت ${toArabicDigits(reviewMeta.visibleCount)} من ${toArabicDigits(reviewMeta.dueCount)} مراجعة؛ تبقت ${formatReviewCount(remainingCount)}.`;
-      if (finishedMessage) finishedMessage.textContent = message;
-      if (elements.dueReviewBadge) {
-        elements.dueReviewBadge.hidden = false;
-        elements.dueReviewBadge.textContent = `${remainingCount} مستحقة`;
-        elements.dueReviewBadge.setAttribute("aria-label", `المراجعات المتبقية بعد الجلسة: ${formatReviewCount(remainingCount)}`);
-      }
-      status(message);
-    } else {
-      if (finishedMessage) finishedMessage.textContent = "🎉 أحسنت! أنهيت جميع مراجعات اليوم.";
-      if (elements.dueReviewBadge) elements.dueReviewBadge.hidden = true;
-    }
-  }
-
-  function flipCard() {
-    ReviewSession.toggleReveal(reviewSession);
-    syncReviewControls();
-    status(ReviewSession.isRevealed(reviewSession) ? "كُشف المعنى." : "أُخفي المعنى.");
-  }
-
-  async function submitRating(rating) {
-    const currentItem = ReviewSession.beginSubmission(reviewSession);
-    if (!currentItem) return;
-    const wordId = currentItem.word?.id ?? currentItem.wordId ?? currentItem.id;
-    const buttons = reviewButtons();
-    syncReviewControls();
-    buttons.forEach((button) => button.setAttribute("aria-busy", "true"));
-    try {
-      const result = await ExtApi.runtime.sendMessage({
-        type: "word.review",
-        wordId,
-        rating,
-        dateKey: state.dateKey || (globalThis.KalimatDate?.todayDateKey ? globalThis.KalimatDate.todayDateKey() : new Date().toISOString().slice(0, 10)),
-      });
-      if (result?.kind === "recovery") return renderRecovery();
-      if (result?.kind === "stale") {
-        ReviewSession.fail(reviewSession, "تغيّرت بيانات التعلّم. حدّث المراجعات للمتابعة.");
-        hideReviewBadge();
-        showPracticeError();
-        return;
-      }
-      if (result?.kind !== "ok") throw new Error("Review unchanged.");
-      const nextIndex = ReviewSession.advance(reviewSession);
-      if (nextIndex !== null) {
-        showPracticeCard(nextIndex);
-        status("تم حفظ المراجعة.");
-      } else {
-        showPracticeFinished();
-        if (ReviewSession.meta(reviewSession).remainingCount === 0) status("تم حفظ المراجعة.");
-      }
-    } catch (_) {
-      ReviewSession.finishSubmission(reviewSession);
-      syncReviewControls();
-      status("تعذّر حفظ المراجعة. حاول مجددًا.");
-    } finally {
-      ReviewSession.finishSubmission(reviewSession);
-      buttons.forEach((button) => button.setAttribute("aria-busy", "false"));
-    }
-  }
-
-  function collectElements() {
-    return {
-      onboarding: byId("onboarding"),
-      assigned: byId("assigned"),
-      assignedTitle: byId("assigned-title"),
-      empty: byId("empty"),
-      error: byId("error"),
-      recovery: byId("recovery"),
-      warning: byId("warning"),
-      status: byId("status"),
-      onboardingTitle: byId("onboarding-title"),
-      emptyTitle: byId("empty-title"),
-      errorTitle: byId("error-title"),
-      errorRetry: byId("error-retry"),
-      recoveryTitle: byId("recovery-title"),
-      word: byId("word"),
-      meaningAr: byId("meaning-ar"),
-      meaningEn: byId("meaning-en"),
-      example: byId("example"),
-      contextEn: byId("example-en"),
-      pronunciation: byId("pronunciation"),
-      known: byId("known"),
-      difficult: byId("difficult"),
-      save: byId("save"),
-      speak: byId("speak"),
-      explore: byId("explore"),
-      reminder: byId("reminder"),
-      reminderTime: byId("reminder-time"),
-      onboardingSubmit: byId("onboarding-submit"),
-      onboardingSkip: byId("onboarding-skip"),
-      actionStatus: byId("action-status"),
-      themeSelect: byId("theme-select"),
-      streakBadge: byId("streak-badge"),
-      assignmentDate: byId("assignment-date"),
-      interestCount: byId("interest-count"),
-      dueReviewBadge: byId("due-review-badge"),
-      btnExportAnki: byId("btn-export-anki"),
-      btnExportCard: byId("btn-export-card"),
-      interests: document.querySelectorAll('input[name="interest"]'),
-      levels: document.querySelectorAll('input[name="level"]'),
-      practiceDialog: byId("practice-dialog"),
-      practiceBody: byId("practice-body"),
-      practiceProgress: byId("practice-progress"),
-      practiceClose: byId("practice-close"),
-      practiceFinished: byId("practice-finished"),
-      practiceFinishedMessage: byId("practice-finished-message"),
-      practiceError: byId("practice-error"),
-      practiceErrorMessage: byId("practice-error-message"),
-      practiceRetry: byId("practice-retry"),
-      practiceFinishBtn: byId("practice-finish-btn"),
-      flashcardCard: byId("flashcard-card"),
-      cardFrontFace: byId("card-front-face"),
-      cardBackFace: byId("card-back-face"),
-      cardFrontFlip: byId("card-front-flip"),
-      cardFrontWord: byId("card-front-word"),
-      cardFrontVocalization: byId("card-front-vocalization"),
-      cardFrontWeight: byId("card-front-weight"),
-      cardFrontRoot: byId("card-front-root"),
-      cardFrontSpeak: byId("card-front-speak"),
-      cardBackMeaningAr: byId("card-back-meaning-ar"),
-      cardBackMeaningEn: byId("card-back-meaning-en"),
-      cardBackExampleAr: byId("card-back-example-ar"),
-      cardBackContext: byId("card-back-context"),
-      practiceRatings: byId("practice-ratings"),
-      rateAgain: byId("rate-again"),
-      rateHard: byId("rate-hard"),
-      rateGood: byId("rate-good"),
-      rateEasy: byId("rate-easy"),
-    };
-  }
-
-  function renderAssigned(result) {
-    elements ??= collectElements();
-    const word = result.word;
-    const formattedDate = formatDateKey(result.dateKey);
-    state.word = word;
-    state.dateKey = formattedDate ? result.dateKey : null;
-    state.showEnglish = result.showEnglish !== false;
-    elements.word.textContent = word.word;
-    elements.meaningAr.textContent = word.meaningAr;
-    elements.meaningEn.textContent = word.meaningEn ?? "";
-    elements.meaningEn.hidden = !state.showEnglish || !word.meaningEn;
-    elements.example.textContent = word.contextAr || word.exampleAr || "";
-    if (elements.contextEn) {
-      elements.contextEn.textContent = word.contextEn ?? "";
-      elements.contextEn.hidden = !state.showEnglish || !word.contextEn;
-    }
-    elements.pronunciation.textContent = word.pronunciation;
-    elements.known.setAttribute("aria-pressed", String(result.status === "known"));
-    elements.difficult.setAttribute("aria-pressed", String(result.status === "difficult"));
-    elements.save.setAttribute("aria-pressed", String(result.saved === true));
-    updateStreak(state.profile?.assignments, result.dateKey);
-    if (elements.assignmentDate) {
-      elements.assignmentDate.textContent = formattedDate;
-      elements.assignmentDate.hidden = !formattedDate;
-    }
-    show("assigned");
-    elements.word.focus();
-    actionStatus("");
-    status("كلمتك جاهزة.");
-  }
-
-  function updateInterestCount() {
-    const chosen = [...(elements?.interests ?? [])].filter((input) => input.checked).length;
-    if (elements?.interestCount) elements.interestCount.textContent = `${chosen}/3`;
-    return chosen;
-  }
-
-  function limitInterests(event) {
-    elements ??= collectElements();
-    const chosen = [...elements.interests].filter((input) => input.checked);
-    if (chosen.length > 3) {
-      if (event?.target) event.target.checked = false;
-      updateInterestCount();
-      status("يمكنك اختيار ثلاثة اهتمامات فقط.");
-      return;
-    }
-    updateInterestCount();
-  }
-
-  async function completeOnboarding(skip = false) {
-    if (onboardingInFlight) return;
-    onboardingInFlight = true;
-    const level = skip ? 1 : Number([...elements.levels].find((input) => input.checked)?.value ?? 1);
-    const interests = skip ? [] : [...elements.interests].filter((input) => input.checked).map((input) => input.value);
-    elements.onboardingSubmit.disabled = true;
-    elements.onboardingSkip.disabled = true;
-    try {
-      const result = await ExtApi.runtime.sendMessage({ type: "onboarding.complete", level, interests });
-      if (result.kind === "recovery") return renderRecovery();
-      state.storageWarning = result.storageWarning === true;
-      warning(state.storageWarning || state.reminderWarning);
-      await loadAssignment();
-    } catch (_) {
-      status("تعذّر حفظ اختياراتك. حاول مرة أخرى.");
-    } finally {
-      elements.onboardingSubmit.disabled = false;
-      elements.onboardingSkip.disabled = false;
-      onboardingInFlight = false;
-    }
   }
 
   async function assignedWord(result) {
@@ -579,87 +172,9 @@
     return { ...result, word };
   }
 
-  async function loadAssignment() {
-    if (!state.reminderError) status("نحضّر كلمتك…");
-    try {
-      const result = await ExtApi.runtime.sendMessage({ type: "assignment.get" });
-      if (result.kind === "recovery") {
-        renderRecovery();
-        return false;
-      }
-      state.storageWarning = result.storageWarning === true;
-      warning(state.storageWarning || state.reminderWarning);
-      if (result.kind === "no-new-word") {
-        show("empty");
-        status("");
-        return true;
-      }
-      const assignment = await assignedWord(result);
-      if (assignment.kind !== "assigned" || !formatDateKey(assignment.dateKey)) throw new Error("Invalid assignment.");
-      renderAssigned(assignment);
-      return true;
-    } catch (_) {
-      show("error");
-      if (!state.reminderError) status("تعذّر تحميل الكلمة. افتح النافذة مجددًا.");
-      return false;
-    } finally {
-      if (state.reminderError) status(state.reminderError);
-    }
-  }
-
-  function renderRecovery() {
-    warning(false);
-    show("recovery");
-    status("");
-  }
-
-  async function sendFeedback(statusName, button) {
-    if (!state.word) return;
-    const targetButton = button || elements[statusName === "known" ? "known" : "difficult"];
-    const feedbackButtons = [elements.known, elements.difficult];
-    if (feedbackButtons.some((feedbackButton) => feedbackButton.disabled)) return;
-    const priorKnown = elements.known.getAttribute("aria-pressed");
-    const priorDifficult = elements.difficult.getAttribute("aria-pressed");
-
-    feedbackButtons.forEach((feedbackButton) => { feedbackButton.setAttribute("aria-busy", "true"); feedbackButton.disabled = true; });
-    actionStatus("جارٍ حفظ تقييمك…");
-
-    try {
-      const result = await ExtApi.runtime.sendMessage({
-        type: "word.feedback",
-        dateKey: state.dateKey,
-        wordId: state.word.id,
-        status: statusName,
-      });
-      if (result?.kind === "recovery") return renderRecovery();
-      if (result?.kind !== "ok") throw new Error("Feedback unchanged.");
-      const authoritativeStatus = result.status ?? statusName;
-      elements.known.setAttribute("aria-pressed", String(authoritativeStatus === "known"));
-      elements.difficult.setAttribute("aria-pressed", String(authoritativeStatus === "difficult"));
-      if (state.profile) {
-        state.profile.assignments ??= {};
-        state.profile.assignments[state.dateKey] = { ...state.profile.assignments[state.dateKey], wordId: state.word.id, status: authoritativeStatus };
-      }
-      updateStreak(state.profile?.assignments, state.dateKey);
-      warning(result.storageWarning === true || state.reminderWarning || state.storageWarning);
-      targetButton.focus();
-      status("تم حفظ تقييمك.");
-      actionStatus("تم حفظ تقييمك.");
-      await refreshProfile();
-      await loadDueReviews({ force: true });
-    } catch (_) {
-      elements.known.setAttribute("aria-pressed", priorKnown);
-      elements.difficult.setAttribute("aria-pressed", priorDifficult);
-      targetButton.focus();
-      status("تعذّر حفظ تقييمك.");
-      actionStatus("تعذّر حفظ تقييمك.", true);
-    } finally {
-      feedbackButtons.forEach((feedbackButton) => { feedbackButton.setAttribute("aria-busy", "false"); feedbackButton.disabled = false; });
-    }
-  }
-
   async function toggleSave() {
     if (!state.word || elements.save.disabled) return;
+    let restoreFocus = true;
     const priorSaved = elements.save.getAttribute("aria-pressed");
     const saved = priorSaved !== "true";
 
@@ -673,85 +188,33 @@
         wordId: state.word.id,
         saved,
       });
-      if (result?.kind === "recovery") return renderRecovery();
+      if (result?.kind === "recovery") { restoreFocus = false; return renderRecovery(); }
       if (result?.kind !== "ok") throw new Error("Save unchanged.");
+      state.storageWarning = result.storageWarning === true;
+      if (state.storageWarning) {
+        warning(true);
+        actionStatus("التغيير مؤقت ولم يُحفظ. حاول مجددًا.", true);
+        return;
+      }
       const authoritativeSaved = typeof result.saved === "boolean" ? result.saved : saved;
-      warning(result.storageWarning === true || state.reminderWarning);
+      warning(result.storageWarning === true);
       elements.save.setAttribute("aria-pressed", String(authoritativeSaved));
-      status(authoritativeSaved ? "حُفظت الكلمة." : "أزيل الحفظ.");
       actionStatus(authoritativeSaved ? "حُفظت الكلمة." : "أزيل الحفظ.");
-      elements.save.focus();
     } catch (_) {
       elements.save.setAttribute("aria-pressed", priorSaved);
-      elements.save.focus();
-      status("تعذّر تغيير الحفظ.");
       actionStatus("تعذّر تغيير الحفظ.", true);
     } finally {
       elements.save.setAttribute("aria-busy", "false");
       elements.save.disabled = false;
+      if (restoreFocus && state.view === "assigned" && (!document.activeElement || document.activeElement === document.body || document.activeElement === elements.save)) elements.save.focus();
     }
   }
 
-  async function exportAnki() {
-    if (elements.btnExportAnki) elements.btnExportAnki.disabled = true;
-    actionStatus("جارٍ تصدير بطاقات Anki…");
-    try {
-      let vocabulary = null;
-      try {
-        const resp = await fetch(ExtApi.runtime.getURL("data/vocabulary.json"));
-        if (resp && resp.ok) vocabulary = await resp.json();
-      } catch (_) {}
-      let profile = state.profile;
-      if (!profile) {
-        try {
-          const stored = await ExtApi.storage.local.get("kalimat.profile");
-          profile = stored?.["kalimat.profile"];
-        } catch (_) {}
-      }
-      const words = vocabulary || (state.word ? [state.word] : []);
-      const history = profile || (state.word ? [state.word] : []);
-      const csv = globalThis.KalimatExport?.serializeAnkiCSV
-        ? globalThis.KalimatExport.serializeAnkiCSV(history, words)
-        : null;
-      if (!csv) throw new Error("CSV generation failed");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "kalimat-anki-deck.csv";
-      link.hidden = true;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      Promise.resolve().then(() => URL.revokeObjectURL(url));
-      status("تم تصدير بطاقات Anki.");
-      actionStatus("تم تصدير بطاقات Anki.");
-    } catch (_) {
-      status("تعذّر تصدير بطاقات Anki.");
-      actionStatus("تعذّر تصدير بطاقات Anki.", true);
-    } finally {
-      if (elements.btnExportAnki) elements.btnExportAnki.disabled = state.view !== "assigned";
-    }
-  }
-
-  async function exportCard() {
-    if (!state.word) return;
-    if (elements.btnExportCard) elements.btnExportCard.disabled = true;
-    actionStatus("جارٍ توليد بطاقة المشاركة…");
-    try {
-      if (globalThis.KalimatExport?.renderSocialCard) {
-        await globalThis.KalimatExport.renderSocialCard(state.word, { download: true });
-        status("تم توليد بطاقة المشاركة.");
-        actionStatus("تم توليد بطاقة المشاركة.");
-      } else {
-        throw new Error("Export unavailable");
-      }
-    } catch (_) {
-      status("تعذّر توليد بطاقة المشاركة.");
-      actionStatus("تعذّر توليد بطاقة المشاركة.", true);
-    } finally {
-      if (elements.btnExportCard) elements.btnExportCard.disabled = state.view !== "assigned";
-    }
+  function speechResult(result) {
+    if (result?.kind === "voices-loading") actionStatus("قائمة الأصوات لم تجهز بعد. حاول النطق مجددًا بعد قليل.");
+    else if (result?.kind === "remote-opt-in") actionStatus("لا يتوفر صوت عربي محلي. يمكنك السماح بالنطق عبر الإنترنت من إعدادات الأطلس.");
+    else if (["no-local-arabic-voice", "no-arabic-voice"].includes(result?.kind)) actionStatus("لا يتوفر صوت عربي محلي. أضف حزمة صوت عربية ثم حاول مجددًا.");
+    else if (!result || result.kind === "unavailable") actionStatus("تعذّر تشغيل النطق على هذا الجهاز.");
   }
 
   function speak(customText = null) {
@@ -759,262 +222,17 @@
     const result = globalThis.KalimatSpeech?.speak(targetText, {
       rate: state.profile?.preferences?.speechRate ?? 0.85,
       repeat: state.profile?.preferences?.speechRepeat ?? 1,
+      allowRemote: state.profile?.preferences?.allowRemoteSpeech === true,
+      onStart: () => actionStatus("جارٍ النطق…"),
+      onEnd: () => actionStatus("اكتمل النطق."),
+      onError: () => actionStatus("تعذّر تشغيل النطق. حاول مجددًا."),
       requireVoice: true,
     });
-    if (result?.kind === "no-arabic-voice") {
-      status("لم يتم العثور على صوت عربي. فعّل حزمة صوت عربية في إعدادات النظام ثم حاول مجددًا.");
-    } else if (result?.kind === "unavailable") {
-      status("تعذّر تشغيل النطق على هذا الجهاز.");
-    }
+    speechResult(result);
   }
 
-  function openAtlas() {
-    const query = encodeURIComponent(state.word?.word ?? "");
-    return ExtApi.tabs.create({ url: ExtApi.runtime.getURL(`atlas/atlas.html?view=explore&q=${query}`) });
-  }
-
-  function enqueueReminder(work) {
-    if (!reminderQueue) {
-      let result;
-      try { result = work(); } catch (error) { result = Promise.reject(error); }
-      const tracked = Promise.resolve(result).catch(() => undefined);
-      reminderQueue = tracked;
-      tracked.finally(() => { if (reminderQueue === tracked) reminderQueue = null; });
-      return result;
-    }
-    const next = reminderQueue.then(work, work);
-    reminderQueue = next.catch(() => undefined);
-    return next;
-  }
-
-  function requestReminder() {
-    if (state.reminderError) return Promise.resolve();
-    return enqueueReminder(async () => {
-      const previous = state.reminder ? { ...state.reminder } : { enabled: elements.reminder.getAttribute("aria-checked") === "true", time: elements.reminderTime.value || "09:00" };
-      const enabled = !previous.enabled;
-      const time = elements.reminderTime.value || previous.time || "09:00";
-      state.reminderBusy = true;
-      elements.reminder.disabled = true;
-      try {
-        if (enabled && !(await ExtApi.permissions.request({ permissions: ["alarms", "notifications"] }))) throw new Error("Permission denied.");
-        const reminder = await ExtApi.runtime.sendMessage({ type: "reminder.configure", enabled, time });
-        if (!renderReminder(reminder)) throw new Error("Reminder unchanged.");
-        state.reminderWarning = reminder.storageWarning === true;
-        warning(state.reminderWarning);
-        if (reminder.enabled !== enabled) {
-          status(enabled ? "لم نفعّل التذكير." : "تعذّر إيقاف التذكير.");
-          return;
-        }
-        status(enabled ? `سيصلك تذكير يومي في ${reminder.time}.` : "أوقفنا التذكير اليومي.");
-      } catch (_) {
-        renderReminder(previous);
-        status(enabled ? "لم نفعّل التذكير." : "تعذّر إيقاف التذكير.");
-      } finally { state.reminderBusy = false; }
-    });
-  }
-
-  function updateReminderTime() {
-    if (state.reminderError || !state.reminder) return Promise.resolve();
-    return enqueueReminder(async () => {
-      const previous = { ...state.reminder };
-      const time = elements.reminderTime.value;
-      state.reminderBusy = true;
-      elements.reminderTime.disabled = true;
-      try {
-        const reminder = await ExtApi.runtime.sendMessage({ type: "reminder.configure", enabled: previous.enabled, time });
-        if (!renderReminder(reminder)) throw new Error("Reminder unchanged.");
-        state.reminderWarning = reminder.storageWarning === true;
-        warning(state.reminderWarning);
-      } catch (_) {
-        renderReminder(previous);
-        status("تعذّر حفظ وقت التذكير.");
-      } finally { state.reminderBusy = false; }
-    });
-  }
-
-  async function resetRecovery() {
-    if (typeof globalThis.confirm !== "function" || !globalThis.confirm("هل تريد إعادة البدء؟ لا يمكن التراجع عن ذلك.")) return;
-    try {
-      const result = await ExtApi.runtime.sendMessage({ type: "state.clear" });
-      if (!result || result.kind !== "ok") throw new Error("Clear failed.");
-      state.reminderWarning = result.reminderWarning === true;
-      state.storageWarning = result.storageWarning === true;
-      warning(state.storageWarning || state.reminderWarning);
-      show("onboarding");
-      status("اختر ما يناسبك للبدء من جديد.");
-    } catch (_) { status("تعذّرت إعادة البدء."); }
-  }
-
-  function handleKeyDown(event) {
-    const isDialogOpen = elements.practiceDialog && (elements.practiceDialog.open || elements.practiceDialog.hasAttribute("open"));
-    if (isDialogOpen) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closePracticeModal();
-        return;
-      }
-      if (event.key === " " || event.key === "Enter") {
-        const targetTag = (event.target?.tagName || "").toLowerCase();
-        if (targetTag !== "button") {
-          event.preventDefault();
-          flipCard();
-          return;
-        }
-      }
-      if (event.key === "1" || event.key === "١") {
-        if (!ReviewSession.isRevealed(reviewSession)) return;
-        event.preventDefault();
-        submitRating("again");
-        return;
-      }
-      if (event.key === "2" || event.key === "٢") {
-        if (!ReviewSession.isRevealed(reviewSession)) return;
-        event.preventDefault();
-        submitRating("hard");
-        return;
-      }
-      if (event.key === "3" || event.key === "٣") {
-        if (!ReviewSession.isRevealed(reviewSession)) return;
-        event.preventDefault();
-        submitRating("good");
-        return;
-      }
-      if (event.key === "4" || event.key === "٤") {
-        if (!ReviewSession.isRevealed(reviewSession)) return;
-        event.preventDefault();
-        submitRating("easy");
-        return;
-      }
-    } else {
-      const targetTag = (event.target?.tagName || "").toLowerCase();
-      if (targetTag !== "input" && targetTag !== "textarea" && targetTag !== "select") {
-        if (event.key === "p" || event.key === "P" || event.key === "ح") {
-          event.preventDefault();
-          openPracticeModal();
-        }
-      }
-    }
-  }
-
-  async function initialize() {
-    elements = collectElements();
-    if (elements.assigned) elements.assigned.hidden = true;
-    if (elements.assignmentDate) {
-      elements.assignmentDate.hidden = true;
-      elements.assignmentDate.textContent = "";
-    }
-    updateInterestCount();
-    if (globalThis.KalimatTheme?.initThemeController) {
-      themeController = globalThis.KalimatTheme.initThemeController({
-        storageArea: ExtApi?.storage?.local,
-        targetDoc: document,
-        selectElement: elements.themeSelect,
-      });
-    }
-    elements.interests.forEach((input) => input.addEventListener("change", limitInterests));
-    byId("onboarding-submit").addEventListener("click", () => completeOnboarding());
-    byId("onboarding-skip").addEventListener("click", () => completeOnboarding(true));
-    elements.known.addEventListener("click", () => sendFeedback("known", elements.known));
-    elements.difficult.addEventListener("click", () => sendFeedback("difficult", elements.difficult));
-    elements.save.addEventListener("click", toggleSave);
-    if (elements.btnExportAnki) elements.btnExportAnki.addEventListener("click", exportAnki);
-    if (elements.btnExportCard) elements.btnExportCard.addEventListener("click", exportCard);
-    elements.speak.addEventListener("click", () => speak());
-    elements.reminder.addEventListener("click", requestReminder);
-    elements.reminderTime.addEventListener("change", updateReminderTime);
-    byId("explore").addEventListener("click", openAtlas);
-    byId("explore-empty").addEventListener("click", openAtlas);
-    byId("recovery-reset").addEventListener("click", resetRecovery);
-
-    if (elements.dueReviewBadge) elements.dueReviewBadge.addEventListener("click", openPracticeModal);
-    if (elements.practiceClose) elements.practiceClose.addEventListener("click", closePracticeModal);
-    if (elements.practiceFinishBtn) elements.practiceFinishBtn.addEventListener("click", closePracticeModal);
-    if (elements.practiceRetry) elements.practiceRetry.addEventListener("click", () => {
-      loadDueReviews({ force: true }).then((result) => {
-        if (result?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) {
-          dismissPracticeForRecovery();
-          return;
-        }
-        showPracticeContent();
-      });
-    });
-    if (elements.practiceDialog) elements.practiceDialog.addEventListener("close", handlePracticeDialogClose);
-    if (elements.cardFrontFlip) elements.cardFrontFlip.addEventListener("click", flipCard);
-    if (elements.cardFrontSpeak) {
-      elements.cardFrontSpeak.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const currentItem = ReviewSession.current(reviewSession);
-        const w = currentItem?.word || currentItem;
-        if (w?.word) speak(w.word);
-      });
-    }
-    if (elements.rateAgain) elements.rateAgain.addEventListener("click", () => submitRating("again"));
-    if (elements.rateHard) elements.rateHard.addEventListener("click", () => submitRating("hard"));
-    if (elements.rateGood) elements.rateGood.addEventListener("click", () => submitRating("good"));
-    if (elements.rateEasy) elements.rateEasy.addEventListener("click", () => submitRating("easy"));
-
-    if (elements.errorRetry) elements.errorRetry.addEventListener("click", async () => {
-      try {
-        const stored = await ExtApi.storage.local.get("kalimat.profile");
-        if (stored["kalimat.profile"] === undefined) {
-          show("onboarding");
-          status("اختر ما يناسبك.");
-          return loadReminder();
-        }
-        state.profile = stored["kalimat.profile"];
-        const [ready] = await Promise.all([loadAssignment(), loadReminder()]);
-        if (ready) await loadDueReviews({ force: true });
-      } catch (_) {
-        warning(true);
-        show("error");
-        status("تعذّر قراءة البيانات. حاول مجددًا أو أعد فتح الإضافة.");
-      }
-    });
-    listenForProfileChanges();
-    document.addEventListener("keydown", handleKeyDown);
-
-    state.speakAvailable = !!globalThis.speechSynthesis && typeof globalThis.SpeechSynthesisUtterance === "function";
-    elements.speak.disabled = !state.speakAvailable;
-    try {
-      const stored = await ExtApi.storage.local.get("kalimat.profile");
-      if (stored["kalimat.profile"] === undefined) {
-        show("onboarding");
-        status("اختر ما يناسبك.");
-        return loadReminder();
-      }
-      state.profile = stored["kalimat.profile"];
-      updateStreak(state.profile?.assignments);
-    } catch (_) {
-      warning(true);
-      show("error");
-      status("تعذّر قراءة البيانات. حاول مجددًا أو أعد فتح الإضافة.");
-      return;
-    }
-    const [assignmentReady] = await Promise.all([loadAssignment(), loadReminder()]);
-    if (assignmentReady) await loadDueReviews();
-  }
-
-  globalThis.KalimatPopup = {
-    renderAssigned,
-    limitInterests,
-    requestReminder,
-    updateReminderTime,
-    toggleSave,
-    completeOnboarding,
-    sendFeedback,
-    openAtlas,
-    resetRecovery,
-    exportAnki,
-    exportCard,
-    updateStreak,
-    loadDueReviews,
-    openPracticeModal,
-    closePracticeModal,
-    flipCard,
-    submitRating,
-    getThemeController: () => themeController,
-    initialize,
-  };
+  globalThis.KalimatPopup = { renderAssigned, toggleSave, openAtlas, speak, refreshProfile, getThemeController: () => themeController, initialize };
+  globalThis.addEventListener?.("pagehide", () => globalThis.KalimatSpeech?.cancel());
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initialize, { once: true });
   else initialize();
 })();

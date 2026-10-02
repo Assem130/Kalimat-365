@@ -13,7 +13,12 @@
     reminder: { enabled: false, time: "09:00" },
     reminderWarning: false,
     storageWarning: false,
+    settingsBusy: false,
+    profileReplacing: false,
+    pendingSaves: 0,
     recoveryRaw: null,
+    view: "",
+    viewRevision: 0,
   };
   let elements;
   let reminderQueue = Promise.resolve();
@@ -36,7 +41,7 @@
       "today-card", "today-date", "today-empty", "explore-card",
       "atlas-search", "search-count", "search-results", "return-today",
       "history-filter", "history-list",
-      "settings-english", "settings-speech-rate", "settings-speech-repeat", "settings-save", "settings-time", "settings-reminder",
+      "settings-english", "settings-remote-speech", "settings-speech-rate", "settings-speech-repeat", "settings-save", "settings-time", "settings-reminder",
       "export", "import-file", "clear",
       "recovery-export", "recovery-import", "recovery-clear", "onboarding-settings",
       "today-save", "today-known", "today-difficult", "today-action-status", "explore-lookup",
@@ -49,11 +54,15 @@
     ].map((id) => [id, byId(id)]));
   }
 
-  function status(message) {
+  function status(message, announce = true) {
+    elements.status?.setAttribute("role", announce ? "status" : "none");
+    elements.status?.setAttribute("aria-live", announce ? "polite" : "off");
     if (elements.status) elements.status.textContent = message;
   }
 
   function actionStatus(message, isError = false) {
+    elements.status?.setAttribute("role", "none");
+    elements.status?.setAttribute("aria-live", "off");
     const target = elements["today-action-status"];
     if (!target) return;
     target.textContent = message;
@@ -66,6 +75,8 @@
   }
 
   function show(name) {
+    state.view = name;
+    state.viewRevision += 1;
     for (const view of views) {
       const section = ["onboarding", "recovery", "empty", "error"].includes(view) ? elements[view] : elements[`${view}-view`];
       if (section) section.hidden = view !== name;
@@ -90,7 +101,7 @@
 
   function setTodayActions(enabled) {
     for (const id of ["today-save", "today-known", "today-difficult"]) {
-      if (elements[id]) elements[id].disabled = !enabled;
+      if (elements[id]) elements[id].disabled = !enabled || state.profileReplacing;
     }
   }
 
@@ -98,7 +109,7 @@
     if (!value) return;
     const node = document.createElement(tag);
     if (className) node.className = className;
-    if (direction) node.dir = direction;
+    if (direction) { node.dir = direction; node.lang = direction === "ltr" ? "en" : "ar"; }
     node.textContent = value;
     parent.append(node);
   }
@@ -107,13 +118,13 @@
     if (!value) return;
     const node = document.createElement("p");
     node.className = className;
-    if (direction) node.dir = direction;
+    if (direction) { node.dir = direction; node.lang = direction === "ltr" ? "en" : "ar"; }
     addText(node, "span", label, "label", direction);
     addText(node, "span", value, "text", direction);
     parent.append(node);
   }
 
-  const REGISTER_LABELS = { standard: "فصيح معاصر", classical: "كلاسيكي", colloquial: "عامي" };
+  const REGISTER_LABELS = { standard: "فصيح", classical: "أدبي", colloquial: "عامي" };
   const PART_LABELS = { noun: "اسم", verb: "فعل", adjective: "صفة", adverb: "ظرف", phrase: "عبارة", other: "أخرى" };
   const ARABIC_DATE_OPTIONS = { weekday: "long", year: "numeric", month: "long", day: "numeric" };
 
@@ -138,16 +149,37 @@
     speakButton.className = "word-speak";
     speakButton.type = "button";
     speakButton.setAttribute("aria-label", `استمع لنطق ${word.word}`);
-    speakButton.textContent = "🔊 استمع للنطق";
+    speakButton.textContent = state.profile?.preferences?.allowRemoteSpeech === true ? "🔊 استمع (قد يستخدم الإنترنت)" : "🔊 استمع للنطق المحلي";
+    speakButton.setAttribute("aria-label", `${speakButton.textContent}: ${word.word}`);
     speakButton.disabled = !speechAvailable();
     speakButton.addEventListener("click", () => speak(word.word));
     container.append(speakButton);
     addText(container, "p", word.meaningAr, "meaning", "rtl");
-    if (state.profile?.showEnglish !== false) addText(container, "p", word.meaningEn, "english", "ltr");
-    addText(container, "p", word.pronunciation, "pronunciation", "ltr");
-    addLabeledText(container, word.contextAr, "context", "سياق عملي", "rtl");
-    if (state.profile?.showEnglish !== false) addLabeledText(container, word.contextEn, "context english", "Practical context", "ltr");
-    addLabeledText(container, word.exampleAr, "example", "مثال أدبي / أصلي", "rtl");
+    addText(container, "p", word.vocalization, "vocalization", "rtl");
+    if (state.profile?.showEnglish !== false) {
+      const translation = document.createElement("details");
+      addText(translation, "summary", "شرح بالإنجليزية والنطق اللاتيني");
+      addText(translation, "p", word.meaningEn, "english", "ltr");
+      addText(translation, "p", word.pronunciation, "pronunciation", "ltr");
+      addLabeledText(translation, word.contextEn, "context english", "Usage", "ltr");
+      container.append(translation);
+    }
+    addLabeledText(container, word.contextAr, "context", "في الاستعمال", "rtl");
+    addLabeledText(container, word.usageNote, "usage-note", "في الاستعمال", "rtl");
+    addLabeledText(container, word.exampleAr, "example", word.exampleKind === "original" ? "مثال من تحرير كلمات" : word.exampleKind === "quotation" && word.exampleSource ? "شاهد" : "مثال", "rtl");
+    if (word.exampleKind === "quotation" && word.exampleSource) {
+      try {
+        const url = new URL(word.exampleSource.url);
+        if (url.protocol === "https:" && url.hostname && !url.username && !url.password && !/[\s\\]/.test(word.exampleSource.url)) {
+          const link = document.createElement("a");
+          link.href = url.href;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = `${word.exampleSource.title} · ${word.exampleSource.reference}`;
+          container.append(link);
+        }
+      } catch (_) { /* Invalid links never become navigation targets. */ }
+    }
     if (word.root || word.pattern) {
       const details = document.createElement("p");
       details.className = "root metadata";
@@ -176,6 +208,16 @@
       if (related.childElementCount) container.append(related);
     }
     if (container === elements?.["explore-card"]) {
+      const wordState = state.profile?.wordStates?.[String(word.id)] || state.profile?.wordStates?.[`w${word.id}`];
+      const saved = wordState?.saved === true || (wordState?.saved === undefined && state.profile?.favorites?.[String(word.id)] === true);
+      const saveBtn = document.createElement("button");
+      saveBtn.id = "explore-save";
+      saveBtn.type = "button";
+      saveBtn.textContent = "حفظ";
+      saveBtn.disabled = state.profileReplacing;
+      saveBtn.setAttribute("aria-pressed", String(saved));
+      saveBtn.addEventListener("click", () => toggleSave(word, saveBtn).catch(() => status("تعذّر الحفظ.")));
+      container.append(saveBtn);
       const cardExportBtn = document.createElement("button");
       cardExportBtn.id = "explore-export-card";
       cardExportBtn.type = "button";
@@ -211,6 +253,7 @@
   }
 
   function mergeAssignment(result) {
+    if (result.storageWarning === true || state.storageWarning) return;
     state.profile.assignments ??= {};
     state.profile.assignments[result.dateKey] = { ...state.profile.assignments[result.dateKey], wordId: result.wordId, ...(result.status ? { status: result.status } : {}) };
     if (result.status || result.saved !== undefined) {
@@ -382,6 +425,8 @@
   }
 
   function renderHistory() {
+    const focusedKey = [...elements["history-list"].children]
+      .find((row) => row === document.activeElement)?.dataset.historyKey;
     const filter = elements["history-filter"].value;
     const wordStates = state.profile?.wordStates ?? {};
     const entries = Object.entries(state.profile?.assignments ?? {})
@@ -397,12 +442,31 @@
       const label = responseStatus === "known" ? "معروف" : responseStatus === "difficult" ? "صعب" : "غير مقيّمة";
       const button = document.createElement("button");
       button.type = "button";
+      button.dataset.historyKey = `day:${dateKey}`;
       button.textContent = `${dateKey} — ${word.word} — ${label}`;
       button.addEventListener("click", () => loadAssignment(dateKey));
       elements["history-list"].append(button);
     }
+    if (filter !== "difficult") {
+      const assignedIds = new Set(entries.map(([, assignment]) => String(wordById(assignment.wordId)?.id)));
+      for (const word of state.vocabulary) {
+        const wordState = wordStates[String(word.id)] || wordStates[`w${word.id}`];
+        if (wordState?.saved !== true || assignedIds.has(String(word.id))) continue;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.historyKey = `saved:${word.id}`;
+        button.textContent = `${word.word} · محفوظة`;
+        button.addEventListener("click", () => { viewWord(word); show("explore"); });
+        elements["history-list"].append(button);
+      }
+    }
     if (!elements["history-list"].childElementCount) {
       elements["history-list"].textContent = "لا توجد كلمات في هذا العرض.";
+    }
+    if (focusedKey) {
+      const retained = [...elements["history-list"].children]
+        .find((row) => row.dataset.historyKey === focusedKey);
+      (retained ?? elements["history-filter"]).focus({ preventScroll: true });
     }
   }
 
@@ -412,13 +476,11 @@
 
   function hydrateSettings() {
     const profile = state.profile ?? {};
-    const levelValue = profile.level === 4 ? 3 : (profile.level ?? 1);
-    const level = document.querySelector(`input[name="atlas-level"][value="${levelValue}"]`);
-    if (level) level.checked = true;
     for (const input of document.querySelectorAll('input[name="atlas-interest"]')) {
       input.checked = profile.interests?.includes(input.value) === true;
     }
     elements["settings-english"].checked = profile.showEnglish !== false;
+    elements["settings-remote-speech"].checked = profile.preferences?.allowRemoteSpeech === true;
     elements["settings-speech-rate"].value = String(profile.preferences?.speechRate ?? 0.85);
     elements["settings-speech-repeat"].value = String(profile.preferences?.speechRepeat ?? 1);
     elements["settings-time"].value = state.reminder.time;
@@ -427,42 +489,59 @@
   }
 
   async function saveSettings() {
-    const interests = selectedInterests();
-    const level = Number(document.querySelector('input[name="atlas-level"]:checked')?.value);
-    if (!Number.isInteger(level) || interests.length > 3) return status("اختر مستوى وحتى ثلاثة اهتمامات.");
-    const speechRate = Number(elements["settings-speech-rate"].value);
-    const speechRepeat = Number(elements["settings-speech-repeat"].value);
-    const wasOnboarding = state.profile === null;
-    const result = await ExtApi.runtime.sendMessage({
-      type: "settings.update",
-      level,
-      interests,
+    if (state.settingsBusy || state.profileReplacing) return;
+    const readDraft = () => ({
+      level: state.profile?.level ?? 1,
+      interests: selectedInterests(),
       showEnglish: elements["settings-english"].checked,
-      speechRate,
-      speechRepeat,
+      allowRemoteSpeech: elements["settings-remote-speech"].checked,
+      speechRate: Number(elements["settings-speech-rate"].value),
+      speechRepeat: Number(elements["settings-speech-repeat"].value),
     });
-    if (result?.kind === "recovery") return renderRecovery(result.recoveryRaw);
-    if (result?.kind !== "ok") throw new Error("Settings unchanged.");
-    state.storageWarning = result.storageWarning === true;
-    warning(state.storageWarning || state.reminderWarning);
-    state.profile = {
-      ...(state.profile ?? {}),
-      level,
-      interests,
-      showEnglish: elements["settings-english"].checked,
-      preferences: {
-        ...(state.profile?.preferences ?? {}),
-        showEnglish: elements["settings-english"].checked,
-        speechRate,
-        speechRepeat,
-      },
-    };
-    if (wasOnboarding) await loadAssignment();
-    else {
-      renderToday();
-      if (state.exploreWord) renderWord(elements["explore-card"], state.exploreWord);
+    const submitted = readDraft();
+    if (submitted.interests.length > 3) return status("اختر حتى ثلاثة اهتمامات.");
+    const controls = [
+      ...document.querySelectorAll('input[name="atlas-interest"]'),
+      ...["settings-english", "settings-remote-speech", "settings-speech-rate", "settings-speech-repeat", "settings-save"].map((id) => elements[id]),
+    ];
+    const disabled = controls.map((control) => control.disabled);
+    const wasOnboarding = state.profile === null;
+    const focusedControl = controls.includes(document.activeElement) ? document.activeElement : null;
+    const viewRevision = state.viewRevision;
+    state.settingsBusy = true;
+    controls.forEach((control) => { control.disabled = true; });
+    try {
+      const result = await ExtApi.runtime.sendMessage({ type: "settings.update", ...submitted });
+      if (result?.kind === "recovery") return renderRecovery(result.recoveryRaw);
+      if (result?.kind !== "ok") throw new Error("Settings unchanged.");
+      state.storageWarning = result.storageWarning === true;
+      warning(state.storageWarning || state.reminderWarning);
+      if (state.storageWarning) return status("الإعدادات مؤقتة ولم تُحفظ. حاول الحفظ مجددًا.");
+      state.profile = {
+        ...(state.profile ?? {}),
+        level: submitted.level,
+        interests: submitted.interests,
+        showEnglish: submitted.showEnglish,
+        preferences: {
+          ...(state.profile?.preferences ?? {}),
+          showEnglish: submitted.showEnglish,
+          allowRemoteSpeech: submitted.allowRemoteSpeech,
+          speechRate: submitted.speechRate,
+          speechRepeat: submitted.speechRepeat,
+        },
+      };
+      const hasLaterDraft = JSON.stringify(readDraft()) !== JSON.stringify(submitted);
+      if (wasOnboarding) await loadAssignment();
+      else {
+        renderToday();
+        if (state.exploreWord) renderWord(elements["explore-card"], state.exploreWord);
+      }
+      status(hasLaterDraft ? "حُفظت الإعدادات المرسلة. توجد تعديلات لاحقة لم تُحفظ؛ احفظها للمتابعة." : "حُفظت الإعدادات.");
+    } finally {
+      controls.forEach((control, index) => { control.disabled = disabled[index]; });
+      state.settingsBusy = false;
+      if (focusedControl && state.view === "settings" && state.viewRevision === viewRevision && !focusedControl.disabled && (!document.activeElement || document.activeElement === document.body)) focusedControl.focus();
     }
-    status("حُفظت الإعدادات.");
   }
 
   function enqueueReminder(work) {
@@ -578,43 +657,91 @@
     download(result.text, "kalimat-data.json");
   }
 
+  function beginProfileReplacement() {
+    if (state.profileReplacing || state.pendingSaves || state.settingsBusy
+      || ReviewSession.isSubmitting(reviewSession)
+      || ["today-known", "today-difficult"].some((id) => elements[id]?.getAttribute("aria-busy") === "true")) {
+      status("جارٍ حفظ التغييرات. حاول مجددًا بعد اكتمالها.");
+      return false;
+    }
+    state.profileReplacing = true;
+    profileRefreshRevision += 1;
+    status("جارٍ تحديث البيانات…");
+    for (const id of ["clear", "import-file", "recovery-clear", "recovery-import", "settings-save"]) {
+      if (elements[id]) elements[id].disabled = true;
+    }
+    setTodayActions(false);
+    const exploreSave = byId("explore-save");
+    if (exploreSave) exploreSave.disabled = true;
+    return true;
+  }
+
+  function endProfileReplacement() {
+    state.profileReplacing = false;
+    for (const id of ["clear", "import-file", "recovery-clear", "recovery-import", "settings-save"]) {
+      if (elements[id]) elements[id].disabled = false;
+    }
+    setTodayActions(state.view === "today" && !!state.today?.word);
+    const exploreSave = byId("explore-save");
+    if (exploreSave) exploreSave.disabled = false;
+  }
+
   async function importState(input) {
     const file = input.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) return status("ملف الاستيراد كبير جدًا.");
+    if (!beginProfileReplacement()) { input.value = ""; return; }
     let committed = false;
     try {
+      if (file.size > 2 * 1024 * 1024) return status("ملف الاستيراد كبير جدًا.");
       const text = await file.text();
       const result = await ExtApi.runtime.sendMessage({ type: "state.import", text });
       if (result?.kind !== "ok") throw new Error("Import failed.");
+      if (result.storageWarning === true) {
+        warning(true);
+        status("الاستيراد مؤقت ولم يُحفظ. أعد اختيار الملف للمحاولة مجددًا.");
+        return;
+      }
       committed = true;
       state.recoveryRaw = null;
       warning(result.storageWarning === true || state.reminderWarning);
       await load();
+      if (state.view !== "error" && state.view !== "recovery") status("تم استيراد الملف.");
     } catch (_) {
       status(committed ? "استوردنا الملف، لكن تعذّر تحديث العرض. افتح الأطلس مجددًا." : "تعذّر استيراد الملف. لم نغيّر بياناتك.");
+    } finally {
+      input.value = "";
+      endProfileReplacement();
     }
-    input.value = "";
   }
 
   async function clearState() {
+    if (state.profileReplacing) return status("جارٍ حفظ التغييرات. حاول مجددًا بعد اكتمالها.");
     if (!globalThis.confirm("هل تريد مسح بيانات كلمات؟ لا يمكن التراجع عن ذلك.")) return;
-    const result = await ExtApi.runtime.sendMessage({ type: "state.clear" });
-    if (result?.kind !== "ok") throw new Error("Clear failed.");
-    state.reminderWarning = result.reminderWarning === true;
-    state.storageWarning = result.storageWarning === true;
-    state.reminder = { ...state.reminder, enabled: false };
-    warning(result.storageWarning === true || state.reminderWarning);
-    state.profile = null;
-    state.today = null;
-    state.exploreWord = null;
-    state.recoveryRaw = null;
-    show("onboarding");
-    status("مُسحت البيانات.");
+    if (!beginProfileReplacement()) return;
+    try {
+      const result = await ExtApi.runtime.sendMessage({ type: "state.clear" });
+      if (result?.kind !== "ok") throw new Error("Clear failed.");
+      state.reminderWarning = result.reminderWarning === true;
+      state.storageWarning = result.storageWarning === true;
+      if (result.reminder !== null) state.reminder = result.reminder ?? { ...state.reminder, enabled: false };
+      warning(result.storageWarning === true || state.reminderWarning);
+      hydrateSettings();
+      if (result.profilePersisted === false) {
+        return status("المسح مؤقت ولم يُحفظ. حاول مجددًا." + (state.reminder.enabled ? " التذكير ما زال مفعّلًا." : ""));
+      }
+      state.profile = null;
+      state.today = null;
+      state.exploreWord = null;
+      state.recoveryRaw = null;
+      show("onboarding");
+      status(state.reminderWarning ? "مُسحت البيانات. تعذّر تأكيد إيقاف التذكير؛ تحقق من إعداداته." : "مُسحت البيانات.");
+    } finally {
+      endProfileReplacement();
+    }
   }
 
   async function feedback(statusName) {
-    if (!state.today?.word) return;
+    if (!state.today?.word || state.profileReplacing) return;
     const btn = elements[statusName === "known" ? "today-known" : "today-difficult"];
     const feedbackButtons = [elements["today-known"], elements["today-difficult"]];
     if (feedbackButtons.some((feedbackButton) => feedbackButton.disabled)) return;
@@ -630,6 +757,13 @@
       });
       if (result?.kind === "recovery") { restoreFocus = false; return renderRecovery(result.recoveryRaw); }
       if (result?.kind !== "ok") throw new Error("Feedback unchanged.");
+      state.storageWarning = result.storageWarning === true;
+      if (state.storageWarning) {
+        warning(true);
+        status("التغيير مؤقت ولم يُحفظ. حاول مجددًا.", false);
+        actionStatus("التغيير مؤقت ولم يُحفظ. حاول مجددًا.", true);
+        return;
+      }
       warning(result.storageWarning === true || state.reminderWarning);
       const authoritativeStatus = result.status ?? statusName;
       const dateKey = result.dateKey ?? state.today.dateKey;
@@ -640,12 +774,12 @@
       state.profile.assignments[dateKey] = { ...state.profile.assignments[dateKey], wordId, status: authoritativeStatus };
       renderToday();
       updateStreakBadge();
-      status("تم حفظ تقييمك.");
+      status("تم حفظ تقييمك.", false);
       actionStatus("تم حفظ تقييمك.");
       await refreshProfile();
       await loadDueReviews({ force: true });
     } catch (_) {
-      status("تعذّر حفظ التقييم.");
+      status("تعذّر حفظ التقييم.", false);
       actionStatus("تعذّر حفظ التقييم.", true);
     } finally {
       feedbackButtons.forEach((feedbackButton) => { feedbackButton.setAttribute("aria-busy", "false"); feedbackButton.disabled = false; });
@@ -653,47 +787,74 @@
     }
   }
 
-  async function toggleSave() {
-    if (!state.today?.word) return;
-    const currentState = state.profile?.wordStates?.[String(state.today.word.id)] || state.profile?.wordStates?.[`w${state.today.word.id}`];
-    const current = currentState?.saved === true;
-    const btn = elements["today-save"];
+  async function toggleSave(targetWord, targetBtn) {
+    if (state.profileReplacing) return;
+    const word = targetWord ?? state.today?.word;
+    if (!word) return;
+    const currentState = state.profile?.wordStates?.[String(word.id)] || state.profile?.wordStates?.[`w${word.id}`];
+    const current = currentState?.saved === true || (currentState?.saved === undefined && state.profile?.favorites?.[String(word.id)] === true);
+    const btn = targetBtn ?? elements["today-save"];
+    const todayAction = btn === elements["today-save"];
+    const viewRevision = state.viewRevision;
+    let restoreFocus = true;
     if (btn?.disabled) return;
+    state.pendingSaves += 1;
     if (btn) {
       btn.setAttribute("aria-busy", "true");
       btn.disabled = true;
     }
-    actionStatus("جارٍ تحديث الحفظ…");
+    if (todayAction) actionStatus("جارٍ تحديث الحفظ…");
+    else status("جارٍ تحديث الحفظ…");
     try {
       const result = await ExtApi.runtime.sendMessage({
         type: "word.save",
-        wordId: state.today.word.id,
+        wordId: word.id,
         saved: !current,
       });
-      if (result?.kind === "recovery") return renderRecovery(result.recoveryRaw);
+      if (result?.kind === "recovery") { restoreFocus = false; return renderRecovery(result.recoveryRaw); }
       if (result?.kind !== "ok") throw new Error("Save unchanged.");
+      state.storageWarning = result.storageWarning === true;
+      if (state.storageWarning) {
+        warning(true);
+        status("التغيير مؤقت ولم يُحفظ. حاول مجددًا.", !todayAction);
+        if (todayAction) actionStatus("التغيير مؤقت ولم يُحفظ. حاول مجددًا.", true);
+        return;
+      }
       warning(result.storageWarning === true || state.reminderWarning);
       const saved = typeof result.saved === "boolean" ? result.saved : !current;
-      const wordId = result.wordId ?? state.today.word.id;
+      const wordId = result.wordId ?? word.id;
       state.profile.wordStates ??= {};
       state.profile.wordStates[wordId] = { ...state.profile.wordStates[wordId], saved };
-      renderToday();
-      updateStreakBadge();
-      status(saved ? "حُفظت الكلمة." : "أزيل الحفظ.");
-      actionStatus(saved ? "حُفظت الكلمة." : "أزيل الحفظ.");
+      if (state.profile.favorites) {
+        if (saved) state.profile.favorites[String(wordId)] = true;
+        else delete state.profile.favorites[String(wordId)];
+      }
+      if (state.today?.word && String(state.today.word.id) === String(wordId)) {
+        renderToday();
+        updateStreakBadge();
+      }
+      if (state.exploreWord && String(state.exploreWord.id) === String(wordId)) {
+        byId("explore-save")?.setAttribute("aria-pressed", String(saved));
+      }
+      status(saved ? "حُفظت الكلمة." : "أزيل الحفظ.", !todayAction);
+      if (todayAction) actionStatus(saved ? "حُفظت الكلمة." : "أزيل الحفظ.");
     } catch (_) {
-      status("تعذّر الحفظ.");
-      actionStatus("تعذّر الحفظ.", true);
+      status("تعذّر الحفظ.", !todayAction);
+      if (todayAction) actionStatus("تعذّر الحفظ.", true);
     } finally {
+      state.pendingSaves -= 1;
       if (btn) {
         btn.setAttribute("aria-busy", "false");
         btn.disabled = false;
-        btn.focus();
+        if (todayAction && state.view !== "today") btn.disabled = true;
+        if (restoreFocus && btn.isConnected !== false && state.viewRevision === viewRevision
+          && (!document.activeElement || document.activeElement === btn || document.activeElement === document.body)) btn.focus();
       }
     }
   }
 
   async function loadAssignment(dateKey) {
+    if (state.profileReplacing) return;
     const result = await ExtApi.runtime.sendMessage({ type: "assignment.get", dateKey });
     if (result?.kind === "recovery") return renderRecovery(result.recoveryRaw);
     if (result?.kind !== "assigned") {
@@ -705,7 +866,22 @@
       show("error");
       return status("الكلمة غير متاحة.");
     }
-    state.storageWarning = result.storageWarning === true;
+    let profileWarning = false;
+    if (!dateKey && !state.profile) {
+      // Clear intentionally drops the old profile. Rehydrate from authority,
+      // without depending on a later storage event or a settings submission.
+      const exported = await ExtApi.runtime.sendMessage({ type: "state.export" });
+      if (exported?.kind === "recovery") return renderRecovery(exported.recoveryRaw);
+      if (exported?.kind !== "export") throw new Error("Profile unavailable.");
+      profileWarning = exported.storageWarning === true;
+      if (profileWarning) {
+        let confirmed;
+        try { confirmed = (await ExtApi.storage.local.get("kalimat.profile"))["kalimat.profile"]; } catch (_) { /* Keep remote speech off if unreadable. */ }
+        state.profile = confirmed ?? { level: 1, interests: [], showEnglish: false, preferences: { allowRemoteSpeech: false }, assignments: {}, wordStates: {} };
+      } else state.profile = JSON.parse(exported.text);
+      if (!state.profile || typeof state.profile !== "object") throw new Error("Profile unavailable.");
+    }
+    state.storageWarning = result.storageWarning === true || profileWarning;
     warning(state.storageWarning || state.reminderWarning);
     if (!dateKey) {
       mergeAssignment(result);
@@ -730,7 +906,7 @@
   }
 
   function returnToToday() {
-    if (!state.today?.word) return show("empty");
+    if (!state.today?.word) return loadAssignment().catch(() => renderError("تعذّر تحميل كلمة اليوم."));
     elements["return-today"].hidden = true;
     elements["explore-card"].hidden = true;
     show("today");
@@ -767,7 +943,12 @@
     if (exported?.kind !== "export") throw new Error("Profile unavailable.");
     if (!assignment || !["assigned", "no-new-word"].includes(assignment.kind)) throw new Error("Assignment unavailable.");
     if (settings?.kind !== "settings" || !settings.reminder || typeof settings.reminder.enabled !== "boolean" || !validTime(settings.reminder.time)) throw new Error("Settings unavailable.");
-    state.profile = JSON.parse(exported.text);
+    if (exported.storageWarning === true) {
+      // A fallback export is readable, but its mutations/consent are temporary.
+      let confirmed;
+      try { confirmed = (await ExtApi.storage.local.get("kalimat.profile"))["kalimat.profile"]; } catch (_) { /* Keep conservative defaults if unreadable. */ }
+      state.profile = confirmed ?? { level: 1, interests: [], showEnglish: false, preferences: { allowRemoteSpeech: false }, assignments: {}, wordStates: {} };
+    } else state.profile = JSON.parse(exported.text);
     if (!state.profile || typeof state.profile !== "object") throw new Error("Profile unavailable.");
     state.reminder = settings.reminder;
     state.reminderWarning = settings?.storageWarning === true;
@@ -775,6 +956,16 @@
     state.recoveryRaw = null;
     warning(state.storageWarning || state.reminderWarning);
     hydrateSettings();
+    const assignedWord = assignment?.kind === "assigned" ? wordById(assignment.wordId) : null;
+    if (assignment?.kind === "assigned" && !assignedWord) return renderError("الكلمة غير متاحة.");
+    // Keep the current encounter available before secondary routes return.
+    // A dated lookup is historical and must never become the Today anchor.
+    if (!dateKey && assignedWord) {
+      mergeAssignment(assignment);
+      state.today = { ...assignment, word: assignedWord };
+      renderToday();
+    }
+    if (requestedView === "settings" && !dateKey) { show("settings"); return; }
     if (directWord) {
       const reviewResult = await loadDueReviews({ force: true });
       if (reviewResult?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) return;
@@ -783,17 +974,11 @@
       return;
     }
     updateStreakBadge(assignment?.dateKey);
-    const assignedWord = assignment?.kind === "assigned" ? wordById(assignment.wordId) : null;
-    if (assignment?.kind === "assigned" && !assignedWord) return renderError("الكلمة غير متاحة.");
     if (assignment?.kind === "assigned") {
       if (dateKey) {
         viewWord(assignedWord);
         show("explore");
       } else {
-        mergeAssignment(assignment);
-        state.today = { ...assignment, word: assignedWord };
-        // Paint the daily word before waiting on the review queue round-trip.
-        renderToday();
         show("today");
         const reviewResult = await loadDueReviews({ force: true });
         if (reviewResult?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) return;
@@ -833,11 +1018,24 @@
     return `${toArabicDigits(value)} مراجعة`;
   }
 
+  function speechResult(result) {
+    if (result?.kind === "voices-loading") status("قائمة الأصوات لم تجهز بعد. حاول النطق مجددًا بعد قليل.");
+    else if (result?.kind === "remote-opt-in") status("لا يتوفر صوت عربي محلي. يمكنك السماح بالنطق عبر الإنترنت من إعدادات الأطلس.");
+    else if (["no-local-arabic-voice", "no-arabic-voice"].includes(result?.kind)) status("لا يتوفر صوت عربي محلي. أضف حزمة صوت عربية ثم حاول مجددًا.");
+    else if (!result || result.kind === "unavailable") status("تعذّر تشغيل النطق على هذا الجهاز.");
+  }
+
   function speak(text) {
-    globalThis.KalimatSpeech?.speak(text, {
+    const result = globalThis.KalimatSpeech?.speak(text, {
       rate: state.profile?.preferences?.speechRate ?? 0.85,
       repeat: state.profile?.preferences?.speechRepeat ?? 1,
+      allowRemote: state.profile?.preferences?.allowRemoteSpeech === true,
+      onStart: () => status("جارٍ النطق…"),
+      onEnd: () => status("اكتمل النطق."),
+      onError: () => status("تعذّر تشغيل النطق. حاول مجددًا."),
+      requireVoice: true,
     });
+    speechResult(result);
   }
 
   function hideReviewBadge() {
@@ -849,6 +1047,9 @@
   }
 
   function syncReviewControls() {
+    const speechLabel = state.profile?.preferences?.allowRemoteSpeech === true ? "استمع (قد يستخدم الإنترنت)" : "استمع للنطق المحلي";
+    if (elements["card-front-speak"]) elements["card-front-speak"].textContent = speechLabel;
+    elements["card-front-speak"]?.setAttribute("aria-label", speechLabel);
     const revealed = ReviewSession.isRevealed(reviewSession);
     if (elements["practice-ratings"]) elements["practice-ratings"].hidden = !revealed;
     for (const button of reviewButtons()) button.disabled = !revealed || ReviewSession.isSubmitting(reviewSession);
@@ -884,13 +1085,24 @@
 
   let profileRefreshRevision = 0;
   async function refreshProfile() {
+    if (state.profileReplacing) return;
     const revision = ++profileRefreshRevision;
     try {
       const exported = await ExtApi.runtime.sendMessage({ type: "state.export" });
-      if (revision !== profileRefreshRevision) return;
+      if (revision !== profileRefreshRevision || state.profileReplacing) return;
       if (exported?.kind === "recovery") return renderRecovery(exported.recoveryRaw);
       if (exported?.kind !== "export") return;
+      if (exported.storageWarning === true) { warning(true); return; }
       state.profile = JSON.parse(exported.text);
+      const label = state.profile?.preferences?.allowRemoteSpeech === true ? "🔊 استمع (قد يستخدم الإنترنت)" : "🔊 استمع للنطق المحلي";
+      for (const button of document.querySelectorAll(".word-speak")) {
+        button.textContent = label;
+        button.setAttribute("aria-label", label);
+      }
+      if (elements["card-front-speak"]) {
+        elements["card-front-speak"].textContent = label;
+        elements["card-front-speak"].setAttribute("aria-label", label);
+      }
       warning(exported.storageWarning === true || state.reminderWarning || state.storageWarning);
       if (state.today) {
         const assignment = state.profile.assignments?.[state.today.dateKey];
@@ -898,8 +1110,18 @@
         const wordState = state.profile.wordStates?.[String(state.today.word.id)] || state.profile.wordStates?.[`w${state.today.word.id}`];
         elements["today-known"].setAttribute("aria-pressed", String(assignment?.status === "known"));
         elements["today-difficult"].setAttribute("aria-pressed", String(assignment?.status === "difficult"));
-        elements["today-save"].setAttribute("aria-pressed", String(wordState?.saved === true || (wordState?.saved === undefined && state.profile.favorites?.[String(state.today.word.id)] === true)));
+        if (elements["today-save"].getAttribute("aria-busy") !== "true") {
+          elements["today-save"].setAttribute("aria-pressed", String(wordState?.saved === true || (wordState?.saved === undefined && state.profile.favorites?.[String(state.today.word.id)] === true)));
+        }
       }
+      const exploreSave = byId("explore-save");
+      if (state.exploreWord && exploreSave && exploreSave.getAttribute("aria-busy") !== "true") {
+        const wordId = state.exploreWord.id;
+        const wordState = state.profile.wordStates?.[String(wordId)] || state.profile.wordStates?.[`w${wordId}`];
+        exploreSave.setAttribute("aria-pressed", String(wordState?.saved === true
+          || (wordState?.saved === undefined && state.profile.favorites?.[String(wordId)] === true)));
+      }
+      if (state.view === "history") renderHistory();
       updateStreakBadge();
     } catch (_) { warning(true); }
   }
@@ -1082,7 +1304,7 @@
       }
       status(message);
     } else {
-      if (finishedMessage) finishedMessage.textContent = "🎉 أحسنت! أنهيت جميع مراجعات اليوم.";
+      if (finishedMessage) finishedMessage.textContent = "انتهت جلسة التذكّر الاختيارية.";
       if (elements["due-review-badge"]) elements["due-review-badge"].hidden = true;
     }
   }
@@ -1094,6 +1316,7 @@
   }
 
   async function submitRating(rating) {
+    if (state.profileReplacing) return;
     const currentItem = ReviewSession.beginSubmission(reviewSession);
     if (!currentItem) return;
     const wordId = currentItem.word?.id ?? currentItem.wordId ?? currentItem.id;
@@ -1114,7 +1337,7 @@
         showPracticeError();
         return;
       }
-      if (result?.kind !== "ok") throw new Error("Review unchanged.");
+      if (result?.kind !== "ok" || result.storageWarning === true) throw new Error("Review unchanged.");
       const nextIndex = ReviewSession.advance(reviewSession);
       if (nextIndex !== null) {
         showPracticeCard(nextIndex);
@@ -1185,7 +1408,7 @@
   }
 
   function listen() {
-    elements.today.addEventListener("click", () => { show("today"); renderToday(); });
+    elements.today.addEventListener("click", returnToToday);
     elements.explore.addEventListener("click", () => { show("explore"); search(); });
     elements.history.addEventListener("click", () => { show("history"); renderHistory(); });
     elements.settings.addEventListener("click", () => { show("settings"); hydrateSettings(); });
@@ -1300,6 +1523,7 @@
     getReminder: () => ({ ...state.reminder }),
     getRecoveryRaw: () => state.recoveryRaw,
   };
+  globalThis.addEventListener?.("pagehide", () => globalThis.KalimatSpeech?.cancel());
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initialize, { once: true });
   else initialize();
 })();

@@ -11,7 +11,12 @@
     return String(text || "").replace(/[\u200B-\u200F\uFEFF\u0640]/g, "").trim();
   }
 
-  function selectArabicVoice(voices) {
+  function selectArabicVoice(voices, allowRemote) {
+    const arabic = voices.filter((voice) => String(voice?.lang || "").toLowerCase().startsWith("ar"));
+    const local = arabic.find((voice) => voice.localService === true);
+    if (typeof allowRemote === "boolean" && local) return local;
+    if (allowRemote === false) return null;
+    if (allowRemote === true) return arabic[0] || null;
     return voices.find((voice) => {
       const language = String(voice?.lang || "").toLowerCase();
       const name = String(voice?.name || "").toLowerCase();
@@ -31,7 +36,13 @@
     } catch (_) {
       return { kind: "unavailable" };
     }
-    const voice = (typeof options.selectVoice === "function" ? options.selectVoice(voices) : selectArabicVoice(voices)) || null;
+    // Explicit consent is the extension policy; omitted consent preserves website callers.
+    const explicitConsent = typeof options.allowRemote === "boolean";
+    const voice = (explicitConsent ? selectArabicVoice(voices, options.allowRemote) : (typeof options.selectVoice === "function" ? options.selectVoice(voices) : selectArabicVoice(voices))) || null;
+    if (explicitConsent && !voice) {
+      if (voices.length === 0) return { kind: "voices-loading" };
+      return { kind: voices.some((item) => String(item?.lang || "").toLowerCase().startsWith("ar")) ? "remote-opt-in" : "no-local-arabic-voice" };
+    }
     if (options.requireVoice === true && !voice) return { kind: "no-arabic-voice" };
     const token = {};
     active = token;

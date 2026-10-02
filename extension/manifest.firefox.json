@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Kalimat",
-  "version": "0.3.0",
-  "description": "A daily Arabic word.",
+  "version": "0.4.0",
+  "description": "Explore one Arabic word each day with meanings, examples, and review.",
   "permissions": ["storage", "contextMenus"],
   "optional_permissions": ["alarms", "notifications"],
   "omnibox": { "keyword": "km" },

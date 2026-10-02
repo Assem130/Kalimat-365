@@ -21,7 +21,6 @@
         <option value="emerald">زمردي</option>
         <option value="midnight">ليلي</option>
       </select>
-      <span id="streak-badge" class="streak-badge" aria-label="تتابع التعلم" role="status">🔥 لا يوجد تتابع بعد</span>
       <button id="due-review-badge" class="due-review-badge" aria-label="المراجعات المستحقة" type="button" hidden>0 مستحقة</button>
     </div>
   </header>
@@ -65,14 +64,8 @@
     </section>
     <section id="settings-view" class="view" aria-labelledby="settings-title" hidden>
       <h2 id="settings-title" tabindex="-1">الإعدادات</h2>
-      <fieldset id="settings-level">
-        <legend>مستواك</legend>
-        <label><input type="radio" name="atlas-level" value="1"> أيسر</label>
-        <label><input type="radio" name="atlas-level" value="2"> متوازن</label>
-        <label><input type="radio" name="atlas-level" value="3"> أعمق</label>
-      </fieldset>
       <fieldset id="settings-interests">
-        <legend>اهتماماتك: حتى ثلاثة</legend>
+        <legend>اهتمامات اختيارية: حتى ثلاثة</legend>
         <label><input type="checkbox" name="atlas-interest" value="classical-arabic"> العربية الكلاسيكية</label>
         <label><input type="checkbox" name="atlas-interest" value="daily-life"> الحياة اليومية</label>
         <label><input type="checkbox" name="atlas-interest" value="family"> العائلة</label>
@@ -81,6 +74,8 @@
         <label><input type="checkbox" name="atlas-interest" value="travel"> السفر</label>
       </fieldset>
       <label class="check"><input id="settings-english" type="checkbox"> إظهار الشرح الإنجليزي</label>
+      <label><input id="settings-remote-speech" type="checkbox"> السماح بالنطق عبر الإنترنت</label>
+      <p>الأصوات غير المحلية أو مجهولة المصدر قد ترسل النص المنطوق إلى مزوّد الصوت وتتطلب الإنترنت. هذا الخيار غير مفعّل افتراضيًا.</p>
       <label for="settings-speech-rate">سرعة النطق</label>
       <input id="settings-speech-rate" type="number" min="0.5" max="1.5" step="0.05" inputmode="decimal" value="0.85">
       <label for="settings-speech-repeat">تكرار النطق</label>
@@ -103,7 +98,7 @@
     </section>
     <section id="onboarding" class="view" aria-labelledby="onboarding-title" hidden>
       <h2 id="onboarding-title" tabindex="-1">لنبدأ من جديد</h2>
-      <p>اختر إعداداتك من قسم الإعدادات، ثم عُد إلى كلمة اليوم.</p>
+      <p>يمكنك العودة إلى كلمة اليوم مباشرة، أو تعديل تفضيلاتك الاختيارية في الإعدادات.</p>
       <button id="onboarding-settings" type="button">فتح الإعدادات</button>
     </section>
     <section id="empty" class="view" aria-labelledby="empty-title" hidden>
@@ -126,10 +121,11 @@
   <dialog id="practice-dialog" class="practice-dialog" aria-modal="true" aria-labelledby="practice-title">
     <div class="practice-container">
       <header class="practice-header">
-        <h2 id="practice-title" class="practice-title">مراجعة البطاقات</h2>
+        <h2 id="practice-title" class="practice-title">تذكّر اختياري</h2>
         <span id="practice-progress" class="practice-progress" aria-live="polite"></span>
         <button id="practice-close" class="practice-close" type="button" aria-label="إغلاق">✕</button>
       </header>
+      <p>قيّم تذكّرك بنفسك إن رغبت؛ يحدد اختيارك موعد العرض التالي، ولا يقيس التعلّم أو الإتقان.</p>
       <div id="practice-body" class="practice-body">
         <div id="practice-error" class="practice-error" role="alert" hidden>
           <p id="practice-error-message">تعذّر تحميل المراجعات. حاول مجددًا.</p>
@@ -178,7 +174,7 @@
         </div>
       </div>
       <div id="practice-finished" class="practice-finished" hidden>
-        <p id="practice-finished-message">🎉 أحسنت! أنهيت جميع مراجعات اليوم.</p>
+        <p id="practice-finished-message">انتهت جلسة التذكّر الاختيارية.</p>
         <button id="practice-finish-btn" class="continue" type="button">إتمام</button>
       </div>
     </div>

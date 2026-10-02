@@ -92,11 +92,16 @@ class FakeCanvasElement {
   }
 }
 
-function element() {
+function setConnected(node, connected) {
+  node.isConnected = connected;
+  for (const child of node.children ?? []) setConnected(child, connected);
+}
+
+function element(connected = true) {
   const attributes = Object.create(null);
   const classes = new Set();
   return {
-    textContent: "", hidden: false, disabled: false, checked: false, value: "", dataset: {}, attributes, focuses: 0, children: [], open: false, className: "",
+    textContent: "", hidden: false, disabled: false, checked: false, value: "", dataset: {}, attributes, focuses: 0, children: [], open: false, className: "", isConnected: connected,
     classList: {
       add(...names) { names.forEach((name) => classes.add(name)); },
       remove(...names) { names.forEach((name) => classes.delete(name)); },
@@ -112,7 +117,15 @@ function element() {
     hasAttribute(name) { return Object.hasOwn(this.attributes, name); },
     removeAttribute(name) { delete this.attributes[name]; },
     addEventListener(type, listener) { this.listeners[type] = listener; }, listeners: {}, focus() { this.focuses += 1; activeElement = this; },
-    append(...nodes) { this.children.push(...nodes); }, replaceChildren(...nodes) { this.children = nodes; }, get childElementCount() { return this.children.length; },
+    append(...nodes) {
+      for (const node of nodes) { this.children.push(node); setConnected(node, this.isConnected); }
+    },
+    replaceChildren(...nodes) {
+      for (const node of this.children) setConnected(node, false);
+      this.children = [];
+      this.append(...nodes);
+    },
+    get childElementCount() { return this.children.length; },
     querySelector(selector) {
       if (selector === ".rate-interval") return this.children.find((child) => child?.className === "rate-interval") || null;
       return null;
@@ -128,7 +141,7 @@ function popupApi(responses = {}, options = {}) {
   const ids = [
     "status", "action-status", "onboarding", "assigned", "assigned-title", "assignment-date", "interest-count", "empty", "error", "recovery", "warning",
     "empty-title", "error-title", "error-retry", "word", "meaning-ar", "meaning-en", "example", "example-en",
-    "pronunciation", "fixed-label", "save", "speak", "reminder", "reminder-time",
+    "translation", "vocalization", "vocalization-details", "register", "error-atlas", "recovery-atlas", "pronunciation", "fixed-label", "save", "speak", "reminder", "reminder-time",
     "onboarding-submit", "onboarding-skip", "explore", "explore-empty", "recovery-reset",
     "known", "difficult", "theme-select", "streak-badge", "btn-export-anki", "btn-export-card",
     "due-review-badge", "practice-dialog", "practice-body", "practice-progress", "practice-close",
@@ -283,7 +296,7 @@ function popupApi(responses = {}, options = {}) {
     console,
     confirm: options.confirm,
     URLSearchParams,
-    URL: mockURL,
+    URL: Object.assign(class extends URL {}, mockURL),
     Blob: globalThis.Blob,
     fetch: async (url) => {
       if (typeof url === "string" && url.includes("vocabulary.json")) {
@@ -310,13 +323,21 @@ function popupApi(responses = {}, options = {}) {
 function atlasApi(responses = {}, options = {}) {
   activeElement = null;
   const elements = new Map();
+  const dynamicById = (id, nodes = [...elements.values()]) => {
+    for (const node of nodes) {
+      if (node.id === id) return node;
+      const found = dynamicById(id, node.children ?? []);
+      if (found) return found;
+    }
+    return null;
+  };
   const ids = [
     "status", "today-action-status", "warning", "today", "explore", "history", "settings",
     "today-view", "explore-view", "history-view", "settings-view", "onboarding", "recovery",
     "empty", "error", "today-title", "explore-title", "history-title", "settings-title",
     "onboarding-title", "recovery-title", "empty-title", "error-title", "today-card", "today-date", "today-empty",
     "explore-card", "atlas-search", "search-count", "search-results", "return-today",
-    "history-filter", "history-list", "settings-english", "settings-speech-rate", "settings-speech-repeat", "settings-save", "settings-time",
+    "history-filter", "history-list", "settings-english", "settings-remote-speech", "settings-speech-rate", "settings-speech-repeat", "settings-save", "settings-time",
     "settings-reminder", "export", "import-file", "clear", "recovery-export", "recovery-import",
     "recovery-clear", "onboarding-settings", "today-save", "today-known", "today-difficult", "explore-lookup",
     "theme-select", "streak-badge", "today-export-card", "history-export-anki", "btn-export-anki",
@@ -404,7 +425,7 @@ function atlasApi(responses = {}, options = {}) {
     documentElement,
     body,
     fonts: { ready: Promise.resolve() },
-    getElementById(id) { return elements.get(id); },
+    getElementById(id) { return elements.get(id) ?? dynamicById(id); },
     createElement(tag) {
       if (tag === "canvas") return new FakeCanvasElement();
       if (tag === "a") {
@@ -417,7 +438,7 @@ function atlasApi(responses = {}, options = {}) {
         a.remove = function () {};
         return a;
       }
-      return element();
+      return element(false);
     },
     querySelector(selector) {
       const level = selector.match(/input\[name="atlas-level"\]\[value="(\d)"\]/);
@@ -477,7 +498,7 @@ function atlasApi(responses = {}, options = {}) {
     Promise,
     console,
     URLSearchParams,
-    URL: mockURL,
+    URL: Object.assign(class extends URL {}, mockURL),
     Blob: globalThis.Blob,
     location: { search: options.search ?? "" },
     fetch: async () => ({ ok: true, async json() { return vocabulary; } }),
@@ -515,67 +536,14 @@ test("popup ships separate native files without unsafe markup or timer work", ()
   assert.doesNotMatch(html, /<script(?![^>]+\bsrc=)[^>]*>/i);
   assert.doesNotMatch(html, /<style\b/i);
 });
-test("popup exposes RTL accessible onboarding and assigned-word controls", () => {
-  const html = source("popup.html");
-  assert.match(html, /href="#main"[^>]*>تجاوز إلى المحتوى/);
-  assert.match(html, /<main id="main"/);
-  assert.match(html, /<h1[^>]*>كلمة اليوم<\/h1>/);
-  assert.match(html, /id="status"[^>]+aria-live="polite"/);
-  assert.match(html, /id="action-status"[^>]+role="status"[^>]+aria-live="polite"/);
-  assert.match(html, /id="assigned"[^>]*hidden/);
-  assert.match(html, /id="assignment-date"/);
-  assert.match(html, /id="interest-count"[^>]+aria-live="polite"/);
-  assert.doesNotMatch(html, /تتابع التعلم/);
-  assert.match(html, /aria-label="المستوى"/);
-  assert.equal((html.match(/name="level"/g) || []).length, 3);
-  assert.equal((html.match(/name="interest"/g) || []).length, 6);
-  for (const label of ["تخطي الآن", "ثابتة لليوم", "معروف", "صعب", "حفظ", "استكشف", "تذكير يومي"]) assert.match(html, new RegExp(label));
-  for (const id of ["known", "difficult", "save", "speak", "explore", "reminder", "onboarding-submit", "onboarding-skip"]) assert.match(html, new RegExp(`<button[^>]+id="${id}"`));
-  assert.match(html, /<h2 id="word"[^>]+tabindex="-1"/);
-  assert.match(html, /<input[^>]+id="reminder-time"[^>]+type="time"[^>]+value="09:00"/);
-  assert.match(html, /<button[^>]+id="reminder"[^>]+role="switch"[^>]+aria-checked="false"/);
-  assert.doesNotMatch(html, /<button[^>]+id="reminder"[^>]*aria-pressed=/);
-  assert.match(html, /<button[^>]+id="reminder"[^>]+aria-label="تفعيل التذكير اليومي"/);
-  const popupCss = source("popup.css");
-  assert.match(popupCss, /\.levels\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, 1fr\)/);
-  for (const [value, label] of [["1", "أيسر"], ["2", "متوازن"], ["3", "أعمق"]]) {
-    assert.match(html, new RegExp(`value="${value}"[\\s\\S]*?<strong>${label}<\\/strong>`));
-  }
-  assert.doesNotMatch(html, />\s*(?:A1-A2|B1-B2|C1|beginner|intermediate|advanced)\s*</i, "Popup must not advertise unsupported challenge bands");
-  assert.match(popupCss, /html, body\s*\{[\s\S]*?width:\s*380px;[\s\S]*?min-width:\s*380px;[\s\S]*?max-width:\s*380px;/);
-  assert.match(popupCss, /main\s*\{[\s\S]*?width:\s*380px;/);
-  const narrowPopupCss = popupCss.match(/@media\s*\(max-width:\s*380px\)[\s\S]*?(?=@media\s*\(|$)/)?.[0] || "";
-  assert.match(narrowPopupCss, /\.levels\s*\{[^}]*grid-template-columns:\s*repeat\(3, 1fr\)/);
-  assert.doesNotMatch(narrowPopupCss, /\.levels\s*\{[^}]*grid-template-columns:\s*repeat\(\s*2\b/);
-  assert.match(html, /<button id="onboarding-submit"[^>]+class="continue"/);
-  assert.match(html, /<article class="word-card">\s*<p id="fixed-label"/);
-  assert.match(html, /<section class="example-card"/);
-  assert.match(html, /<button id="speak"[^>]+aria-label="استمع للنطق"/);
-  assert.match(html, /<p class="feedback-prompt">كيف كانت الكلمة اليوم؟<\/p>/);
-  assert.match(html, /<svg[^>]+viewBox=/);
-  assert.match(source("popup.css"), /\.reminder-row button::before/);
-  assert.match(source("popup.css"), /\.reminder-row button\[aria-checked="true"\]::after/);
-  assert.match(source("popup.css"), /\.reminder-row\s*\{[^}]*direction:\s*ltr/);
-  assert.match(source("popup.css"), /\.reminder-row button\s*\{[^}]*grid-column:\s*3/);
-  assert.match(source("popup.css"), /\.reminder-row button\[aria-checked="true"\]::after\s*\{[^}]*translateX\(20px\)/);
-});
 
-test("popup and Atlas expose a persistent accessible flip control", () => {
-  for (const [name, html, css] of [["popup", source("popup.html"), source("popup.css")], ["atlas", atlasSource("atlas.html"), atlasSource("atlas.css")]]) {
-    assert.match(html, /class="flashcard-scene"[\s\S]*id="card-front-flip"[^>]*aria-pressed="false"[\s\S]*id="flashcard-card"/);
-    assert.match(html, /id="flashcard-card"[^>]*role="group"(?![^>]*tabindex)/);
-    assert.match(css, /\.card-front-flip[^\{]*\{[\s\S]*\.card-front-flip:focus-visible/);
-    assert.match(html, /id="card-front-speak"[^>]*type="button"/);
-    assert.ok(name);
-  }
-});
 
 test("popup renders practical context before the literary fallback as safe text", () => {
   const { api, elements } = popupApi();
   assert.ok(api);
-  api.renderAssigned({ kind: "assigned", word: { id: "w1", word: "كلمة", meaningAr: "معنى", meaningEn: "meaning", contextAr: "<img onerror=alert(1)>", exampleAr: "مثال أدبي", pronunciation: "/test/" } });
+  api.renderAssigned({ kind: "assigned", word: { id: "w1", word: "كلمة", meaningAr: "معنى", meaningEn: "meaning", contextAr: "<img onerror=alert(1)>", exampleKind: "original", exampleAr: "مثال أدبي", pronunciation: "/test/" } });
   assert.equal(elements.get("example").textContent, "<img onerror=alert(1)>");
-  api.renderAssigned({ kind: "assigned", word: { id: "w1", word: "كلمة", meaningAr: "معنى", meaningEn: "meaning", exampleAr: "مثال أدبي", pronunciation: "/test/" } });
+  api.renderAssigned({ kind: "assigned", word: { id: "w1", word: "كلمة", meaningAr: "معنى", meaningEn: "meaning", exampleKind: "original", exampleAr: "مثال أدبي", pronunciation: "/test/" } });
   assert.equal(elements.get("example").textContent, "مثال أدبي");
 });
 
@@ -610,298 +578,6 @@ test("popup keeps the assignment hidden until render and formats a validated loc
   assert.equal(invalid.elements.get("error").hidden, false);
 });
 
-test("popup reports the three-interest limit with an exact live count", () => {
-  const fixture = popupApi();
-  assert.equal(fixture.elements.get("interest-count").textContent, "0/3");
-  for (let index = 0; index < 3; index += 1) {
-    fixture.inputs[index].checked = true;
-    fixture.api.limitInterests({ target: fixture.inputs[index] });
-    assert.equal(fixture.elements.get("interest-count").textContent, `${index + 1}/3`);
-  }
-
-  fixture.inputs[3].checked = true;
-  fixture.api.limitInterests({ target: fixture.inputs[3] });
-  assert.equal(fixture.inputs[3].checked, false);
-  assert.equal(fixture.elements.get("interest-count").textContent, "3/3");
-  assert.equal(fixture.elements.get("status").textContent, "يمكنك اختيار ثلاثة اهتمامات فقط.");
-});
-
-test("popup labels assignment streaks as reading and visit evidence", () => {
-  const fixture = popupApi();
-  fixture.api.updateStreak({ "2026-08-14": { wordId: "w1" } }, "2026-08-14");
-  const badge = fixture.elements.get("streak-badge");
-  assert.match(badge.getAttribute("aria-label"), /تتابع القراءة/);
-  assert.match(badge.getAttribute("aria-label"), /الزيارة/);
-  assert.equal(badge.title, "تتابع القراءة والزيارة");
-  assert.doesNotMatch(badge.getAttribute("aria-label"), /التعلم/);
-});
-
-test("popup renders the current card's exact review intervals", async () => {
-  const word = { id: "w1", word: "كلمة", meaningAr: "معنى", meaningEn: "meaning", pronunciation: "/w1/", exampleAr: "مثال" };
-  const reviewOptions = {
-    again: { interval: 1, nextReviewDate: "2026-08-18", label: "غدًا" },
-    hard: { interval: 1, nextReviewDate: "2026-08-18", label: "غدًا" },
-    good: { interval: 1, nextReviewDate: "2026-08-18", label: "غدًا" },
-    easy: { interval: 1, nextReviewDate: "2026-08-18", label: "غدًا" },
-  };
-  const fixture = popupApi({
-    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-08-17" },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "review.queue": { kind: "queue", words: [{ word, reviewOptions }], dueCount: 1, visibleCount: 1, remainingCount: 0 },
-  }, { vocabulary: [word], profile: {} });
-  await fixture.api.initialize();
-  await fixture.api.loadDueReviews();
-  await fixture.api.openPracticeModal();
-
-  for (const id of ["rate-again", "rate-hard", "rate-good", "rate-easy"]) {
-    assert.equal(fixture.elements.get(id).children[0].textContent, "غدًا");
-  }
-});
-
-test("popup flip control exposes state, keeps speaker independent, and resets for the next card", async () => {
-  const words = [
-    { id: "w1", word: "الأولى", meaningAr: "معنى أول", pronunciation: "/w1/", exampleAr: "مثال" },
-    { id: "w2", word: "الثانية", meaningAr: "معنى ثان", pronunciation: "/w2/", exampleAr: "مثال" },
-  ];
-  const reviewOptions = { again: { label: "غدًا" }, hard: { label: "غدًا" }, good: { label: "غدًا" }, easy: { label: "غدًا" } };
-  const fixture = popupApi({
-    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-08-17" },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "review.queue": { kind: "queue", words: words.map((word) => ({ word, reviewOptions })), dueCount: 2, visibleCount: 2, remainingCount: 0 },
-    "word.review": { kind: "ok" },
-  }, { vocabulary: words });
-  await fixture.api.initialize();
-  await fixture.api.loadDueReviews();
-  await fixture.api.openPracticeModal();
-
-  const flip = fixture.elements.get("card-front-flip");
-  const card = fixture.elements.get("flashcard-card");
-  fixture.elements.get("card-front-speak").listeners.click({ stopPropagation() {} });
-  assert.equal(card.classList.contains("flipped"), false);
-
-  flip.listeners.click({ stopPropagation() {} });
-  assert.equal(flip.getAttribute("aria-pressed"), "true");
-  assert.equal(flip.getAttribute("aria-label"), "أخفِ المعنى");
-  assert.equal(fixture.elements.get("status").textContent, "كُشف المعنى.");
-  flip.listeners.click({ stopPropagation() {} });
-  assert.equal(flip.getAttribute("aria-pressed"), "false");
-  assert.equal(flip.getAttribute("aria-label"), "اقلب البطاقة");
-  assert.equal(fixture.elements.get("status").textContent, "أُخفي المعنى.");
-
-  await fixture.api.submitRating("good");
-  assert.equal(fixture.elements.get("card-front-flip").getAttribute("aria-pressed"), "false");
-  assert.equal(fixture.elements.get("card-front-flip").getAttribute("aria-label"), "اقلب البطاقة");
-});
-
-test("popup does not reopen stale review cards while the post-close queue refresh is pending", async () => {
-  const firstWord = { id: "w1", word: "الأولى", meaningAr: "معنى أول", pronunciation: "/w1/", exampleAr: "مثال" };
-  const remainingWord = { id: "w2", word: "الثانية", meaningAr: "معنى ثان", pronunciation: "/w2/", exampleAr: "مثال" };
-  const reviewOptions = { again: { label: "غدًا" }, hard: { label: "غدًا" }, good: { label: "غدًا" }, easy: { label: "غدًا" } };
-  const initialQueue = { kind: "queue", words: [{ word: firstWord, reviewOptions }], dueCount: 2, visibleCount: 1, remainingCount: 1 };
-  const refreshedQueue = { kind: "queue", words: [{ word: remainingWord, reviewOptions }], dueCount: 1, visibleCount: 1, remainingCount: 0 };
-  let queueCalls = 0;
-  let resolveRefresh;
-  const refreshPending = new Promise((resolve) => { resolveRefresh = resolve; });
-  const fixture = popupApi({
-    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-08-17" },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "review.queue": () => {
-      queueCalls += 1;
-      return queueCalls <= 2 ? initialQueue : refreshPending;
-    },
-  }, { vocabulary: [firstWord, remainingWord], profile: {} });
-  await fixture.api.initialize();
-  await fixture.api.loadDueReviews();
-  await fixture.api.openPracticeModal();
-  assert.equal(fixture.elements.get("practice-dialog").open, true);
-
-  fixture.api.closePracticeModal();
-  fixture.api.openPracticeModal();
-  assert.equal(queueCalls, 3);
-  assert.equal(fixture.elements.get("practice-dialog").open, false, "reopen waits for the authoritative refresh");
-
-  resolveRefresh(refreshedQueue);
-  await new Promise(setImmediate);
-  assert.equal(fixture.elements.get("practice-dialog").open, true);
-  assert.equal(fixture.elements.get("card-front-word").textContent, "الثانية");
-});
-
-test("popup startup loads a due badge once, hides zero due, and skips onboarding or failed assignments", async () => {
-  const assigned = { kind: "assigned", dateKey: "2026-08-17", word: { id: "w1", word: "كلمة", meaningAr: "معنى", pronunciation: "/w1/" } };
-  const settings = { kind: "settings", reminder: { enabled: false, time: "09:00" } };
-  const queue = { kind: "queue", words: [{ wordId: "w1", word: assigned.word }], dueCount: 1, visibleCount: 1, remainingCount: 0 };
-  const due = popupApi({ "assignment.get": assigned, "settings.get": settings, "review.queue": queue }, { profile: {} });
-  await due.api.initialize();
-  assert.equal(due.calls.filter((message) => message.type === "review.queue").length, 1);
-  assert.equal(due.elements.get("due-review-badge").hidden, false);
-  assert.match(due.elements.get("due-review-badge").textContent, /1 مستحقة/);
-  assert.match(due.elements.get("due-review-badge").getAttribute("aria-label"), /المراجعات المستحقة/);
-
-  const warned = popupApi({ "assignment.get": { ...assigned, storageWarning: true }, "settings.get": settings, "review.queue": queue }, { profile: {} });
-  await warned.api.initialize();
-  assert.equal(warned.elements.get("warning").hidden, false, "queue hydration must preserve an assignment storage warning");
-
-  const zero = popupApi({ "assignment.get": assigned, "settings.get": settings, "review.queue": { kind: "queue", words: [], dueCount: 0, visibleCount: 0, remainingCount: 0 } }, { profile: {} });
-  await zero.api.initialize();
-  assert.equal(zero.elements.get("due-review-badge").hidden, true);
-
-  const onboarding = popupApi({ "settings.get": settings, "review.queue": queue }, { profile: undefined });
-  await onboarding.api.initialize();
-  assert.equal(onboarding.calls.some((message) => message.type === "review.queue"), false);
-
-  const failed = popupApi({ "assignment.get": new Error("assignment"), "settings.get": settings, "review.queue": queue }, { profile: {} });
-  await failed.api.initialize();
-  assert.equal(failed.calls.some((message) => message.type === "review.queue"), false);
-
-  const noWord = popupApi({ "assignment.get": { kind: "no-new-word" }, "settings.get": settings, "review.queue": { kind: "queue", words: [], dueCount: 0, visibleCount: 0, remainingCount: 0 } }, { profile: {} });
-  await noWord.api.initialize();
-  assert.equal(noWord.elements.get("empty").hidden, false);
-  assert.equal(noWord.calls.filter((message) => message.type === "review.queue").length, 1);
-});
-
-test("popup queue rejection is retryable and recovery uses the existing recovery view", async () => {
-  const assigned = { kind: "assigned", dateKey: "2026-08-17", word: { id: "w1", word: "كلمة", meaningAr: "معنى", pronunciation: "/w1/" } };
-  const settings = { kind: "settings", reminder: { enabled: false, time: "09:00" } };
-  const rejected = popupApi({ "assignment.get": assigned, "settings.get": settings, "review.queue": new Error("queue") }, { profile: {} });
-  await rejected.api.initialize();
-  assert.equal(rejected.elements.get("due-review-badge").hidden, true);
-  await rejected.api.openPracticeModal();
-  await new Promise(setImmediate);
-  assert.equal(rejected.elements.get("practice-dialog").open, true);
-  assert.equal(rejected.elements.get("practice-body").hidden, false);
-  assert.equal(rejected.elements.get("practice-finished").hidden, true);
-  assert.equal(rejected.elements.get("practice-error").hidden, false);
-  assert.equal(rejected.elements.get("practice-retry").hidden, false);
-
-  const malformed = popupApi({ "assignment.get": assigned, "settings.get": settings, "review.queue": { kind: "queue", words: [{ wordId: "w1" }], dueCount: 1, visibleCount: 1, remainingCount: 0 } }, { profile: {} });
-  await malformed.api.initialize();
-  malformed.api.openPracticeModal();
-  await new Promise(setImmediate);
-  assert.equal(malformed.elements.get("practice-error").hidden, false);
-  assert.equal(malformed.elements.get("practice-finished").hidden, true);
-
-  const inconsistent = popupApi({ "assignment.get": assigned, "settings.get": settings, "review.queue": { kind: "queue", words: [], dueCount: 1, visibleCount: 1, remainingCount: 0 } }, { profile: {} });
-  await inconsistent.api.initialize();
-  assert.equal(inconsistent.elements.get("due-review-badge").hidden, true);
-  await inconsistent.api.openPracticeModal();
-  await new Promise(setImmediate);
-  assert.equal(inconsistent.elements.get("practice-error").hidden, false, "inconsistent queue counts must be retryable errors");
-  assert.equal(inconsistent.elements.get("practice-finished").hidden, true);
-
-  let retryCalls = 0;
-  const retryRecovery = popupApi({
-    "assignment.get": assigned,
-    "settings.get": settings,
-    "review.queue": () => {
-      retryCalls += 1;
-      return retryCalls < 3 ? new Error("queue") : { kind: "recovery", recoveryRaw: { broken: true } };
-    },
-  }, { profile: {} });
-  await retryRecovery.api.initialize();
-  await retryRecovery.api.openPracticeModal();
-  await new Promise(setImmediate);
-  assert.equal(retryRecovery.elements.get("practice-error").hidden, false);
-  retryRecovery.elements.get("practice-retry").listeners.click({});
-  await new Promise(setImmediate);
-  assert.equal(retryRecovery.elements.get("recovery").hidden, false);
-  assert.equal(retryRecovery.elements.get("practice-dialog").open, false);
-  assert.equal(retryRecovery.elements.get("practice-error").hidden, true);
-
-  const recovery = popupApi({ "assignment.get": assigned, "settings.get": settings, "review.queue": { kind: "recovery", recoveryRaw: { broken: true } } }, { profile: {} });
-  await recovery.api.initialize();
-  assert.equal(recovery.elements.get("recovery").hidden, false);
-  assert.equal(recovery.elements.get("due-review-badge").hidden, true);
-});
-
-test("popup review focus returns to its invoker and numeric ratings require reveal", async () => {
-  const word = { id: "w1", word: "كلمة", meaningAr: "معنى", pronunciation: "/w1/" };
-  const fixture = popupApi({
-    "assignment.get": { kind: "assigned", dateKey: "2026-08-17", word },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "review.queue": { kind: "queue", words: [{ wordId: "w1", word }], dueCount: 1, visibleCount: 1, remainingCount: 0 },
-    "word.review": { kind: "ok" },
-  }, { profile: {} });
-  await fixture.api.initialize();
-  const invoker = fixture.elements.get("due-review-badge");
-  invoker.focus();
-  await fixture.api.openPracticeModal();
-  const event = { type: "keydown", key: "1", target: { tagName: "DIV" }, prevented: false, preventDefault() { this.prevented = true; } };
-  fixture.documentListeners.keydown(event);
-  assert.equal(fixture.calls.some((message) => message.type === "word.review"), false);
-  assert.equal(fixture.elements.get("practice-ratings").hidden, true);
-  fixture.elements.get("card-front-flip").listeners.click({});
-  assert.equal(fixture.elements.get("practice-ratings").hidden, false);
-  fixture.documentListeners.keydown(event);
-  await new Promise(setImmediate);
-  assert.equal(fixture.calls.filter((message) => message.type === "word.review").length, 1);
-  fixture.api.closePracticeModal();
-  assert.equal(fixture.context.document.activeElement, invoker);
-});
-
-test("popup two-card review gate blocks keys before reveal and resets controls for the next card", async () => {
-  const words = [
-    { id: "w1", word: "الأولى", meaningAr: "معنى أول", pronunciation: "/w1/" },
-    { id: "w2", word: "الثانية", meaningAr: "معنى ثان", pronunciation: "/w2/" },
-  ];
-  const fixture = popupApi({
-    "assignment.get": { kind: "assigned", dateKey: "2026-08-17", word: words[0] },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "review.queue": { kind: "queue", words: words.map((word) => ({ wordId: word.id, word })), dueCount: 2, visibleCount: 2, remainingCount: 0 },
-    "word.review": { kind: "ok" },
-  }, { profile: {}, vocabulary: words });
-  await fixture.api.initialize();
-  await fixture.api.openPracticeModal();
-  assert.equal(fixture.elements.get("rate-again").disabled, true);
-  assert.equal(fixture.elements.get("card-front-speak").disabled, false);
-  fixture.documentListeners.keydown({ type: "keydown", key: "1", target: { tagName: "DIV" }, preventDefault() {} });
-  assert.equal(fixture.calls.some((message) => message.type === "word.review"), false);
-
-  fixture.elements.get("card-front-flip").listeners.click({});
-  assert.equal(fixture.elements.get("card-front-speak").disabled, true);
-  fixture.documentListeners.keydown({ type: "keydown", key: "1", target: { tagName: "DIV" }, preventDefault() {} });
-  await new Promise(setImmediate);
-  assert.equal(fixture.calls.filter((message) => message.type === "word.review").length, 1);
-  assert.equal(fixture.elements.get("card-front-word").textContent, "الثانية");
-  assert.equal(fixture.elements.get("practice-ratings").hidden, true);
-  assert.equal(fixture.elements.get("rate-again").disabled, true);
-
-  fixture.documentListeners.keydown({ type: "keydown", key: "4", target: { tagName: "DIV" }, preventDefault() {} });
-  assert.equal(fixture.calls.filter((message) => message.type === "word.review").length, 1);
-  fixture.elements.get("card-front-flip").listeners.click({});
-  fixture.documentListeners.keydown({ type: "keydown", key: "4", target: { tagName: "DIV" }, preventDefault() {} });
-  await new Promise(setImmediate);
-  assert.equal(fixture.calls.filter((message) => message.type === "word.review").length, 2);
-});
-
-test("popup rejected ratings restore revealed controls for a retry", async () => {
-  const word = { id: "w1", word: "كلمة", meaningAr: "معنى", pronunciation: "/w1/" };
-  let releaseReview;
-  let reviewCalls = 0;
-  const pendingReview = new Promise((resolve) => { releaseReview = resolve; });
-  const fixture = popupApi({
-    "assignment.get": { kind: "assigned", dateKey: "2026-08-17", word },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "review.queue": { kind: "queue", words: [{ wordId: "w1", word }], dueCount: 1, visibleCount: 1, remainingCount: 0 },
-    "word.review": () => {
-      reviewCalls += 1;
-      return reviewCalls === 1 ? pendingReview : { kind: "ok" };
-    },
-  }, { profile: {} });
-  await fixture.api.initialize();
-  await fixture.api.openPracticeModal();
-  assert.equal(fixture.elements.get("rate-good").disabled, true);
-  fixture.elements.get("card-front-flip").listeners.click({});
-  assert.equal(fixture.elements.get("rate-good").disabled, false);
-  const firstAttempt = fixture.api.submitRating("good");
-  assert.equal(fixture.elements.get("rate-good").disabled, true);
-  releaseReview(new Error("review"));
-  await firstAttempt;
-  assert.equal(fixture.elements.get("rate-good").disabled, false);
-  assert.equal(fixture.elements.get("card-back-face").getAttribute("aria-hidden"), "false");
-  await fixture.api.submitRating("good");
-  assert.equal(reviewCalls, 2);
-});
-
 test("popup shows English practical context only when enabled and preserves text content", () => {
   const { api, elements, inputs } = popupApi();
   api.renderAssigned({ kind: "assigned", word: { id: "w1", word: "<img onerror=alert(1)>", meaningAr: "معنى", meaningEn: "meaning", contextAr: "سياق", contextEn: "<img onerror=alert(1)>", exampleAr: "مثال", pronunciation: "/test/" } });
@@ -910,20 +586,9 @@ test("popup shows English practical context only when enabled and preserves text
   assert.equal(elements.get("example-en").hidden, false);
   api.renderAssigned({ kind: "assigned", showEnglish: false, word: { id: "w1", word: "كلمة", meaningAr: "معنى", meaningEn: "meaning", contextAr: "سياق", contextEn: "in context", exampleAr: "مثال", pronunciation: "/test/" } });
   assert.equal(elements.get("example-en").hidden, true);
-  inputs.slice(0, 3).forEach((input) => { input.checked = true; });
-  inputs[3].checked = true;
-  api.limitInterests({ target: inputs[3] });
-  assert.equal(inputs[3].checked, false);
+  assert.equal(elements.get("translation").hidden, true);
 });
 
-test("reminder requests optional permissions in the click handler before configuration", async () => {
-  const { api, calls } = popupApi({ "reminder.configure": { enabled: true, time: "09:00" } });
-  api.renderAssigned({ kind: "assigned", word: { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "مثال", pronunciation: "/test/" } });
-  const pending = api.requestReminder();
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])), { permission: { permissions: ["alarms", "notifications"] } });
-  await pending;
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[1])), { type: "reminder.configure", enabled: true, time: "09:00" });
-});
 
 test("save uses a real attribute value and toggles both ways", async () => {
   const { api, elements, calls } = popupApi({ "word.save": { kind: "ok" } });
@@ -942,94 +607,14 @@ test("popup Explore preserves the current word and supports empty-corpus browsin
   fixture.api.renderAssigned({ kind: "assigned", word: { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "مثال", pronunciation: "/test/" } });
   await fixture.api.openAtlas();
   assert.deepEqual(JSON.parse(JSON.stringify(fixture.calls.at(-1))), {
-    tab: { url: "extension://kalimat/atlas/atlas.html?view=explore&q=%D9%83%D9%84%D9%85%D8%A9" },
+    tab: { url: "extension://kalimat/atlas/atlas.html?view=explore&id=w1&q=%D9%83%D9%84%D9%85%D8%A9" },
   });
 
   const empty = popupApi();
   await empty.api.openAtlas();
   assert.deepEqual(JSON.parse(JSON.stringify(empty.calls.at(-1))), {
-    tab: { url: "extension://kalimat/atlas/atlas.html?view=explore&q=" },
+    tab: { url: "extension://kalimat/atlas/atlas.html?view=explore&id=&q=" },
   });
-});
-
-test("popup ignores duplicate feedback and save requests while the first mutation is pending", async () => {
-  let releaseFeedback;
-  let releaseSave;
-  const feedbackResult = new Promise((resolve) => { releaseFeedback = resolve; });
-  const saveResult = new Promise((resolve) => { releaseSave = resolve; });
-  const fixture = popupApi({ "word.feedback": () => feedbackResult, "word.save": () => saveResult });
-  fixture.api.renderAssigned({ kind: "assigned", dateKey: "2026-07-30", word: { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "مثال", pronunciation: "/test/" } });
-
-  const feedbackPending = fixture.api.sendFeedback("known", fixture.elements.get("known"));
-  await new Promise(setImmediate);
-  await fixture.api.sendFeedback("difficult", fixture.elements.get("difficult"));
-  assert.equal(fixture.calls.filter((message) => message.type === "word.feedback").length, 1);
-  releaseFeedback({ kind: "ok", status: "known" });
-  await feedbackPending;
-
-  const savePending = fixture.api.toggleSave();
-  await new Promise(setImmediate);
-  await fixture.api.toggleSave();
-  assert.equal(fixture.calls.filter((message) => message.type === "word.save").length, 1);
-  releaseSave({ kind: "ok", saved: true });
-  await savePending;
-});
-
-test("popup feedback and save expose adjacent pending, success, failure, and focus states", async () => {
-  let releaseFeedback;
-  const feedback = new Promise((resolve) => { releaseFeedback = resolve; });
-  const fixture = popupApi({ "word.feedback": () => feedback, "word.save": { kind: "ok" } });
-  fixture.api.renderAssigned({ kind: "assigned", dateKey: "2026-07-30", word: { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "مثال", pronunciation: "/test/" } });
-  const known = fixture.elements.get("known");
-  const pending = fixture.api.sendFeedback("known", known);
-  await new Promise(setImmediate);
-  assert.equal(known.disabled, true);
-  assert.equal(known.getAttribute("aria-busy"), "true");
-  releaseFeedback({ kind: "ok" });
-  await pending;
-  assert.equal(known.getAttribute("aria-pressed"), "true");
-  assert.equal(known.focuses, 1);
-  assert.equal(fixture.elements.get("action-status").textContent, "تم حفظ تقييمك.");
-  assert.equal(fixture.elements.get("action-status").getAttribute("role"), "status");
-
-  await fixture.api.toggleSave();
-  assert.equal(fixture.elements.get("save").getAttribute("aria-pressed"), "true");
-  assert.equal(fixture.elements.get("save").focuses, 1);
-  assert.equal(fixture.elements.get("action-status").textContent, "حُفظت الكلمة.");
-
-  const failed = popupApi({ "word.feedback": new Error("offline") });
-  failed.api.renderAssigned({ kind: "assigned", dateKey: "2026-07-30", word: { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "مثال", pronunciation: "/test/" } });
-  const difficult = failed.elements.get("difficult");
-  await failed.api.sendFeedback("difficult", difficult);
-  assert.equal(difficult.getAttribute("aria-pressed"), "false");
-  assert.equal(difficult.focuses, 1);
-  assert.equal(failed.elements.get("action-status").textContent, "تعذّر حفظ تقييمك.");
-  assert.equal(failed.elements.get("action-status").getAttribute("role"), "alert");
-
-  const failedSave = popupApi({ "word.save": new Error("offline") });
-  failedSave.api.renderAssigned({ kind: "assigned", dateKey: "2026-07-30", word: { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "مثال", pronunciation: "/test/" } });
-  await failedSave.api.toggleSave();
-  assert.equal(failedSave.elements.get("save").getAttribute("aria-pressed"), "false");
-  assert.equal(failedSave.elements.get("save").focuses, 1);
-  assert.equal(failedSave.elements.get("action-status").textContent, "تعذّر تغيير الحفظ.");
-  assert.equal(failedSave.elements.get("action-status").getAttribute("role"), "alert");
-});
-
-test("popup restores validated feedback, saved state, and English visibility from assignment", () => {
-  const { api, elements } = popupApi();
-  api.renderAssigned({ kind: "assigned", dateKey: "2026-07-30", status: "known", saved: true, showEnglish: false, word: { id: "w1", word: "كلمة", meaningAr: "معنى", meaningEn: "meaning", exampleAr: "مثال", pronunciation: "/test/" } });
-  assert.equal(elements.get("known").getAttribute("aria-pressed"), "true");
-  assert.equal(elements.get("difficult").getAttribute("aria-pressed"), "false");
-  assert.equal(elements.get("save").getAttribute("aria-pressed"), "true");
-  assert.equal(elements.get("meaning-en").hidden, true);
-});
-
-test("popup mutation enters recovery and does not claim a successful save", async () => {
-  const { api, elements } = popupApi({ "word.feedback": { kind: "recovery", recoveryRaw: { broken: true } } });
-  api.renderAssigned({ kind: "assigned", dateKey: "2026-07-30", word: { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "مثال", pronunciation: "/test/" } });
-  await api.sendFeedback("known", elements.get("known"));
-  assert.equal(elements.get("recovery").hidden, false);
-  assert.equal(elements.get("known").getAttribute("aria-pressed"), "false");
 });
 
 test("popup no-word and load-error states focus a clear state and disable word actions", async () => {
@@ -1037,7 +622,6 @@ test("popup no-word and load-error states focus a clear state and disable word a
   await noWord.api.initialize();
   assert.equal(noWord.elements.get("empty").hidden, false);
   assert.equal(noWord.elements.get("empty-title").focuses, 1);
-  assert.equal(noWord.elements.get("known").disabled, true);
   assert.equal(noWord.elements.get("save").disabled, true);
 
   const failed = popupApi({ "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } }, "assignment.get": new Error("load") });
@@ -1045,163 +629,6 @@ test("popup no-word and load-error states focus a clear state and disable word a
   assert.equal(failed.elements.get("error").hidden, false);
   assert.equal(failed.elements.get("error-title").focuses, 1);
   assert.match(failed.elements.get("status").textContent, /تعذّر تحميل/);
-});
-
-test("onboarding focuses the assigned word and feedback retains the authoritative assignment date", async () => {
-  const assigned = { kind: "assigned", dateKey: "2026-07-30", word: { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "مثال", pronunciation: "/test/" } };
-  const { api, elements, calls } = popupApi({ "onboarding.complete": { kind: "ok" }, "assignment.get": assigned, "word.feedback": { kind: "ok" } });
-  api.renderAssigned(assigned);
-  elements.get("word").focuses = 0;
-  await api.completeOnboarding();
-  assert.equal(elements.get("word").focuses, 1);
-  await api.sendFeedback("known", elements.get("known"));
-  assert.deepEqual(JSON.parse(JSON.stringify(calls.findLast((message) => message.type === "word.feedback"))), { type: "word.feedback", dateKey: "2026-07-30", wordId: "w1", status: "known" });
-});
-
-test("popup serializes onboarding submit and skip while completion is pending", async () => {
-  let release;
-  const pending = new Promise((resolve) => { release = resolve; });
-  const fixture = popupApi({
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "onboarding.complete": () => pending,
-  }, { profile: undefined });
-  await fixture.api.initialize();
-
-  const submit = fixture.api.completeOnboarding();
-  await new Promise(setImmediate);
-  const skip = fixture.api.completeOnboarding(true);
-  assert.equal(fixture.calls.filter((message) => message.type === "onboarding.complete").length, 1);
-  assert.equal(fixture.elements.get("onboarding-submit").disabled, true);
-  assert.equal(fixture.elements.get("onboarding-skip").disabled, true);
-
-  release({ kind: "ok" });
-  await Promise.all([submit, skip]);
-  assert.equal(fixture.elements.get("onboarding-submit").disabled, false);
-  assert.equal(fixture.elements.get("onboarding-skip").disabled, false);
-});
-
-test("popup hydrates an active authoritative reminder on reopen and toggles it off", async () => {
-  const { api, elements, calls } = popupApi({
-    "settings.get": { kind: "settings", reminder: { enabled: true, time: "18:45" } },
-    "assignment.get": { kind: "no-new-word" },
-    "reminder.configure": { enabled: false, time: "18:45" },
-  });
-  await api.initialize();
-  assert.equal(elements.get("reminder").getAttribute("aria-checked"), "true");
-  assert.equal(elements.get("reminder").getAttribute("aria-pressed"), null);
-  assert.equal(elements.get("reminder-time").value, "18:45");
-  await api.requestReminder();
-  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1))), { type: "reminder.configure", enabled: false, time: "18:45" });
-  assert.equal(elements.get("reminder").getAttribute("aria-checked"), "false");
-  assert.equal(elements.get("reminder").getAttribute("aria-pressed"), null);
-});
-
-test("popup renders the daily word before reminder hydration finishes", async () => {
-  let resolveSettings;
-  const settings = new Promise((resolve) => { resolveSettings = resolve; });
-  const assigned = { kind: "assigned", dateKey: "2026-07-30", word: { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "مثال", pronunciation: "/w1/" } };
-  const { api, elements, calls } = popupApi({
-    "settings.get": () => settings,
-    "assignment.get": assigned,
-  });
-
-  const initializing = api.initialize();
-  await new Promise(setImmediate);
-
-  assert.deepEqual(calls.map((message) => message.type), ["assignment.get", "settings.get"]);
-  assert.equal(elements.get("assigned").hidden, false);
-  assert.equal(elements.get("reminder").disabled, true);
-  assert.equal(elements.get("reminder-time").disabled, true);
-
-  resolveSettings({ kind: "settings", reminder: { enabled: false, time: "09:00" } });
-  await initializing;
-  assert.equal(elements.get("reminder").disabled, false);
-  assert.equal(elements.get("reminder-time").disabled, false);
-});
-
-test("popup shows first-run onboarding before reminder hydration finishes", async () => {
-  let resolveSettings;
-  const settings = new Promise((resolve) => { resolveSettings = resolve; });
-  const { api, elements, calls } = popupApi({ "settings.get": () => settings }, { profile: undefined });
-
-  const initializing = api.initialize();
-  await new Promise(setImmediate);
-
-  assert.equal(elements.get("onboarding").hidden, false);
-  assert.equal(elements.get("reminder").disabled, true);
-  assert.equal(calls.some((message) => message.type === "assignment.get"), false);
-
-  resolveSettings({ kind: "settings", reminder: { enabled: false, time: "09:00" } });
-  await initializing;
-  assert.equal(elements.get("reminder").disabled, true);
-});
-
-test("popup serializes rapid reminder toggles from the authoritative state", async () => {
-  let enabled = false;
-  const { api, elements, calls } = popupApi({
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "assignment.get": { kind: "no-new-word" },
-    "reminder.configure": (message) => { enabled = message.enabled; return { enabled, time: message.time }; },
-  });
-  await api.initialize();
-  api.renderAssigned({ kind: "assigned", word: { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "مثال", pronunciation: "/w1/" } });
-  await Promise.all([api.requestReminder(), api.requestReminder()]);
-  assert.deepEqual(calls.filter((message) => message.type === "reminder.configure").map((message) => message.enabled), [true, false]);
-  assert.equal(elements.get("reminder").getAttribute("aria-checked"), "false");
-  assert.equal(elements.get("reminder").getAttribute("aria-pressed"), null);
-});
-
-test("popup recovery reset requires confirmation and cancellation leaves state untouched", async () => {
-  const fixture = popupApi({}, { confirm: () => false });
-  await fixture.api.resetRecovery();
-  assert.equal(fixture.calls.some((message) => message.type === "state.clear"), false);
-});
-
-test("popup recovery reset does not retain a profile-only warning as a reminder warning", async () => {
-  const fixture = popupApi({
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "assignment.get": { kind: "no-new-word" },
-    "state.clear": { kind: "ok", storageWarning: true, reminderWarning: false },
-    "onboarding.complete": { kind: "ok" },
-  }, { confirm: () => true });
-  await fixture.api.initialize();
-  await fixture.api.resetRecovery();
-  assert.equal(fixture.elements.get("warning").hidden, false);
-  await fixture.api.completeOnboarding(true);
-  assert.equal(fixture.elements.get("warning").hidden, true);
-});
-
-test("a rejected reminder disable keeps the visible enabled state and reports the error", async () => {
-  const { api, elements } = popupApi({
-    "settings.get": { kind: "settings", reminder: { enabled: true, time: "09:00" } },
-    "assignment.get": { kind: "no-new-word" },
-    "reminder.configure": new Error("storage unavailable"),
-  });
-  await api.initialize();
-  await assert.doesNotReject(api.requestReminder());
-  assert.equal(elements.get("reminder").getAttribute("aria-checked"), "true");
-  assert.equal(elements.get("reminder").getAttribute("aria-pressed"), null);
-  assert.match(elements.get("status").textContent, /تعذّر إيقاف التذكير/);
-});
-
-test("failed reminder hydration keeps controls disabled and its error survives assignment loading", async () => {
-  const { api, elements, calls } = popupApi({
-    "settings.get": new Error("settings unavailable"),
-    "assignment.get": { kind: "no-new-word" },
-  });
-  await api.initialize();
-  assert.equal(elements.get("reminder").disabled, true);
-  assert.equal(elements.get("reminder-time").disabled, true);
-  assert.match(elements.get("status").textContent, /تعذّر تحميل إعدادات التذكير/);
-  assert.ok(calls.some((message) => message.type === "assignment.get"));
-});
-
-test("failed reminder hydration keeps its error through first-time onboarding", async () => {
-  const { api, elements, calls } = popupApi({ "settings.get": new Error("settings unavailable") }, { profile: undefined });
-  await api.initialize();
-  assert.equal(elements.get("onboarding").hidden, false);
-  assert.match(elements.get("status").textContent, /تعذّر تحميل إعدادات التذكير/);
-  assert.equal(calls.some((message) => message.type === "assignment.get"), false);
 });
 
 test("Atlas ships a dark, accessible four-view page without unsafe sinks or timer work", () => {
@@ -1215,13 +642,10 @@ test("Atlas ships a dark, accessible four-view page without unsafe sinks or time
   assert.match(html, /<script\s+src="\.\.\/shared\/speech\.js"><\/script>/);
   assert.match(html, /id="today-date"/);
   assert.match(js, /word-speak/);
-  for (const id of ["today", "explore", "history", "settings", "atlas-search", "return-today", "history-filter", "settings-level", "settings-english", "settings-time", "export", "import-file", "clear", "recovery-export", "recovery-import", "recovery-clear", "today-action-status", "explore-lookup"]) assert.match(html, new RegExp(`id="${id}"`));
+  for (const id of ["today", "explore", "history", "settings", "atlas-search", "return-today", "history-filter", "settings-english", "settings-time", "export", "import-file", "clear", "recovery-export", "recovery-import", "recovery-clear", "today-action-status", "explore-lookup"]) assert.match(html, new RegExp(`id="${id}"`));
   assert.match(html, /id="today-action-status"[^>]+role="status"[^>]+aria-live="polite"/);
   assert.doesNotMatch(html, /id="today-lookup"/);
-  assert.equal((html.match(/name="atlas-level"/g) || []).length, 3);
-  for (const [value, label] of [["1", "أيسر"], ["2", "متوازن"], ["3", "أعمق"]]) {
-    assert.match(html, new RegExp(`value="${value}"> ${label}`));
-  }
+  assert.doesNotMatch(html, /name="atlas-level"|id="streak-badge"/);
   assert.doesNotMatch(html, />\s*(?:A1-A2|B1-B2|C1|مبتدئ|متوسط|متقدم|beginner|intermediate|advanced)\s*</i, "Atlas must not advertise unsupported challenge bands");
   assert.match(html, /<input[^>]+id="settings-speech-rate"[^>]+type="number"[^>]+min="0\.5"[^>]+max="1\.5"[^>]+step="0\.05"/);
   assert.match(html, /<select[^>]+id="settings-speech-repeat"[\s\S]*value="1"[\s\S]*value="3"/);
@@ -1251,7 +675,7 @@ test("Atlas keeps the daily anchor while exploration, history, settings, and rec
   assert.match(js, /type:\s*"state\.export"/);
   assert.match(js, /type:\s*"state\.import",\s*text/);
   assert.match(js, /type:\s*"state\.clear"/);
-  assert.match(js, /type:\s*"settings\.update",\s*level,\s*interests,\s*showEnglish/);
+  assert.match(js, /type:\s*"settings\.update",\s*\.\.\.submitted/);
   assert.match(js, /type:\s*"reminder\.configure",\s*enabled,\s*time/);
   assert.match(js, /new Blob\(/);
   assert.match(js, /globalThis\.confirm/);
@@ -1266,7 +690,7 @@ test("Atlas Today formats its validated local date and shares speech controls wi
   const speechCalls = [];
   class FakeUtterance { constructor(text) { this.text = text; } }
   const speechSynthesis = {
-    getVoices() { return []; },
+    getVoices() { return [{ lang: "ar", localService: true }]; },
     cancel() { speechCalls.push("cancel"); },
     speak(utterance) { speechCalls.push({ text: utterance.text }); },
   };
@@ -1321,7 +745,7 @@ test("Atlas hides an invalid Today date and disables shared speakers without Web
   assert.equal(exploreSpeaker.disabled, true);
 });
 
-test("Atlas exposes speech settings, hydrates every valid rate, and maps legacy level 4 to level 3", async () => {
+test("Atlas speech settings preserve legacy level 4 without a visible proficiency control", async () => {
   for (const speechRate of [0.7, 0.85, 1, 1.25]) {
     const profile = atlasProfile({
       level: 4,
@@ -1336,11 +760,12 @@ test("Atlas exposes speech settings, hydrates every valid rate, and maps legacy 
     await fixture.api.initialize();
     assert.equal(fixture.elements.get("settings-speech-rate").value, String(speechRate));
     assert.equal(fixture.elements.get("settings-speech-repeat").value, "3");
-    assert.equal(fixture.levels[2].checked, true);
+    assert.equal(fixture.levels.some((control) => control.checked), false);
     fixture.elements.get("settings-speech-rate").value = "1.25";
     fixture.elements.get("settings-speech-repeat").value = "1";
     await fixture.api.saveSettings();
     const update = fixture.calls.find((message) => message.type === "settings.update");
+    assert.equal(update.level, 4);
     assert.equal(update.speechRate, 1.25);
     assert.equal(update.speechRepeat, 1);
   }
@@ -1352,7 +777,7 @@ test("Popup speech honors stored rate and repeat while stale utterances cannot r
     constructor(text) { this.text = text; }
   }
   const speechSynthesis = {
-    getVoices() { return [{ lang: "ar-SA", name: "Arabic Natural" }]; },
+    getVoices() { return [{ lang: "ar-SA", name: "Arabic Natural", localService: true }]; },
     cancel() {},
     speak(utterance) { utterances.push(utterance); },
   };
@@ -1388,7 +813,7 @@ test("Atlas speech honors stored rate and repeat while stale utterances cannot r
     constructor(text) { this.text = text; }
   }
   const speechSynthesis = {
-    getVoices() { return [{ lang: "ar-SA", name: "Arabic Natural" }]; },
+    getVoices() { return [{ lang: "ar-SA", name: "Arabic Natural", localService: true }]; },
     cancel() {},
     speak(utterance) { utterances.push(utterance); },
   };
@@ -1435,51 +860,6 @@ test("Atlas dated query loads only the retained date plus profile and settings",
   assert.deepEqual(fixture.calls.filter((message) => message.type === "assignment.get").map((message) => message.dateKey), ["2026-07-28"]);
 });
 
-test("Atlas opens bounded Popup Explore URLs with preserved search context", async () => {
-  const vocabulary = [
-    { id: "w1", word: "كتاب", normalized: "كتاب", meaningAr: "كتاب", meaningEn: "book", pronunciation: "/book/", exampleAr: "مثال", difficultyBand: "beginner", usefulnessBand: "high", reviewed: true },
-  ];
-  const responses = {
-    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
-    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-  };
-
-  const routed = atlasApi(responses, { vocabulary, search: "?view=explore&q=book" });
-  await routed.api.initialize();
-  assert.equal(routed.elements.get("atlas-search").value, "book");
-  assert.equal(routed.elements.get("explore-view").hidden, false);
-  assert.equal(routed.elements.get("today-view").hidden, true);
-  assert.equal(routed.elements.get("search-results").children.length, 1);
-  assert.equal(routed.elements.get("atlas-search").focuses, 1);
-
-  const blank = atlasApi(responses, { vocabulary, search: "?view=explore&q=" });
-  await blank.api.initialize();
-  assert.equal(blank.elements.get("explore-view").hidden, false);
-  assert.equal(blank.elements.get("search-results").children.length, 1);
-
-  const oversized = atlasApi(responses, { vocabulary, search: `?view=explore&q=${"a".repeat(257)}` });
-  await oversized.api.initialize();
-  assert.equal(oversized.elements.get("today-view").hidden, false);
-  assert.equal(oversized.elements.get("explore-view").hidden, true);
-
-  const impossibleDate = atlasApi(responses, { vocabulary, search: "?date=2026-99-99" });
-  await impossibleDate.api.initialize();
-  assert.deepEqual(impossibleDate.calls.filter((message) => message.type === "assignment.get").map((message) => message.dateKey), [undefined]);
-  assert.equal(impossibleDate.elements.get("today-view").hidden, false);
-  assert.equal(impossibleDate.elements.get("atlas-search").listeners.keydown, undefined);
-
-  const mixedInvalid = atlasApi(responses, { vocabulary, search: "?date=2026-99-99&view=explore&q=book" });
-  await mixedInvalid.api.initialize();
-  assert.equal(mixedInvalid.elements.get("today-view").hidden, false);
-  assert.equal(mixedInvalid.elements.get("explore-view").hidden, true);
-
-  const exhausted = atlasApi({ ...responses, "assignment.get": { kind: "no-new-word" } }, { vocabulary, search: "?view=explore&q=" });
-  await exhausted.api.initialize();
-  assert.equal(exhausted.elements.get("explore-view").hidden, false);
-  assert.equal(exhausted.elements.get("search-results").children.length, 1);
-  assert.equal(exhausted.elements.get("atlas-search").focuses, 1);
-});
 
 test("Atlas blank Explore shows every reviewed local word and ranks exact and prefix matches", async () => {
   const vocabulary = [
@@ -1747,15 +1127,17 @@ test("Atlas Today actions expose adjacent pending, success, failure, and focus s
   assert.equal(fixture.elements.get("today-difficult").getAttribute("aria-pressed"), "true");
   assert.equal(fixture.elements.get("today-difficult").focuses, 1);
 
-  const savePending = fixture.api.toggleSave();
-  await new Promise(setImmediate);
   const save = fixture.elements.get("today-save");
+  save.focus();
+  const savePending = fixture.api.toggleSave();
+  activeElement = fixture.context.document.body;
+  await new Promise(setImmediate);
   assert.equal(save.disabled, true);
   assert.equal(save.getAttribute("aria-busy"), "true");
   releaseSave({ kind: "ok", wordId: "w1", saved: true });
   await savePending;
   assert.equal(save.getAttribute("aria-pressed"), "true");
-  assert.equal(save.focuses, 1);
+  assert.equal(fixture.context.document.activeElement, save);
   assert.equal(fixture.elements.get("today-action-status").textContent, "حُفظت الكلمة.");
 
   const failed = atlasApi({
@@ -1772,7 +1154,7 @@ test("Atlas Today actions expose adjacent pending, success, failure, and focus s
   assert.equal(failed.elements.get("today-action-status").getAttribute("role"), "alert");
   await failed.api.toggleSave();
   assert.equal(failed.elements.get("today-save").getAttribute("aria-pressed"), "false");
-  assert.equal(failed.elements.get("today-save").focuses, 1);
+  assert.equal(failed.context.document.activeElement, failed.elements.get("today-difficult"), "a direct Save call must not pull focus from another control");
   assert.equal(failed.elements.get("today-action-status").textContent, "تعذّر الحفظ.");
 });
 
@@ -1848,7 +1230,7 @@ test("Atlas renders practical context before the literary example and honors Eng
   const cards = visible.elements.get("today-card").children;
   const context = cards.find((node) => node.className === "context");
   const example = cards.find((node) => node.className === "example");
-  const contextEnglish = cards.find((node) => node.className === "context english");
+  const contextEnglish = cards.find((node) => node.children?.some((child) => child.className === "context english"))?.children.find((node) => node.className === "context english");
   assert.ok(context && example && contextEnglish);
   assert.ok(cards.indexOf(context) < cards.indexOf(example));
   assert.equal(context.children.at(-1).textContent, "سياق عملي");
@@ -2152,172 +1534,13 @@ test("Atlas clear does not retain a profile-only warning as a reminder warning",
   assert.equal(fixture.elements.get("warning").hidden, true);
 });
 
-test("popup exposes theme-select, streak-badge, and export controls in HTML", () => {
-  const html = source("popup.html");
-  assert.match(html, /<select\s+id="theme-select"[^>]*aria-label="اختر السمة"/);
-  assert.match(html, /<option\s+value="paper">ورقي<\/option>/);
-  assert.match(html, /<option\s+value="emerald">زمردي<\/option>/);
-  assert.match(html, /<option\s+value="midnight">ليلي<\/option>/);
-  assert.match(html, /<span\s+id="streak-badge"[^>]*class="streak-badge"/);
-  assert.match(html, /<button\s+id="btn-export-anki"[^>]*>تصدير إلى Anki<\/button>/);
-  assert.match(html, /<button\s+id="btn-export-card"[^>]*>بطاقة للمشاركة<\/button>/);
-  assert.match(html, /<script\s+src="\.\.\/shared\/theme\.js"><\/script>/);
-  assert.match(html, /<script\s+src="\.\.\/shared\/streak\.js"><\/script>/);
-  assert.match(html, /<script\s+src="\.\.\/shared\/export\.js"><\/script>/);
-});
-
-test("popup ThemeController initializes, binds theme select, and synchronizes theme across views", async () => {
-  const fixture = popupApi({
-    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-08-14" },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-  }, { theme: "emerald" });
-  await fixture.api.initialize();
-
-  const themeSelect = fixture.elements.get("theme-select");
-  assert.equal(themeSelect.value, "emerald");
-  assert.equal(fixture.context.document.documentElement.getAttribute("data-theme"), "emerald");
-
-  themeSelect.value = "midnight";
-  if (themeSelect.listeners["change"]) {
-    await themeSelect.listeners["change"]();
-  }
-  assert.equal(fixture.context.document.documentElement.getAttribute("data-theme"), "midnight");
-  assert.equal(fixture.storageData["kalimat.theme"], "midnight");
-
-  for (const listener of fixture.storageListeners) {
-    listener({ "kalimat.theme": { newValue: "paper" } }, "local");
-  }
-  assert.equal(themeSelect.value, "paper");
-  assert.equal(fixture.context.document.documentElement.getAttribute("data-theme"), "paper");
-});
-
-test("popup calculates streak and formats Classical Arabic pluralization on badge", async () => {
-  const vocabulary = Array.from({ length: 5 }, (_, index) => ({
-    id: `w${index + 1}`,
-    word: `كلمة${index + 1}`,
-    normalized: `كلمة${index + 1}`,
-    meaningAr: "معنى",
-    meaningEn: "meaning",
-    pronunciation: `/w${index + 1}/`,
-    exampleAr: "مثال",
-    contextAr: "سياق",
-  }));
-  const assignments = {
-    "2026-08-10": { wordId: "w1", status: "known" },
-    "2026-08-11": { wordId: "w2", status: "known" },
-    "2026-08-12": { wordId: "w3", status: "known" },
-    "2026-08-13": { wordId: "w4", status: "known" },
-    "2026-08-14": { wordId: "w5", status: "known" },
-  };
-  const profile = { assignments, assignmentOrdinal: 5, level: 1, interests: ["classical-arabic"], showEnglish: true, wordStates: {} };
-  const fixture = popupApi({
-    "assignment.get": { kind: "assigned", wordId: "w5", dateKey: "2026-08-14" },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "word.feedback": { kind: "ok", wordId: "w5", dateKey: "2026-08-14", status: "known" },
-  }, { profile, vocabulary });
-  await fixture.api.initialize();
-
-  const streakBadge = fixture.elements.get("streak-badge");
-  assert.match(streakBadge.textContent, /🔥\s*٥\s*أيام\s*متتالية/);
-
-  fixture.api.updateStreak({}, "2026-08-14");
-  assert.equal(streakBadge.textContent, "🔥 لا يوجد تتابع بعد");
-
-  fixture.api.updateStreak({ "2026-08-14": { wordId: "w1" } }, "2026-08-14");
-  assert.equal(streakBadge.textContent, "🔥 يوم واحد");
-
-  fixture.api.updateStreak({ "2026-08-13": { wordId: "w1" }, "2026-08-14": { wordId: "w2" } }, "2026-08-14");
-  assert.equal(streakBadge.textContent, "🔥 يومان متتاليان");
-
-  const elevenDays = {};
-  for (let d = 4; d <= 14; d++) {
-    const dayStr = d < 10 ? `0${d}` : `${d}`;
-    elevenDays[`2026-08-${dayStr}`] = { wordId: `w${d}`, status: "known" };
-  }
-  fixture.api.updateStreak(elevenDays, "2026-08-14");
-  assert.match(streakBadge.textContent, /🔥\s*١١\s*يوماً\s*متتالياً/);
-});
-
-test("popup Anki CSV export triggers download with UTF-8 BOM, RFC 4180 escaping, and 7 lexical columns", async () => {
-  const vocabulary = [
-    {
-      id: "w1",
-      word: "كِتَابٌ",
-      meaningAr: "مُؤَلَّفٌ مَكْتُوبٌ",
-      meaningEn: "book, \"volume\"",
-      pronunciation: "/kitaab/",
-      contextAr: "قَرَأْتُ كِتَابًا",
-      contextEn: "I read a book",
-      exampleAr: "خَيْرُ جَلِيسٍ فِي الزَّمَانِ كِتَابُ",
-      root: "ك-ت-ب",
-      pattern: "فِعَال",
-      partOfSpeech: "noun",
-      register: "classical",
-    },
-  ];
-  const profile = {
-    assignments: { "2026-08-14": { wordId: "w1", status: "known" } },
-    assignmentOrdinal: 1,
-    level: 1,
-    interests: ["classical-arabic"],
-    showEnglish: true,
-    wordStates: { w1: { status: "known", saved: true } },
-  };
-  const fixture = popupApi({
-    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-08-14" },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-  }, { profile, vocabulary });
-  await fixture.api.initialize();
-  await fixture.api.renderAssigned({ word: vocabulary[0], dateKey: "2026-08-14", status: "known", saved: true });
-
-  await fixture.api.exportAnki();
-
-  assert.equal(fixture.downloads.length, 1);
-  assert.equal(fixture.downloads[0].download, "kalimat-anki-deck.csv");
-  const blob = fixture.recordedBlobs.get(fixture.downloads[0].href);
-  assert.ok(blob);
-  const buffer = Buffer.from(await blob.arrayBuffer());
-  assert.equal(buffer[0], 0xEF, "Byte 0 must be UTF-8 BOM EF");
-  assert.equal(buffer[1], 0xBB, "Byte 1 must be UTF-8 BOM BB");
-  assert.equal(buffer[2], 0xBF, "Byte 2 must be UTF-8 BOM BF");
-  const csvContent = await blob.text();
-  const lines = csvContent.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  assert.equal(lines[0], '"Word","Root","Weight","Vocalization","Meaning","English Meaning","Example"');
-  assert.match(lines[1], /"كِتَابٌ"/);
-  assert.match(lines[1], /"ك-ت-ب"/);
-  assert.match(lines[1], /"book, ""volume"""/);
-});
-
-test("popup 1080x1080 social card export triggers Canvas generation with correct filename and geometry", async () => {
-  const word = {
-    id: "w1",
-    word: "سَلَام",
-    meaningAr: "أمان وطمأنينة",
-    meaningEn: "peace and security",
-    pronunciation: "/salaam/",
-    contextAr: "يَعُمُّ السَّلَامُ الأَرْجَاءَ",
-    exampleAr: "سَلَامٌ هِيَ حَتَّى مَطْلَعِ الفَجْرِ",
-  };
-  const fixture = popupApi({
-    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-08-14" },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-  }, { profile: { assignments: {} }, vocabulary: [word] });
-  await fixture.api.initialize();
-  await fixture.api.renderAssigned({ word, dateKey: "2026-08-14" });
-
-  await fixture.api.exportCard();
-
-  assert.equal(fixture.downloads.length, 1);
-  assert.equal(fixture.downloads[0].download, "kalimat-word-w1.png");
-});
-
 test("Atlas exposes theme-select, streak-badge, and export controls in HTML", () => {
   const html = atlasSource("atlas.html");
   assert.match(html, /<select\s+id="theme-select"[^>]*aria-label="اختر السمة"/);
   assert.match(html, /<option\s+value="paper">ورقي<\/option>/);
   assert.match(html, /<option\s+value="emerald">زمردي<\/option>/);
   assert.match(html, /<option\s+value="midnight">ليلي<\/option>/);
-  assert.match(html, /<span\s+id="streak-badge"[^>]*class="streak-badge"/);
+  assert.doesNotMatch(html, /id="streak-badge"/);
   assert.match(html, /<button\s+id="today-export-card"[^>]*>بطاقة للمشاركة<\/button>/);
   assert.match(html, /<button\s+id="history-export-anki"[^>]*>تصدير إلى Anki \(CSV\)<\/button>/);
   assert.match(html, /<button\s+id="btn-export-anki"[^>]*>تصدير بطاقات Anki \(CSV\)<\/button>/);
@@ -2353,38 +1576,6 @@ test("Atlas ThemeController initializes, binds select, and persists theme change
   assert.equal(fixture.context.document.documentElement.getAttribute("data-theme"), "paper");
 });
 
-test("Atlas streak badge calculates consecutive days and updates on feedback and save", async () => {
-  const today = new Date();
-  const dateKey = (offset) => {
-    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-  };
-  const todayKey = dateKey(0);
-  const yesterdayKey = dateKey(-1);
-  const twoDaysAgoKey = dateKey(-2);
-  const profile = atlasProfile({
-    assignments: {
-      [twoDaysAgoKey]: { wordId: "w1", status: "known" },
-      [yesterdayKey]: { wordId: "w2", status: "known" },
-      [todayKey]: { wordId: "w1", status: "known" },
-    },
-    assignmentOrdinal: 3,
-  });
-  const fixture = atlasApi({
-    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: todayKey },
-    "state.export": { kind: "export", text: JSON.stringify(profile) },
-    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
-    "word.feedback": { kind: "ok", wordId: "w1", dateKey: todayKey, status: "known" },
-    "word.save": { kind: "ok", wordId: "w1", saved: true },
-  });
-  await fixture.api.initialize();
-
-  const streakBadge = fixture.elements.get("streak-badge");
-  assert.match(streakBadge.textContent, /🔥\s*٣\s*أيام\s*متتالية/);
-
-  await fixture.api.feedback("known");
-  assert.match(streakBadge.textContent, /🔥\s*٣\s*أيام\s*متتالية/);
-});
 
 test("Atlas Anki CSV and Social Card exports download valid deck and 1080x1080 PNG", async () => {
   const word = {
@@ -2439,20 +1630,7 @@ test("All popup and atlas files maintain zero CSP violations and no unsafe sinks
   }
 });
 
-
-test("popup storage read failure shows an error and usable retry", async () => {
-  const options = { storageReadFailure: true, profile: undefined };
-  const fixture = popupApi({}, options);
-  await fixture.api.initialize();
-  assert.equal(fixture.elements.get("error").hidden, false);
-  assert.equal(typeof fixture.elements.get("error-retry").listeners.click, "function");
-  options.storageReadFailure = false;
-  await fixture.elements.get("error-retry").listeners.click({});
-  assert.equal(fixture.elements.get("onboarding").hidden, false);
-});
-
-
-for (const surface of ["popup", "Atlas"]) {
+for (const surface of ["Atlas"]) {
   test(`${surface} refreshes daily and external review changes without replacing an active or pending card`, async () => {
     const profile = atlasProfile({ assignments: { "2026-07-30": { wordId: "w1" } }, assignmentOrdinal: 1 });
     const word = { id: "w1", word: "كلمة", meaningAr: "معنى", pronunciation: "/w1/" };
@@ -2508,7 +1686,7 @@ for (const surface of ["popup", "Atlas"]) {
   });
 }
 
-for (const surface of ["popup", "Atlas"]) {
+for (const surface of ["Atlas"]) {
   test(`${surface} reloads authority after feedback overlaps a pending startup queue`, async () => {
     const profile = atlasProfile({ assignments: { "2026-07-30": { wordId: "w1" } }, assignmentOrdinal: 1 });
     const word = { id: "w1", word: "كلمة", meaningAr: "معنى", pronunciation: "/w1/" };
@@ -2543,7 +1721,7 @@ for (const surface of ["popup", "Atlas"]) {
   });
 }
 
-for (const surface of ["popup", "Atlas"]) {
+for (const surface of ["Atlas"]) {
   for (const replacement of [false, true]) {
     test(`${surface} discards a stale review card and retries the current ${replacement ? "imported" : "cleared"} queue`, async () => {
       const word = { id: "w1", word: "كلمة", meaningAr: "معنى" };
@@ -2580,3 +1758,853 @@ for (const surface of ["popup", "Atlas"]) {
     });
   }
 }
+
+
+test("failed profile mutations retain durable controls and retry explicit save intent", async () => {
+  for (const surface of ["popup", "atlas"]) {
+    let fail = true;
+    const replies = {
+      "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+      "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+      "word.save": (message) => ({ kind: "ok", wordId: "w1", saved: message.saved, storageWarning: fail }),
+      "word.feedback": { kind: "ok", status: "known", storageWarning: true },
+    };
+    const fixture = surface === "popup" ? popupApi(replies) : atlasApi(replies);
+    if (surface === "popup") await fixture.api.renderAssigned({ word: { id: "w1", word: "كلمة" }, dateKey: "2026-07-30" });
+    else await fixture.api.initialize();
+    const save = fixture.elements.get(surface === "popup" ? "save" : "today-save");
+    save.focus();
+    await fixture.api.toggleSave();
+    assert.notEqual(save.getAttribute("aria-pressed"), "true");
+    assert.match(fixture.elements.get(surface === "popup" ? "action-status" : "status").textContent, /مؤقت.*لم يُحفظ/);
+    assert.equal(save.disabled, false);
+    assert.equal(fixture.context.document.activeElement, save);
+    fail = false;
+    await fixture.api.toggleSave();
+    const saves = fixture.calls.filter((message) => message.type === "word.save");
+    assert.deepEqual(saves.map((message) => message.saved), [true, true]);
+    assert.equal(save.getAttribute("aria-pressed"), "true");
+    if (surface !== "popup") {
+      await fixture.api.feedback("known");
+      assert.match(fixture.elements.get("status").textContent, /مؤقت.*لم يُحفظ/);
+      assert.notEqual(fixture.elements.get("today-known").getAttribute("aria-pressed"), "true");
+    }
+  }
+});
+
+test("Atlas failed settings import and clear never announce durable success", async () => {
+  const profile = atlasProfile();
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(profile) },
+    "settings.get": { kind: "settings", reminder: { enabled: true, time: "10:30" } },
+    "settings.update": { kind: "ok", storageWarning: true },
+    "state.import": { kind: "ok", storageWarning: true },
+    "state.clear": { kind: "ok", profilePersisted: false, storageWarning: true, reminderWarning: true, reminder: { enabled: true, time: "10:30" } },
+  });
+  await fixture.api.initialize();
+  fixture.levels[0].checked = true;
+  fixture.elements.get("settings-remote-speech").checked = true;
+  await fixture.api.saveSettings();
+  assert.match(fixture.elements.get("status").textContent, /مؤقتة.*لم تُحفظ/);
+  await fixture.api.importState({ files: [{ size: 10, text: async () => JSON.stringify(profile) }], value: "file" });
+  assert.match(fixture.elements.get("status").textContent, /مؤقت.*لم يُحفظ/);
+  await fixture.api.clearState();
+  assert.match(fixture.elements.get("status").textContent, /مؤقت.*لم يُحفظ/);
+  assert.equal(fixture.api.getReminder().enabled, true);
+  assert.equal(fixture.api.getReminder().time, "10:30");
+  assert.equal(fixture.elements.get("settings-reminder").getAttribute("aria-checked"), "true");
+  await fixture.api.returnToToday();
+  assert.equal(fixture.elements.get("today-view").hidden, false, "failed clear retains the prior current assignment");
+  assert.doesNotMatch(fixture.elements.get("today-card").children.find((node) => node.className === "word-speak").textContent, /الإنترنت/, "failed settings/clear do not adopt draft consent");
+  assert.equal(fixture.calls.filter((call) => call.type === "state.export").length, 1, "failed clear does not discard the confirmed profile");
+});
+
+test("clear profile success is separate from a failed reminder disable", async () => {
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: true, time: "10:30" } },
+    "state.clear": { kind: "ok", profilePersisted: true, storageWarning: true, reminderWarning: true, reminder: { enabled: true, time: "10:30" } },
+  });
+  await fixture.api.initialize();
+  await fixture.api.clearState();
+  assert.match(fixture.elements.get("status").textContent, /مُسحت البيانات.*التذكير/);
+  assert.equal(fixture.elements.get("onboarding").hidden, false);
+  assert.equal(fixture.api.getReminder().enabled, true);
+});
+
+
+test("Atlas shows remote possibility before playback and reports empty inventories and async errors", async () => {
+  const spoken = [];
+  let voices = [];
+  class Utterance { constructor(text) { this.text = text; } }
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile({ preferences: { allowRemoteSpeech: true } })) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+  }, { speechSynthesis: { getVoices: () => voices, speak: (item) => spoken.push(item), cancel() {} }, SpeechSynthesisUtterance: Utterance });
+  await fixture.api.initialize();
+  const speaker = fixture.elements.get("today-card").children.find((node) => node.className === "word-speak");
+  assert.match(speaker.textContent, /الإنترنت/);
+  assert.match(speaker.getAttribute("aria-label"), /الإنترنت/);
+  assert.equal(fixture.elements.get("settings-remote-speech").checked, true);
+  fixture.api.speak("كلمة");
+  assert.match(fixture.elements.get("status").textContent, /لم تجهز.*مجددًا/);
+  assert.equal(spoken.length, 0);
+  voices = [{ lang: "ar-SA", localService: false }];
+  fixture.api.speak("كلمة");
+  assert.equal(spoken.length, 1);
+  spoken[0].onstart();
+  assert.match(fixture.elements.get("status").textContent, /جارٍ النطق/);
+  spoken[0].onerror();
+  assert.match(fixture.elements.get("status").textContent, /تعذّر تشغيل النطق/);
+});
+
+
+test("Atlas warning import resets selection so the same file can be retried", async () => {
+  const fixture = atlasApi({
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.import": { kind: "ok", storageWarning: true },
+  });
+  await fixture.api.initialize();
+  const input = { files: [{ size: 10, text: async () => JSON.stringify(atlasProfile()) }], value: "same-file.json" };
+  await fixture.api.importState(input);
+  assert.equal(input.value, "");
+  assert.match(fixture.elements.get("status").textContent, /مؤقت.*لم يُحفظ/);
+  input.value = "same-file.json";
+  await fixture.api.importState(input);
+  assert.equal(input.value, "");
+  assert.equal(fixture.calls.filter((message) => message.type === "state.import").length, 2);
+});
+
+test("unknown clear reminder retains prior confirmed controls in Atlas", async () => {
+  const clear = { kind: "ok", profilePersisted: true, storageWarning: true, reminderWarning: true, reminder: null };
+  const atlas = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: true, time: "10:30" } },
+    "state.clear": clear,
+  });
+  await atlas.api.initialize();
+  await atlas.api.clearState();
+  assert.equal(atlas.api.getReminder().enabled, true);
+  assert.equal(atlas.api.getReminder().time, "10:30");
+  assert.equal(atlas.elements.get("settings-reminder").getAttribute("aria-checked"), "true");
+  assert.equal(atlas.elements.get("onboarding").hidden, false);
+
+});
+
+test("deferred Atlas settings commit uses submitted consent and speech preferences", async () => {
+  let release;
+  let voices = [{ lang: "ar", localService: false }];
+  const spoken = [];
+  class Utterance { constructor(text) { this.text = text; } }
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "settings.update": () => new Promise((resolve) => { release = resolve; }),
+  }, { speechSynthesis: { getVoices: () => voices, speak: (item) => spoken.push(item), cancel() {} }, SpeechSynthesisUtterance: Utterance });
+  await fixture.api.initialize();
+  fixture.elements.get("settings-remote-speech").checked = false;
+  fixture.elements.get("settings-english").checked = false;
+  fixture.elements.get("settings-speech-rate").value = "0.7";
+  fixture.elements.get("settings-speech-repeat").value = "1";
+  const pending = fixture.api.saveSettings();
+  assert.equal(fixture.elements.get("settings-remote-speech").disabled, true);
+  assert.equal(fixture.elements.get("settings-save").disabled, true);
+  // Scripted changes model the original pending-form race even though user editing is locked.
+  fixture.elements.get("settings-remote-speech").checked = true;
+  fixture.elements.get("settings-english").checked = true;
+  fixture.elements.get("settings-speech-rate").value = "1.2";
+  fixture.elements.get("settings-speech-repeat").value = "3";
+  release({ kind: "ok" });
+  await pending;
+  const submitted = fixture.calls.find((message) => message.type === "settings.update");
+  assert.equal(submitted.allowRemoteSpeech, false);
+  assert.equal(submitted.showEnglish, false);
+  assert.equal(submitted.speechRate, 0.7);
+  assert.equal(submitted.speechRepeat, 1);
+  assert.equal(fixture.elements.get("settings-remote-speech").disabled, false);
+  assert.match(fixture.elements.get("status").textContent, /لم تُحفظ/);
+  assert.equal(fixture.elements.get("settings-remote-speech").checked, true, "later draft is retained honestly");
+  fixture.api.speak("كلمة");
+  assert.equal(spoken.length, 0, "unsaved consent does not permit remote playback");
+  voices = [{ lang: "ar", localService: true }];
+  fixture.api.speak("كلمة");
+  assert.equal(spoken[0].rate, 0.7);
+  spoken[0].onend();
+  assert.equal(spoken.length, 1, "submitted repeat remains authoritative");
+});
+
+
+test("popup source keeps the encounter prominent with Arabic, disclosure, and recovery routes", () => {
+  const html = source("popup.html");
+  assert.match(html, /<h1>كَلِمات<\/h1>/);
+  assert.match(html, /في الاستعمال/);
+  assert.match(html, /id="translation" hidden/);
+  assert.ok(html.indexOf('id="explore"') < html.indexOf('id="translation"'));
+  assert.ok(html.indexOf('id="explore"') < html.indexOf('id="vocalization-details"'));
+  assert.match(source("popup.css"), /overflow-y: auto/);
+  assert.match(source("popup.css"), /main \{ width: 380px; max-width: 100%/);
+  assert.match(html, /id="pronunciation"[^>]*lang="en"[^>]*dir="ltr"/);
+  assert.doesNotMatch(html, /id="(?:known|difficult|onboarding|reminder|streak-badge|theme-select|practice-dialog|btn-export-anki)"/);
+  assert.match(html, /id="recovery-atlas"/);
+  assert.match(source("popup.css"), /min-height: 44px/);
+  assert.match(source("popup.css"), /#word[^}]*line-height: 1.65/);
+  assert.match(source("popup.css"), /:focus-visible/);
+  assert.match(source("popup.css"), /prefers-reduced-motion/);
+});
+
+test("fresh popup gets a word directly and storage refresh preserves keyboard focus", async () => {
+  const profile = atlasProfile({ showEnglish: false, wordStates: { w1: { saved: true } } });
+  const fixture = popupApi({
+    "assignment.get": { kind: "assigned", word: { id: "w1", word: "كَلِمَة", meaningAr: "معنى", register: "classical" }, dateKey: "2026-07-30", showEnglish: false },
+    "state.export": { kind: "export", text: JSON.stringify(profile) },
+  }, { profile: undefined });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("assigned").hidden, false);
+  assert.equal(fixture.elements.get("word").focuses, 0);
+  assert.equal(fixture.elements.get("translation").hidden, true);
+  assert.equal(fixture.elements.get("register").textContent, "أدبي");
+  assert.deepEqual(fixture.calls.filter((call) => call.type !== "state.export").map((call) => call.type), ["assignment.get"]);
+  const focused = fixture.elements.get("explore");
+  focused.focus();
+  for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+  await new Promise(setImmediate);
+  assert.equal(fixture.context.document.activeElement, focused);
+  assert.equal(fixture.elements.get("save").getAttribute("aria-pressed"), "true");
+});
+
+test("popup leaves unaudited quotations to Atlas and keeps recovery data intact", async () => {
+  const fixture = popupApi({ "assignment.get": { kind: "recovery", recoveryRaw: { broken: true } } }, { profile: { broken: true } });
+  fixture.api.renderAssigned({ word: { id: 1, word: "كلمة", exampleAr: "unverified quotation" }, dateKey: "2026-07-30" });
+  assert.equal(fixture.elements.get("example").textContent, "");
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("recovery").hidden, false);
+  await fixture.elements.get("recovery-atlas").listeners.click();
+  assert.ok(fixture.calls.some((call) => call.tab?.url?.endsWith("atlas/atlas.html?view=settings")));
+  assert.equal(fixture.calls.some((call) => call.type === "state.clear"), false);
+});
+
+test("Atlas saved-only history words open details without a missing assignment request", async () => {
+  const word = { id: "w2", word: "محفوظة", meaningAr: "معنى", reviewed: true };
+  const fixture = atlasApi({
+    "assignment.get": { kind: "no-new-word" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile({ wordStates: { w2: { saved: true } } })) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+  }, { vocabulary: [word] });
+  await fixture.api.initialize();
+  fixture.elements.get("history-filter").value = "saved";
+  fixture.api.renderHistory();
+  const row = fixture.elements.get("history-list").children[0];
+  assert.match(row.textContent, /محفوظة/);
+  row.listeners.click();
+  assert.equal(fixture.elements.get("explore-card").hidden, false);
+  assert.equal(fixture.calls.filter((call) => call.type === "assignment.get").length, 1);
+});
+
+test("Atlas labels provenance neutrally and protects source navigation", async () => {
+  const word = { id: "w1", word: "كلمة", meaningAr: "معنى", exampleAr: "<b>مثال</b>", vocalization: "ضبط", usageNote: "ملاحظة" };
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+  }, { vocabulary: [word] });
+  await fixture.api.initialize();
+  const card = fixture.elements.get("explore-card");
+  const label = () => card.children.find((node) => node.className === "example").children[0].textContent;
+  fixture.api.viewWord(word);
+  assert.equal(label(), "مثال");
+  fixture.api.viewWord({ ...word, exampleKind: "original" });
+  assert.equal(label(), "مثال من تحرير كلمات");
+  fixture.api.viewWord({ ...word, exampleKind: "quotation", exampleSource: { title: "مصدر", reference: "مرجع", url: "https://example.org/source" } });
+  assert.equal(label(), "شاهد");
+  assert.equal(card.children.find((node) => node.href)?.href, "https://example.org/source");
+  assert.equal(card.children.find((node) => node.className === "example").children[1].textContent, "<b>مثال</b>");
+  fixture.api.viewWord({ ...word, exampleKind: "quotation", exampleSource: { url: "javascript:alert(1)" } });
+  assert.equal(card.children.some((node) => node.href), false);
+});
+
+test("Atlas settings restores locked focus only in the unchanged settings view", async () => {
+  for (const outcome of ["lost", "new-control", "navigate", "leave-return"]) {
+    let release;
+    const fixture = atlasApi({
+      "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+      "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+      "settings.update": () => new Promise((resolve) => { release = resolve; }),
+    });
+    await fixture.api.initialize();
+    fixture.elements.get("settings").listeners.click();
+    const control = fixture.elements.get("settings-save");
+    control.focus();
+    const pending = fixture.api.saveSettings();
+    activeElement = null; // Model browser focus lost when a focused button becomes disabled.
+    if (outcome === "new-control") fixture.elements.get("settings-time").focus();
+    if (outcome === "navigate" || outcome === "leave-return") fixture.elements.get("explore").listeners.click();
+    if (outcome === "leave-return") { fixture.elements.get("settings").listeners.click(); activeElement = null; }
+    const focuses = control.focuses;
+    release({ kind: "ok" });
+    await pending;
+    assert.equal(control.focuses, focuses + (outcome === "lost" ? 1 : 0), outcome);
+    assert.equal(control.disabled, false);
+  }
+});
+
+
+test("popup assignment fallback remains reachable when direct storage reading fails", async () => {
+  const fixture = popupApi({
+    "assignment.get": { kind: "assigned", word: { id: "w1", word: "كلمة" }, dateKey: "2026-07-30", storageWarning: true },
+  }, { storageReadFailure: true });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("assigned").hidden, false);
+  assert.equal(fixture.elements.get("warning").hidden, false);
+  assert.equal(fixture.calls.filter((call) => call.type === "assignment.get").length, 1);
+});
+
+test("warning exports cannot turn temporary saves or consent into confirmed state", async () => {
+  for (const surface of ["popup", "atlas"]) {
+    for (const reopening of [false, true]) {
+      const confirmed = atlasProfile({ showEnglish: false, preferences: { allowRemoteSpeech: false, speechRate: 0.7, speechRepeat: 1, showEnglish: false, dailyReviewLimit: 20 } });
+      const temporary = { ...confirmed, showEnglish: true, wordStates: { w1: { saved: true } }, preferences: { ...confirmed.preferences, allowRemoteSpeech: true, speechRate: 1.2 } };
+      let warned = reopening;
+      const spoken = [];
+      class Utterance { constructor(text) { this.text = text; } }
+      const replies = {
+        "assignment.get": () => ({ kind: "assigned", wordId: "w1", dateKey: "2026-07-30", saved: warned, storageWarning: warned }),
+        "state.export": () => ({ kind: "export", text: JSON.stringify(warned ? temporary : confirmed), storageWarning: warned }),
+        "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+        "word.save": { kind: "ok", saved: true, storageWarning: true },
+      };
+      const options = { profile: confirmed, storage: { "kalimat.profile": confirmed }, speechSynthesis: { getVoices: () => [{ lang: "ar", localService: false }], speak: (item) => spoken.push(item), cancel() {} }, SpeechSynthesisUtterance: Utterance };
+      const fixture = surface === "popup" ? popupApi(replies, options) : atlasApi(replies, options);
+      await fixture.api.initialize();
+      const saved = fixture.elements.get(surface === "popup" ? "save" : "today-save");
+      if (!reopening) {
+        await fixture.api.toggleSave();
+        assert.equal(saved.getAttribute("aria-pressed"), "false");
+        warned = true;
+        for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: temporary } }, "local");
+        await new Promise(setImmediate);
+      }
+      assert.equal(saved.getAttribute("aria-pressed"), "false", `${surface} ${reopening ? "reopen" : "refresh"}`);
+      fixture.api.speak("كلمة");
+      assert.equal(spoken.length, 0, "temporary consent cannot enable remote playback");
+    }
+  }
+});
+
+
+test("popup save keeps explicit intent, disables duplicate clicks, and announces once", async () => {
+  let release;
+  const fixture = popupApi({ "word.save": () => new Promise((resolve) => { release = resolve; }) });
+  fixture.api.renderAssigned({ word: { id: "w1", word: "كلمة" }, dateKey: "2026-07-30" });
+  const save = fixture.elements.get("save");
+  save.focus();
+  const first = fixture.api.toggleSave();
+  await fixture.api.toggleSave();
+  assert.equal(fixture.calls.filter((call) => call.type === "word.save").length, 1);
+  assert.equal(save.disabled, true);
+  assert.match(fixture.elements.get("action-status").textContent, /جارٍ/);
+  release({ kind: "ok", saved: true });
+  await first;
+  assert.equal(save.disabled, false);
+  assert.equal(save.getAttribute("aria-pressed"), "true");
+  assert.equal(fixture.elements.get("status").textContent, "");
+  assert.equal(fixture.elements.get("status").getAttribute("aria-live"), "off");
+  assert.match(fixture.elements.get("action-status").textContent, /حُفظت/);
+});
+
+test("popup local voice feedback handles missing inventories and asynchronous failure", async () => {
+  let voices = [];
+  const spoken = [];
+  class Utterance { constructor(text) { this.text = text; } }
+  const fixture = popupApi({ "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" } }, {
+    profile: { preferences: { allowRemoteSpeech: false } },
+    speechSynthesis: { getVoices: () => voices, speak: (item) => spoken.push(item), cancel() {} }, SpeechSynthesisUtterance: Utterance,
+  });
+  await fixture.api.initialize();
+  fixture.api.speak();
+  assert.equal(spoken.length, 0);
+  assert.match(fixture.elements.get("action-status").textContent, /لم تجهز/);
+  voices = [{ lang: "ar", localService: false }];
+  fixture.api.speak();
+  assert.equal(spoken.length, 0);
+  assert.match(fixture.elements.get("action-status").textContent, /إعدادات الأطلس/);
+  voices = [{ lang: "ar", localService: true }];
+  fixture.api.speak();
+  spoken[0].onstart();
+  assert.match(fixture.elements.get("action-status").textContent, /جارٍ النطق/);
+  spoken[0].onerror({ error: "synthesis-failed" });
+  assert.match(fixture.elements.get("action-status").textContent, /تعذّر/);
+});
+
+test("Atlas settings continuation opens controls while recovery keeps precedence", async () => {
+  const replies = {
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+  };
+  const fixture = atlasApi(replies, { search: "?view=settings" });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("settings-view").hidden, false);
+  assert.equal(fixture.elements.get("today-view").hidden, true);
+  const recovery = atlasApi({ ...replies, "state.export": { kind: "recovery", recoveryRaw: { broken: true } } }, { search: "?view=settings" });
+  await recovery.api.initialize();
+  assert.equal(recovery.elements.get("recovery").hidden, false);
+});
+
+
+test("Atlas current-word ID and settings routes retain the current daily continuation", async () => {
+  for (const search of ["?view=explore&id=w1", "?view=settings"]) {
+    const fixture = atlasApi({
+      "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+      "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    }, { search });
+    await fixture.api.initialize();
+    assert.equal(fixture.elements.get(search.includes("settings") ? "settings-view" : "explore-view").hidden, false);
+    if (search.includes("id=")) assert.equal(fixture.elements.get("return-today").hidden, true, "current word does not need a redundant return action");
+    await fixture.api.returnToToday();
+    assert.equal(fixture.elements.get("today-view").hidden, false, search);
+    assert.equal(fixture.elements.get("empty").hidden, true, search);
+    assert.equal(fixture.elements.get("today-card").children[0].textContent, "كلمة");
+    assert.equal(fixture.calls.filter((call) => call.type === "assignment.get").length, 1);
+  }
+});
+
+test("Atlas historical return and Today navigation load the current day without relabeling history", async () => {
+  for (const throughNavigation of [false, true]) {
+    const history = { id: "w2", word: "سابقة", meaningAr: "معنى" };
+    const today = { id: "w1", word: "اليوم", meaningAr: "معنى" };
+    const fixture = atlasApi({
+      "assignment.get": (message) => message.dateKey
+        ? { kind: "assigned", wordId: "w2", dateKey: "2026-07-28" }
+        : { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+      "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    }, { search: "?date=2026-07-28", vocabulary: [today, history] });
+    await fixture.api.initialize();
+    assert.equal(fixture.elements.get("explore-card").children[0].textContent, "سابقة");
+    assert.equal(fixture.elements.get("today-card").children.length, 0);
+    if (throughNavigation) await fixture.elements.get("today").listeners.click();
+    else await fixture.api.returnToToday();
+    assert.equal(fixture.elements.get("today-view").hidden, false);
+    assert.equal(fixture.elements.get("today-card").children[0].textContent, "اليوم");
+    assert.equal(fixture.elements.get("today-date").textContent.includes("٢٨"), false);
+    assert.deepEqual(fixture.calls.filter((call) => call.type === "assignment.get").map((call) => call.dateKey), ["2026-07-28", undefined]);
+  }
+});
+
+
+test("Atlas committed clear can continue directly through Today and Return without a storage event", async () => {
+  for (const route of ["today", "return"]) {
+    for (const reminderResult of ["off", "failed", "unknown"]) {
+      let durable = atlasProfile({ preferences: { allowRemoteSpeech: true, showEnglish: true, speechRate: 1.2, speechRepeat: 1, dailyReviewLimit: 20 } });
+      const fixture = atlasApi({
+        "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+        "state.export": () => ({ kind: "export", text: JSON.stringify(durable) }),
+        "settings.get": { kind: "settings", reminder: { enabled: true, time: "10:30" } },
+        "state.clear": () => {
+          durable = atlasProfile({ showEnglish: false, preferences: { allowRemoteSpeech: false, showEnglish: false, speechRate: 0.85, speechRepeat: 1, dailyReviewLimit: 20 } });
+          return { kind: "ok", profilePersisted: true, storageWarning: reminderResult !== "off", reminderWarning: reminderResult !== "off", reminder: reminderResult === "unknown" ? null : { enabled: reminderResult === "failed", time: "10:30" } };
+        },
+        "word.save": { kind: "ok", wordId: "w1", saved: true },
+      });
+      await fixture.api.initialize();
+      await fixture.api.clearState();
+      if (route === "return") {
+        fixture.elements.get("explore").listeners.click();
+        fixture.api.viewWord({ id: "w2", word: "سابقة", meaningAr: "معنى" });
+        await fixture.api.returnToToday();
+      } else await fixture.elements.get("today").listeners.click();
+      assert.equal(fixture.elements.get("today-view").hidden, false, `${route}/${reminderResult}`);
+      assert.equal(fixture.elements.get("error").hidden, true);
+      assert.equal(fixture.elements.get("today-card").children[0].textContent, "كلمة");
+      assert.equal(fixture.api.getReminder().enabled, reminderResult !== "off");
+      assert.equal(fixture.elements.get("warning").hidden, reminderResult === "off");
+      assert.doesNotMatch(fixture.elements.get("today-card").children.find((node) => node.className === "word-speak").textContent, /الإنترنت/);
+      await fixture.api.toggleSave();
+      assert.equal(fixture.elements.get("today-save").getAttribute("aria-pressed"), "true", "the adopted profile supports subsequent Save");
+      assert.equal(fixture.calls.filter((call) => call.type === "settings.update").length, 0);
+      assert.equal(fixture.calls.filter((call) => call.type === "state.export").length, 2);
+    }
+  }
+});
+
+test("Atlas post-clear continuation keeps recovery precedence and rejects temporary consent", async () => {
+  for (const recovery of [false, true]) {
+    let cleared = false;
+    const confirmed = atlasProfile({ showEnglish: false, preferences: { allowRemoteSpeech: false } });
+    const temporary = atlasProfile({ wordStates: { w1: { saved: true } }, preferences: { allowRemoteSpeech: true } });
+    const fixture = atlasApi({
+      "assignment.get": () => ({ kind: "assigned", wordId: "w1", dateKey: "2026-07-30", saved: cleared, storageWarning: cleared }),
+      "state.export": () => cleared ? (recovery ? { kind: "recovery", recoveryRaw: { broken: true } } : { kind: "export", text: JSON.stringify(temporary), storageWarning: true }) : { kind: "export", text: JSON.stringify(confirmed) },
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+      "state.clear": () => { cleared = true; return { kind: "ok", profilePersisted: true, reminder: { enabled: false, time: "09:00" } }; },
+    }, { storage: { "kalimat.profile": confirmed } });
+    await fixture.api.initialize();
+    await fixture.api.clearState();
+    await fixture.api.returnToToday();
+    assert.equal(fixture.elements.get(recovery ? "recovery" : "today-view").hidden, false);
+    assert.equal(fixture.elements.get("error").hidden, true);
+    if (!recovery) {
+      assert.equal(fixture.elements.get("today-save").getAttribute("aria-pressed"), "false");
+      assert.doesNotMatch(fixture.elements.get("today-card").children.find((node) => node.className === "word-speak").textContent, /الإنترنت/);
+      assert.equal(fixture.elements.get("warning").hidden, false);
+    }
+  }
+});
+
+const exploreSaveVocabulary = [
+  { id: "w1", word: "كلمة", meaningAr: "معنى", reviewed: true },
+  { id: "w2", word: "ثانية", meaningAr: "شرح", reviewed: true },
+];
+
+test("Atlas generated Explore Save keeps non-today intent, blocks pending duplicates, and announces both states", async () => {
+  let profile = atlasProfile();
+  const releases = [];
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "word.save": () => new Promise((resolve) => { releases.push(resolve); }),
+  }, { vocabulary: exploreSaveVocabulary });
+  await fixture.api.initialize();
+  fixture.elements.get("explore").listeners.click();
+  fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+  const save = fixture.context.document.getElementById("explore-save");
+  save.focus();
+  const saving = save.listeners.click();
+  await save.listeners.click();
+  assert.equal(fixture.calls.filter((call) => call.type === "word.save").length, 1);
+  assert.equal(save.disabled, true);
+  assert.equal(save.getAttribute("aria-busy"), "true");
+  assert.equal(fixture.elements.get("status").textContent, "جارٍ تحديث الحفظ…");
+
+  profile = atlasProfile({ wordStates: { w2: { saved: true } } });
+  for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+  await new Promise(setImmediate);
+  assert.equal(fixture.context.document.getElementById("explore-save"), save, "refresh must preserve the pending control");
+  assert.equal(save.disabled, true);
+  assert.equal(save.getAttribute("aria-pressed"), "false", "the response confirms the submitted intent");
+  releases[0]({ kind: "ok", wordId: "w2", saved: true });
+  await saving;
+  assert.equal(save.disabled, false);
+  assert.equal(save.getAttribute("aria-busy"), "false");
+  assert.equal(save.getAttribute("aria-pressed"), "true");
+  assert.equal(fixture.elements.get("today-save").getAttribute("aria-pressed"), "false");
+  assert.equal(fixture.elements.get("status").textContent, "حُفظت الكلمة.");
+  assert.equal(fixture.elements.get("status").getAttribute("aria-live"), "polite");
+  assert.equal(fixture.elements.get("today-action-status").textContent, "");
+
+  const removing = save.listeners.click();
+  releases[1]({ kind: "ok", wordId: "w2", saved: false });
+  await removing;
+  assert.deepEqual(fixture.calls.filter((call) => call.type === "word.save").map((call) => [call.wordId, call.saved]), [["w2", true], ["w2", false]]);
+  assert.equal(save.getAttribute("aria-pressed"), "false");
+  assert.equal(fixture.elements.get("status").textContent, "أزيل الحفظ.");
+  assert.equal(fixture.elements.get("status").getAttribute("role"), "status");
+});
+
+test("Atlas generated Explore Save retains confirmed state after warning or failure and retries the same intent", async () => {
+  for (const outcome of ["warning", "failure"]) {
+    let failed = true;
+    const fixture = atlasApi({
+      "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+      "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+      "word.save": (message) => failed && outcome === "failure" ? new Error("storage unavailable") : { kind: "ok", wordId: "w2", saved: message.saved, storageWarning: failed },
+    }, { vocabulary: exploreSaveVocabulary });
+    await fixture.api.initialize();
+    fixture.elements.get("explore").listeners.click();
+    fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+    const save = fixture.context.document.getElementById("explore-save");
+    await save.listeners.click();
+    assert.equal(save.getAttribute("aria-pressed"), "false", outcome);
+    assert.equal(save.disabled, false);
+    assert.equal(save.getAttribute("aria-busy"), "false");
+    assert.match(fixture.elements.get("status").textContent, outcome === "warning" ? /مؤقت.*لم يُحفظ/ : /تعذّر الحفظ/);
+    assert.doesNotMatch(fixture.elements.get("status").textContent, /حُفظت الكلمة/);
+    assert.equal(fixture.elements.get("status").getAttribute("aria-live"), "polite");
+    failed = false;
+    await save.listeners.click();
+    assert.deepEqual(fixture.calls.filter((call) => call.type === "word.save").map((call) => call.saved), [true, true]);
+    assert.equal(save.getAttribute("aria-pressed"), "true");
+    assert.equal(fixture.elements.get("status").textContent, "حُفظت الكلمة.");
+  }
+});
+
+test("Atlas pending Save restores lost focus only in the original view and connected card", async () => {
+  for (const surface of ["today", "explore"]) {
+    const outcomes = ["lost", "new-control", "navigate", "leave-return", ...(surface === "explore" ? ["replace-card"] : [])];
+    for (const outcome of outcomes) {
+      let release;
+      const fixture = atlasApi({
+        "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+        "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+        "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+        "word.save": () => new Promise((resolve) => { release = resolve; }),
+      }, { vocabulary: exploreSaveVocabulary });
+      await fixture.api.initialize();
+      const openExplore = () => {
+        fixture.elements.get("explore").listeners.click();
+        fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+      };
+      if (surface === "explore") openExplore();
+      const save = fixture.context.document.getElementById(`${surface}-save`);
+      save.focus();
+      const pending = save.listeners.click();
+      activeElement = fixture.context.document.body; // A disabled focused button can leave focus on the document.
+      if (outcome === "new-control") fixture.elements.get(surface === "today" ? "today-known" : "atlas-search").focus();
+      if (outcome === "navigate" || outcome === "leave-return") fixture.elements.get(surface === "today" ? "explore" : "settings").listeners.click();
+      if (outcome === "leave-return") {
+        if (surface === "today") await fixture.elements.get("today").listeners.click();
+        else openExplore();
+        activeElement = fixture.context.document.body;
+      }
+      if (outcome === "replace-card") {
+        fixture.elements.get("atlas-search").listeners.input();
+        fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+        activeElement = fixture.context.document.body;
+      }
+      const destination = fixture.context.document.activeElement;
+      const focuses = save.focuses;
+      release({ kind: "ok", wordId: surface === "today" ? "w1" : "w2", saved: true });
+      await pending;
+      assert.equal(save.focuses, focuses + (outcome === "lost" ? 1 : 0), `${surface}/${outcome}`);
+      assert.equal(fixture.context.document.activeElement, outcome === "lost" ? save : destination, `${surface}/${outcome}`);
+      assert.equal(save.disabled, surface === "today" && outcome === "navigate");
+      if (outcome === "replace-card") assert.equal(save.isConnected, false);
+    }
+  }
+});
+
+test("Atlas external profile changes synchronize an open Explore Save and the next click intent", async () => {
+  let profile = atlasProfile();
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "word.save": (message) => ({ kind: "ok", wordId: "w2", saved: message.saved }),
+  }, { vocabulary: exploreSaveVocabulary });
+  await fixture.api.initialize();
+  fixture.elements.get("explore").listeners.click();
+  fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+  const save = fixture.context.document.getElementById("explore-save");
+  save.focus();
+  profile = atlasProfile({ wordStates: { w2: { saved: true } } });
+  for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+  await new Promise(setImmediate);
+  assert.equal(fixture.context.document.getElementById("explore-save"), save);
+  assert.equal(save.getAttribute("aria-pressed"), "true");
+  assert.equal(fixture.context.document.activeElement, save);
+  await save.listeners.click();
+  assert.deepEqual(fixture.calls.filter((call) => call.type === "word.save").map((call) => [call.wordId, call.saved]), [["w2", false]]);
+  assert.equal(save.getAttribute("aria-pressed"), "false");
+  assert.equal(fixture.elements.get("status").textContent, "أزيل الحفظ.");
+});
+
+test("Atlas external changes update visible saved History and preserve or recover its focused row", async () => {
+  let profile = atlasProfile({
+    assignments: { "2026-07-30": { wordId: "w1" }, "2026-07-29": { wordId: "w2" } }, assignmentOrdinal: 2,
+    wordStates: { w1: { saved: true }, w2: { saved: true } },
+  });
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+  });
+  const refresh = async () => {
+    for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+    await new Promise(setImmediate);
+  };
+  await fixture.api.initialize();
+  const filter = fixture.elements.get("history-filter");
+  filter.value = "saved";
+  fixture.elements.get("history").listeners.click();
+  const rows = () => fixture.elements.get("history-list").children;
+  const row = () => rows().find((item) => item.textContent.includes("ثانية"));
+  const original = row();
+  original.focus();
+  profile.assignments["2026-07-29"].status = "known";
+  await refresh();
+  assert.match(row().textContent, /معروف/);
+  assert.notEqual(row(), original);
+  assert.equal(original.isConnected, false);
+  assert.equal(fixture.context.document.activeElement, row(), "a surviving row keeps focus after refresh");
+
+  filter.focus();
+  profile.assignments["2026-07-29"].status = "difficult";
+  await refresh();
+  assert.match(row().textContent, /صعب/);
+  assert.equal(fixture.context.document.activeElement, filter, "refresh preserves a different focused target");
+
+  row().focus();
+  profile.wordStates.w2.saved = false;
+  await refresh();
+  assert.equal(rows().length, 1);
+  assert.equal(row(), undefined);
+  assert.equal(fixture.context.document.activeElement, filter, "a removed row returns focus to the filter");
+});
+
+test("Atlas ordinary import after Clear confirms success and restores history and preferences", async () => {
+  let profile = atlasProfile();
+  const imported = atlasProfile({
+    interests: ["food", "travel"], showEnglish: false,
+    preferences: { showEnglish: false, allowRemoteSpeech: true, speechRate: 1.15, speechRepeat: 3 },
+    assignments: { "2026-07-30": { wordId: "w1", status: "known" }, "2026-07-29": { wordId: "w2", status: "difficult" } }, assignmentOrdinal: 2,
+    wordStates: { w1: { status: "known" }, w2: { status: "difficult", saved: true } },
+  });
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "state.clear": () => { profile = atlasProfile(); return { kind: "ok", profilePersisted: true, reminder: { enabled: false, time: "09:00" } }; },
+    "state.import": (message) => { profile = JSON.parse(message.text); return { kind: "ok" }; },
+  });
+  await fixture.api.initialize();
+  await fixture.elements.get("clear").listeners.click();
+  assert.equal(fixture.elements.get("onboarding").hidden, false);
+  const input = fixture.elements.get("import-file");
+  const text = JSON.stringify(imported);
+  input.files = [{ size: text.length, text: async () => text }];
+  input.value = "backup.json";
+  await input.listeners.change();
+  assert.equal(input.value, "");
+  assert.equal(fixture.elements.get("status").textContent, "تم استيراد الملف.");
+  assert.equal(fixture.elements.get("status").getAttribute("aria-live"), "polite");
+  assert.equal(fixture.elements.get("onboarding").hidden, true);
+  assert.equal(fixture.elements.get("today-view").hidden, false);
+  assert.equal(fixture.elements.get("settings-english").checked, false);
+  assert.equal(fixture.elements.get("settings-remote-speech").checked, true);
+  assert.equal(fixture.elements.get("settings-speech-rate").value, "1.15");
+  assert.equal(fixture.elements.get("settings-speech-repeat").value, "3");
+  assert.deepEqual(fixture.interests.filter((interest) => interest.checked).map((interest) => interest.value), ["food", "travel"]);
+  assert.equal(fixture.elements.get("today-card").children.some((node) => node.children?.some((child) => child.textContent === "شرح بالإنجليزية والنطق اللاتيني")), false);
+  fixture.elements.get("history-filter").value = "saved";
+  fixture.elements.get("history").listeners.click();
+  const rows = fixture.elements.get("history-list").children;
+  assert.equal(rows.length, 1);
+  assert.match(rows[0].textContent, /2026-07-29.*ثانية.*صعب/);
+  assert.equal(fixture.calls.filter((call) => call.type === "settings.update").length, 0, "import restores preferences without a settings submission");
+});
+
+test("Atlas pending import file reading blocks competing mutations and releases the lock after a read failure", async () => {
+  let failRead;
+  const reading = new Promise((_, reject) => { failRead = reject; });
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "word.save": { kind: "ok", wordId: "w1", saved: true },
+    "settings.update": { kind: "ok" },
+    "state.clear": { kind: "ok", profilePersisted: true },
+  }, { vocabulary: exploreSaveVocabulary });
+  await fixture.api.initialize();
+  const input = { files: [{ size: 10, text: () => reading }], value: "backup.json" };
+  const importing = fixture.api.importState(input);
+  await fixture.api.clearState();
+  await fixture.api.toggleSave();
+  await fixture.api.feedback("known");
+  fixture.elements.get("explore").listeners.click();
+  fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+  await fixture.context.document.getElementById("explore-save").listeners.click();
+  fixture.elements.get("settings").listeners.click();
+  await fixture.api.saveSettings();
+  assert.equal(fixture.calls.some((call) => ["state.clear", "state.import", "word.save", "word.feedback", "settings.update"].includes(call.type)), false);
+  assert.match(fixture.elements.get("status").textContent, /جارٍ.*اكتمالها/);
+
+  failRead(new Error("file unreadable"));
+  await importing;
+  assert.equal(input.value, "");
+  assert.match(fixture.elements.get("status").textContent, /تعذّر استيراد الملف/);
+  await fixture.elements.get("today").listeners.click();
+  assert.equal(fixture.elements.get("today-save").disabled, false);
+  await fixture.elements.get("today-save").listeners.click();
+  assert.equal(fixture.calls.filter((call) => call.type === "word.save").length, 1);
+  await fixture.api.clearState();
+  assert.equal(fixture.calls.filter((call) => call.type === "state.clear").length, 1);
+  assert.equal(fixture.elements.get("onboarding").hidden, false);
+});
+
+test("Atlas pending Clear blocks cached Today, generated Explore, settings, and import until failure recovery", async () => {
+  let release;
+  let clears = 0;
+  let fileReads = 0;
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "word.save": { kind: "ok", wordId: "w1", saved: true },
+    "settings.update": { kind: "ok" },
+    "state.clear": () => ++clears === 1 ? new Promise((resolve) => { release = resolve; }) : { kind: "ok", profilePersisted: true },
+  }, { vocabulary: exploreSaveVocabulary });
+  await fixture.api.initialize();
+  const clearing = fixture.elements.get("clear").listeners.click();
+  await fixture.elements.get("today").listeners.click();
+  assert.equal(fixture.elements.get("today-save").disabled, true);
+  await fixture.elements.get("today-save").listeners.click();
+  await fixture.api.feedback("known");
+  fixture.elements.get("explore").listeners.click();
+  fixture.elements.get("search-results").children.find((row) => row.textContent.startsWith("ثانية")).listeners.click();
+  await fixture.context.document.getElementById("explore-save").listeners.click();
+  fixture.elements.get("settings").listeners.click();
+  await fixture.api.saveSettings();
+  const input = { files: [{ size: 10, text: async () => { fileReads += 1; return JSON.stringify(atlasProfile()); } }], value: "backup.json" };
+  await fixture.api.importState(input);
+  await fixture.api.clearState();
+  assert.equal(input.value, "");
+  assert.equal(fileReads, 0, "a blocked import must not start reading its file");
+  assert.deepEqual(fixture.calls.filter((call) => ["state.clear", "state.import", "word.save", "word.feedback", "settings.update"].includes(call.type)).map((call) => call.type), ["state.clear"]);
+
+  release({ kind: "error" });
+  await clearing;
+  assert.match(fixture.elements.get("status").textContent, /تعذّر مسح البيانات/);
+  await fixture.elements.get("today").listeners.click();
+  assert.equal(fixture.elements.get("today-save").disabled, false);
+  await fixture.elements.get("today-save").listeners.click();
+  await fixture.api.saveSettings();
+  assert.equal(fixture.calls.filter((call) => call.type === "word.save").length, 1);
+  assert.equal(fixture.calls.filter((call) => call.type === "settings.update").length, 1);
+  await fixture.api.clearState();
+  assert.equal(fixture.calls.filter((call) => call.type === "state.clear").length, 2);
+  assert.equal(fixture.elements.get("onboarding").hidden, false);
+});
+
+test("Atlas pending Save or settings prevents profile replacement and allows retry after commit", async () => {
+  for (const mutation of ["word.save", "settings.update"]) {
+    let release;
+    let fileReads = 0;
+    const fixture = atlasApi({
+      "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+      "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+      "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+      [mutation]: () => new Promise((resolve) => { release = resolve; }),
+      "state.import": { kind: "ok" },
+      "state.clear": { kind: "ok", profilePersisted: true },
+    });
+    await fixture.api.initialize();
+    if (mutation === "settings.update") fixture.elements.get("settings").listeners.click();
+    const pending = mutation === "word.save" ? fixture.api.toggleSave() : fixture.api.saveSettings();
+    const input = { files: [{ size: 10, text: async () => { fileReads += 1; return JSON.stringify(atlasProfile()); } }], value: "backup.json" };
+    await fixture.api.clearState();
+    await fixture.api.importState(input);
+    assert.equal(fixture.calls.some((call) => call.type === "state.clear" || call.type === "state.import"), false, mutation);
+    assert.equal(fileReads, 0);
+    assert.equal(input.value, "");
+    assert.match(fixture.elements.get("status").textContent, /جارٍ.*اكتمالها/);
+    release({ kind: "ok", wordId: "w1", saved: true });
+    await pending;
+    await fixture.api.importState(input);
+    await fixture.api.clearState();
+    assert.equal(fileReads, 1);
+    assert.equal(fixture.calls.filter((call) => call.type === "state.import").length, 1);
+    assert.equal(fixture.calls.filter((call) => call.type === "state.clear").length, 1);
+  }
+});

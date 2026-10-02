@@ -11,7 +11,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "classical",
-    "reviewed": true
+    "reviewed": true,
+    "usageNote": "لفظ أدبي في المدح، يُوصف به السيد الكريم أو الرجل الشجاع.",
+    "exampleKind": "original"
   },
   {
     "sourceId": 2,
@@ -25,7 +27,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "classical",
-    "reviewed": true
+    "reviewed": true,
+    "usageNote": "أورده لسان العرب في مادة خنذ، وذكر ابن سيده أنه كأنه بُني منها؛ وهذا اشتقاق محتمل، لا حكم متفق عليه.",
+    "exampleKind": "original"
   },
   {
     "sourceId": 3,
@@ -40,7 +44,14 @@
     ],
     "partOfSpeech": "noun",
     "register": "standard",
-    "reviewed": true
+    "reviewed": true,
+    "usageNote": "أي دائمًا مستمرًّا؛ وهذا استعمال مجازي مأخوذ من دوام المطر.",
+    "exampleKind": "quotation",
+    "exampleSource": {
+      "title": "صحيح البخاري",
+      "reference": "6466",
+      "url": "https://sunnah.com/bukhari:6466"
+    }
   },
   {
     "sourceId": 4,
@@ -51,9 +62,11 @@
     "topics": [
       "classical-arabic"
     ],
-    "partOfSpeech": "noun",
+    "partOfSpeech": "adjective",
     "register": "classical",
-    "reviewed": true
+    "reviewed": true,
+    "usageNote": "صفة تُستعمل في وصف كثرة الجيش، وتَرِد في الأسلوب الأدبي للدلالة على الشدة والكثرة.",
+    "exampleKind": "original"
   },
   {
     "sourceId": 5,
@@ -66,7 +79,14 @@
     ],
     "partOfSpeech": "noun",
     "register": "standard",
-    "reviewed": true
+    "reviewed": true,
+    "usageNote": "لفظ فصيح يُستعمل في الأسلوب الرسمي والأدبي لوصف الوجع والمرض أو التعب والفتور.",
+    "exampleKind": "quotation",
+    "exampleSource": {
+      "title": "صحيح البخاري",
+      "reference": "5641–5642",
+      "url": "https://sunnah.com/bukhari:5641"
+    }
   },
   {
     "sourceId": 6,

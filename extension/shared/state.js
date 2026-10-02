@@ -66,7 +66,7 @@
     "streak",
     "streakData",
   ]);
-  const PREFERENCE_KEYS = new Set(["showEnglish", "speechRate", "speechRepeat", "dailyReviewLimit"]);
+  const PREFERENCE_KEYS = new Set(["showEnglish", "speechRate", "speechRepeat", "dailyReviewLimit", "allowRemoteSpeech"]);
   const WORD_STATE_KEYS = new Set(["status", "dateKey", "saved"]);
   const ASSIGNMENT_KEYS = new Set(["wordId", "status"]);
   const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
@@ -405,11 +405,13 @@
     const rawPreferences = suppliedPreferences ? raw.preferences : null;
     if (suppliedPreferences) safeKeys(rawPreferences, PREFERENCE_KEYS, "preferences");
     const preferences = {
+      allowRemoteSpeech: Object.hasOwn(rawPreferences ?? {}, "allowRemoteSpeech") ? rawPreferences.allowRemoteSpeech : false,
       showEnglish: Object.hasOwn(rawPreferences ?? {}, "showEnglish") ? rawPreferences.showEnglish : (raw.showEnglish ?? true),
       speechRate: Object.hasOwn(rawPreferences ?? {}, "speechRate") ? rawPreferences.speechRate : 0.85,
       speechRepeat: Object.hasOwn(rawPreferences ?? {}, "speechRepeat") ? rawPreferences.speechRepeat : 1,
       dailyReviewLimit: Object.hasOwn(rawPreferences ?? {}, "dailyReviewLimit") ? rawPreferences.dailyReviewLimit : 20,
     };
+    if (typeof preferences.allowRemoteSpeech !== "boolean") fail("preferences allowRemoteSpeech");
     if (typeof preferences.showEnglish !== "boolean") fail("preferences showEnglish");
     if (!Number.isFinite(preferences.speechRate) || preferences.speechRate < 0.5 || preferences.speechRate > 1.5) fail("preferences speechRate");
     if (preferences.speechRepeat !== 1 && preferences.speechRepeat !== 3) fail("preferences speechRepeat");
@@ -438,7 +440,7 @@
     };
   }
 
-  function createProfile({ seedHex = "0".repeat(32), level = 1, interests = [], showEnglish = true } = {}) {
+  function createProfile({ seedHex = "0".repeat(32), level = 1, interests = [], showEnglish = false } = {}) {
     return copyProfile({
       schemaVersion: SCHEMA_VERSION,
       version: 1,
@@ -455,7 +457,7 @@
       srs: nullMap(),
       history: nullMap(),
       favorites: nullMap(),
-      preferences: { showEnglish, speechRate: 0.85, speechRepeat: 1, dailyReviewLimit: 20 },
+      preferences: { allowRemoteSpeech: false, showEnglish, speechRate: 0.85, speechRepeat: 1, dailyReviewLimit: 20 },
       streak: null,
     });
   }

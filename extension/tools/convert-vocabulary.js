@@ -72,6 +72,9 @@ const vocabulary = words.map((seed) => {
     contextAr: source.context,
     contextEnglish: source.contextEnglish,
     contextEn: source.contextEnglish,
+    ...Object.fromEntries(["exampleKind", "exampleSource", "usageNote"]
+      .filter((field) => Object.hasOwn(metadata, field))
+      .map((field) => [field, metadata[field]])),
   };
 });
 
