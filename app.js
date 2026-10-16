@@ -110,9 +110,24 @@ document.addEventListener("DOMContentLoaded", () => {
     activeDateKey = Core.getLocalDateKey(new Date());
 
     const search = (typeof window !== "undefined" && window.location) ? window.location.search : "";
+    let action = null;
+    try {
+        if (typeof URLSearchParams !== "undefined") {
+            action = new URLSearchParams(search).get("action");
+        } else if (typeof window !== "undefined" && window.URLSearchParams) {
+            action = new window.URLSearchParams(search).get("action");
+        } else if (typeof search === "string") {
+            const match = search.match(/(?:^|[?&])action=([^&]*)/);
+            action = match ? decodeURIComponent(match[1]) : null;
+        }
+    } catch (_) {}
+
     const queryId = Core.parseWordIdFromQuery(search, WORDS_DB.length);
     const queryDateKey = parseArchiveDateKey(search);
-    if (queryId !== null) {
+    if (action === "history") {
+        // Export access must not enroll a new daily word or rewrite the saved state.
+        renderWord(WORDS_DB[Core.getDailyWordIndex(activeDateKey, WORDS_DB.length)], null);
+    } else if (queryId !== null) {
         const foundWord = WORDS_DB.find(item => item.id === queryId);
         if (foundWord) {
             const todayWord = determineTodayWord();
@@ -139,24 +154,16 @@ document.addEventListener("DOMContentLoaded", () => {
     setupSpeech();
     setupEventListeners();
     setupKeyboardShortcuts();
-    startCountdown();
+    if (action !== "history") startCountdown();
     updateStreakUI();
     updateDueReviewBadge();
-    setupOnboarding();
+    if (action !== "history") setupOnboarding();
     setupInstallPrompt();
-    setupDailyReminder();
+    if (action !== "history") setupDailyReminder();
 
-    let action = null;
-    try {
-        if (typeof URLSearchParams !== "undefined") {
-            action = new URLSearchParams(search).get("action");
-        } else if (typeof window !== "undefined" && window.URLSearchParams) {
-            action = new window.URLSearchParams(search).get("action");
-        } else if (typeof search === "string") {
-            const match = search.match(/(?:^|[?&])action=([^&]*)/);
-            action = match ? decodeURIComponent(match[1]) : null;
-        }
-    } catch (_) {}
+    if (action === "history") {
+        openHistory();
+    }
 
     if (action === "practice") {
         setTimeout(startSpacedRepetitionReview, 0);
@@ -1285,15 +1292,17 @@ function showToast(message) {
     }
 }
 
+function openHistory() {
+    stopSpeech();
+    setMenuOpen(false);
+    historyDialogInvoker = document.activeElement || btnToggleHistory;
+    historyDialog.showModal();
+    updateHistoryUI(true);
+    if (typeof btnCloseHistory.focus === "function") btnCloseHistory.focus();
+}
+
 function setupEventListeners() {
-    btnToggleHistory.addEventListener("click", () => {
-        stopSpeech();
-        setMenuOpen(false);
-        historyDialogInvoker = document.activeElement || btnToggleHistory;
-        historyDialog.showModal();
-        updateHistoryUI(true);
-        if (typeof btnCloseHistory.focus === "function") btnCloseHistory.focus();
-    });
+    btnToggleHistory.addEventListener("click", openHistory);
     btnCloseHistory.addEventListener("click", () => {
         stopSpeech();
         historyDialog.close();

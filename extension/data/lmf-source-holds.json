@@ -1,0 +1,11 @@
+{
+  "sha256": "776b902ade101446ef1c6f9f37a62791942d6bd30d19b3df8989e997955da9eb",
+  "holds": [
+    {"entryId":"أربعينيات","senseId":"أربعينيَّاتD1","reason":"The example incorrectly places the end of World War II in the early 1940s."},
+    {"entryId":"تخاطر","senseId":"تخاطُرD1","reason":"The definition and example present telepathy as an established unexplained phenomenon; held pending source review."},
+    {"entryId":"استئصالية","senseId":"استئصاليَّةD4","reason":"Political extermination-movement definition paired with an example of military eradication strikes, which does not establish that sense."},
+    {"entryId":"تضامنية","senseId":"تضامنيَّةD2","reason":"Political/philosophical doctrine definition paired with generic solidarity and union, which does not establish that sense."},
+    {"entryId":"تشافى","senseId":"تشافىD2","reason":"The gloss describes displaying recovery; the example describes collective recovery from aggression. The exact sense correspondence is uncertain and is held pending source review."},
+    {"entryId":"تهالك","senseId":"تهالكَD4","reason":"The gloss describes workers striving and hurrying to finish a task; the example describes an individual striving to outperform a rival. The exact sense correspondence is uncertain and is held pending source review."}
+  ]
+}

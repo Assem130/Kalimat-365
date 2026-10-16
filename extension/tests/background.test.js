@@ -97,7 +97,7 @@ function fakeExtension({ profile, reminder, vocabulary = [word("w1"), word("w2")
     extension.notifications = notificationApi;
   }
   if (reminderApis) installReminderApis();
-  return { extension, values, alarms, calls, vocabulary, api, installReminderApis, setPermissions(value) { permissionsGranted = value; }, setHostPermissions(value) { hostPermissionsGranted = value; }, setStorageAvailable(value) { storageAvailable = value; } };
+  return { extension, values, alarms, calls, vocabulary, api, installReminderApis, setPermissions(value) { permissionsGranted = value; }, setHostPermissions(value) { hostPermissionsGranted = value; }, setStorageAvailable(value) { storageAvailable = value; }, failNextWrites(count) { remainingSetFailures = count; } };
 }
 
 function loadBackground(options = {}) {
@@ -150,8 +150,17 @@ function profile(overrides = {}) {
   return { ...createProfile({ seedHex: "a".repeat(32), level: 1, interests: ["language"] }), ...overrides };
 }
 
-test("concurrent assignment requests persist and return one local-day word", async () => {
-  await withBackground({}, async ({ background, values }) => {
+// Model old installs explicitly. Retained assignments must remain usable after
+// removing the bundled selector from new daily assignments.
+function retainedProfile(day = require("../shared/date.js").getLocalDateKey(new Date()), id = "w1", overrides = {}) {
+  return profile({ assignments: { [day]: { wordId: id } }, assignmentOrdinal: 1, ...overrides });
+}
+function sourceProfile(overrides = {}) {
+  return profile({ discovery: { enabled: true, topics: [], knownKeys: [] }, ...overrides });
+}
+
+test("concurrent source assignment requests persist and return one local-day word", async () => {
+  await withBackground({ profile: sourceProfile(), fetch: freeSourceFetch([]) }, async ({ background, values }) => {
     await withLocalDay("2026-07-30", async () => {
       const results = await Promise.all([background.handleMessage({ type: "assignment.get" }), background.handleMessage({ type: "assignment.get" })]);
       assert.deepEqual(results[0], results[1]);
@@ -162,7 +171,7 @@ test("concurrent assignment requests persist and return one local-day word", asy
 });
 
 test("Firefox browser APIs use the same background message adapter", async () => {
-  await withBackground({ api: "browser" }, async ({ background, extension }) => {
+  await withBackground({ api: "browser", profile: retainedProfile("2026-07-30") }, async ({ background, extension }) => {
     assert.equal(extension.runtime.onMessage.listeners.length, 1);
     await withLocalDay("2026-07-30", async () => {
       const result = await background.handleMessage({ type: "assignment.get" });
@@ -177,12 +186,12 @@ test("first-run background serves settings and assignments without optional remi
   assert.doesNotThrow(() => { fixture = loadBackground({ permissions: false, reminderApis: false }); });
   try {
     assert.deepEqual(await fixture.background.handleMessage({ type: "settings.get" }), { kind: "settings", reminder: { enabled: false, time: "09:00" } });
-    assert.equal((await fixture.background.handleMessage({ type: "assignment.get" })).kind, "assigned");
+    assert.equal((await fixture.background.handleMessage({ type: "assignment.get" })).kind, "no-new-word");
   } finally { fixture?.restore(); }
 });
 
 test("real numeric vocabulary keeps assignment, save, and review canonical and transactional", async () => {
-  await withBackground({ vocabulary: realVocabulary, permissions: false, reminderApis: false }, async ({ background, values }) => {
+  await withBackground({ vocabulary: realVocabulary, profile: retainedProfile("2026-08-17", 1), permissions: false, reminderApis: false }, async ({ background, values }) => {
     await withLocalDay("2026-08-17", async () => {
       const assigned = await background.handleMessage({ type: "assignment.get" });
       assert.equal(assigned.kind, "assigned");
@@ -217,6 +226,7 @@ test("real numeric vocabulary keeps assignment, save, and review canonical and t
 test("a rejected vocabulary load is cleared so the next message can retry", async () => {
   let attempts = 0;
   await withBackground({
+    profile: retainedProfile("2026-07-30"),
     vocabularyFetch: async () => {
       attempts += 1;
       if (attempts === 1) return { ok: false, status: 503 };
@@ -260,7 +270,7 @@ test("review queue reports total and remaining counts when the daily limit caps 
   });
 });
 
-test("browser background bootstrap imports the six shared domain modules", async () => {
+test("browser background bootstrap imports the shared domain modules", async () => {
   const fake = fakeExtension({ permissions: false, reminderApis: false });
   const imported = [];
   const context = vm.createContext({ chrome: fake.extension, console, crypto: webcrypto, TextEncoder, fetch: async () => ({ ok: true, async json() { return fake.vocabulary; } }) });
@@ -272,8 +282,8 @@ test("browser background bootstrap imports the six shared domain modules", async
     }
   };
   assert.doesNotThrow(() => vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "background.js"), "utf8"), context, { filename: "background.js" }));
-  assert.deepEqual(imported, ["shared/date.js", "shared/vocabulary.js", "shared/review-policy.js", "shared/state.js", "shared/selector.js", "shared/lookup.js"]);
-  for (const name of ["KalimatDate", "KalimatVocabulary", "KalimatReviewPolicy", "KalimatState", "KalimatSelector", "KalimatLookup"]) assert.equal(typeof context[name], "object");
+  assert.deepEqual(imported, ["shared/date.js", "shared/vocabulary.js", "shared/review-policy.js", "shared/state.js", "shared/lookup.js", "shared/discovery.js"]);
+  for (const name of ["KalimatDate", "KalimatVocabulary", "KalimatReviewPolicy", "KalimatState", "KalimatLookup", "KalimatDiscovery"]) assert.equal(typeof context[name], "object");
   assert.equal((await fake.extension.runtime.onMessage.listeners[0]({ type: "settings.get" })).kind, "settings");
 });
 
@@ -441,21 +451,22 @@ test("assignment response restores validated feedback, save, and English visibil
   });
 });
 
-test("a storage failure keeps one session assignment and reports a warning", async () => {
+test("a profile read failure never fabricates a daily assignment and reports a warning", async () => {
   await withBackground({ storageFailure: true }, async ({ background }) => {
     await withLocalDay("2026-07-30", async () => {
       const first = await background.handleMessage({ type: "assignment.get" });
       const second = await background.handleMessage({ type: "assignment.get" });
       assert.deepEqual(first, second);
+      assert.equal(first.kind, "no-new-word");
       assert.equal(first.storageWarning, true);
       assert.equal((await background.handleMessage({ type: "state.export" })).storageWarning, true);
     });
   });
 });
 
-test("a transient write failure keeps the session assignment until persistence succeeds", async () => {
-  const original = profile();
-  await withBackground({ profile: original, storageSetFailures: 1 }, async ({ background, values }) => {
+test("a transient write failure keeps the source session assignment until persistence succeeds", async () => {
+  const original = sourceProfile();
+  await withBackground({ profile: original, storageSetFailures: 1, fetch: freeSourceFetch([]) }, async ({ background, values }) => {
     await withLocalDay("2026-07-30", async () => {
       assert.equal((await background.handleMessage({ type: "assignment.get" })).storageWarning, true);
       const exported = await background.handleMessage({ type: "state.export" });
@@ -466,9 +477,9 @@ test("a transient write failure keeps the session assignment until persistence s
 });
 
 test("a newer persisted profile wins over a stale session fallback", async () => {
-  const original = profile();
+  const original = sourceProfile();
   const newer = profile({ level: 3 });
-  await withBackground({ profile: original, storageSetFailures: 1 }, async ({ background, values }) => {
+  await withBackground({ profile: original, storageSetFailures: 1, fetch: freeSourceFetch([]) }, async ({ background, values }) => {
     await withLocalDay("2026-07-30", async () => {
       await background.handleMessage({ type: "assignment.get" });
       values["kalimat.profile"] = newer;
@@ -767,14 +778,14 @@ test("background evaluation realigns an enabled stale reminder alarm", async () 
 test("a new valid-date assignment prunes 5,001 records while lifetime cadence continues", async () => {
   const assignments = Object.create(null);
   for (let index = 0; index < 5000; index += 1) assignments[new Date(Date.UTC(2000, 0, index + 1)).toISOString().slice(0, 10)] = { wordId: "interest" };
-  const existing = profile({ assignments, assignmentOrdinal: 5004 });
-  await withBackground({ profile: existing, vocabulary: [word("interest"), word("outside", { topics: ["food"], usefulnessBand: "low" })] }, async ({ background, values }) => {
+  const existing = sourceProfile({ assignments, assignmentOrdinal: 5004 });
+  await withBackground({ profile: existing, fetch: freeSourceFetch([]), vocabulary: [word("interest"), word("outside", { topics: ["food"], usefulnessBand: "low" })] }, async ({ background, values }) => {
     await withLocalDay("2026-07-30", async () => {
-      assert.deepEqual(await background.handleMessage({ type: "assignment.get" }), { kind: "assigned", wordId: "outside", dateKey: "2026-07-30", word: word("outside", { topics: ["food"], usefulnessBand: "low" }), showEnglish: false });
+      assert.equal((await background.handleMessage({ type: "assignment.get" })).word.word, "استنزاف");
     });
     assert.equal(Object.keys(values["kalimat.profile"].assignments).length, 5000);
     assert.equal(values["kalimat.profile"].assignmentOrdinal, 5005);
-    assert.equal(values["kalimat.profile"].assignments["2026-07-30"].wordId, "outside");
+    assert.ok(String(values["kalimat.profile"].assignments["2026-07-30"].wordId).startsWith("wk_"));
     assert.equal(Object.hasOwn(values["kalimat.profile"].assignments, "2000-01-01"), false);
   });
 });
@@ -948,7 +959,7 @@ test("saved-only save and unsave survive export/import without SRS enrollment", 
 
 
 test("daily feedback replay and corrections preserve a same-grade deliberate review", async () => {
-  await withBackground({}, async ({ background, values }) => {
+  await withBackground({ profile: retainedProfile() }, async ({ background, values }) => {
     const assignment = await background.handleMessage({ type: "assignment.get" });
     const feedback = { type: "word.feedback", wordId: assignment.wordId, dateKey: assignment.dateKey, status: "known" };
     await background.handleMessage(feedback);
@@ -967,7 +978,7 @@ test("daily feedback replay and corrections preserve a same-grade deliberate rev
 
 for (const mutation of ["clear", "replacement import"]) {
   test(`background rejects an old queued review after ${mutation} without restoring learner data`, async () => {
-    await withBackground({ vocabulary: realVocabulary }, async ({ background, values, calls }) => {
+    await withBackground({ vocabulary: realVocabulary, profile: retainedProfile("2026-08-16", 1) }, async ({ background, values, calls }) => {
       await withLocalDay("2026-08-17", async () => {
         let assigned;
         await withLocalDay("2026-08-16", async () => {
@@ -997,7 +1008,7 @@ for (const mutation of ["clear", "replacement import"]) {
 
 
 test("repeated failed review writes never become durable success", async () => {
-  const fixture = loadBackground({ profile: profile() });
+  const fixture = loadBackground({ profile: retainedProfile() });
   try {
     const assigned = await fixture.background.handleMessage({ type: "assignment.get" });
     await fixture.background.handleMessage({ type: "word.feedback", wordId: assigned.wordId, dateKey: assigned.dateKey, status: "known" });
@@ -1061,5 +1072,331 @@ test("clear returns unknown reminder when its snapshot cannot be read without di
     assert.equal(alarms.get("kalimat.reminder"), alarmBefore);
     assert.equal(values["kalimat.reminder"].enabled, true);
     assert.equal(Object.keys(values["kalimat.profile"].assignments).length, 0);
+  });
+});
+
+function freeSourceFetch(calls, { offline = false } = {}) {
+  return async url => {
+    calls.push(url);
+    if (url.includes('lmf-index.json')) return { ok: true, json: async () => [] };
+    if (url.includes('discovery-index.json')) return { ok: true, json: async () => require('../data/discovery-index.json').filter(row=>row[0]==='استنزاف') };
+    if (offline) throw new Error('offline');
+    const data = { query: { pages: [{ pageid: 100, title: 'الموارد', lastrevid: 900, extract: 'يؤدي استنزاف الموارد الطبيعية إلى أضرار كبيرة تهدد مستقبل البشرية وحياة الكائنات، ولذلك يجب أن تعمل المؤسسات على حماية الموارد.' }] } };
+    return { ok: true, headers: { get: name => name === 'content-type' ? 'application/json' : null }, text: async () => JSON.stringify(data) };
+  };
+}
+
+test('discovery requires opt-in permission and never makes unrequested remote calls', async () => {
+  const calls = [];
+  await withBackground({ hostPermissions: false, fetch: freeSourceFetch(calls) }, async ({ background, values }) => {
+    assert.equal((await background.handleMessage({ type: 'discovery.get' })).enabled, false);
+    assert.equal((await background.handleMessage({ type: 'discovery.find' })).kind, 'permission-required');
+    assert.equal((await background.handleMessage({ type: 'discovery.configure', enabled: true, topics: ['culture'] })).kind, 'permission-required');
+    assert.equal(values['kalimat.profile'], undefined);
+    assert.equal(calls.length, 0);
+  });
+});
+
+test('source discovery preserves today, save and export survive a fresh worker offline', async () => {
+  const calls = []; let exported, wordId, stored;
+  await withLocalDay('2026-10-16', async () => {
+    await withBackground({ profile: retainedProfile("2026-10-16"), fetch: freeSourceFetch(calls) }, async ({ background, values }) => {
+      const before = await background.handleMessage({ type: 'assignment.get' });
+      await background.handleMessage({ type: 'discovery.configure', enabled: true, topics: ['culture'] });
+      const found = await background.handleMessage({ type: 'discovery.find' });
+      assert.equal(found.kind, 'found'); wordId = found.word.id;
+      assert.equal(found.word.meaningAr, 'إفراغ أو استهلاك الشيء حتى نفاده.');
+      assert.equal((await background.handleMessage({ type: 'assignment.get' })).wordId, before.wordId);
+      await background.handleMessage({ type: 'word.save', wordId, saved: true });
+      exported = (await background.handleMessage({ type: 'state.export' })).text;
+      stored = JSON.parse(JSON.stringify(values['kalimat.profile']));
+      assert.equal(stored.favorites[wordId], true);
+    });
+  });
+  const offlineCalls = [];
+  await withLocalDay('2026-10-17', async () => {
+    await withBackground({ profile: stored, fetch: freeSourceFetch(offlineCalls, { offline: true }) }, async ({ background, values }) => {
+      const assigned = await background.handleMessage({ type: 'assignment.get' });
+      assert.equal(assigned.wordId, wordId);
+      assert.equal(assigned.saved, true);
+      assert.equal(assigned.word.exampleKind, 'quotation');
+      assert.equal(offlineCalls.filter(url=>url.startsWith('https://')).length, 0);
+      await background.handleMessage({ type: 'state.import', text: exported });
+      assert.equal((await background.handleMessage({ type: 'discovery.get' })).word.id, wordId);
+      await background.handleMessage({ type: 'discovery.known', wordId });
+      assert.deepEqual(values['kalimat.profile'].discovery.knownKeys, ['استنزاف']);
+      assert.equal(values['kalimat.profile'].srs[wordId], undefined);
+      assert.equal(values['kalimat.profile'].favorites[wordId], true);
+      assert.equal((await background.handleMessage({ type: 'discovery.get' })).word, undefined);
+      const next = await background.handleMessage({ type: 'assignment.get' });
+      assert.notEqual(next.wordId, wordId);
+      assert.equal(next.discoveryStatus, 'unavailable');
+    });
+  });
+});
+
+test('discovered daily words can enter and complete a deliberate review', async () => {
+  await withLocalDay('2026-10-16', async () => {
+    await withBackground({ fetch: freeSourceFetch([]) }, async ({ background, values }) => {
+      await background.handleMessage({ type: 'discovery.configure', enabled: true, topics: [] });
+      const assigned = await background.handleMessage({ type: 'assignment.get' });
+      assert.match(assigned.wordId, /^wk_/);
+      await background.handleMessage({ type: 'word.feedback', wordId: assigned.wordId, dateKey: assigned.dateKey, status: 'difficult' });
+      const result = await background.handleMessage({ type: 'word.review', wordId: assigned.wordId, dateKey: '2026-10-17', rating: 'good' });
+      assert.equal(result.kind, 'ok');
+      assert.ok(values['kalimat.profile'].srs[assigned.wordId]);
+      assert.equal((await background.handleMessage({ type: 'assignment.get' })).wordId, assigned.wordId);
+    });
+  });
+});
+
+test('a failed source snapshot write reports warning and retries without losing favorites', async () => {
+  await withBackground({ profile: profile({ favorites: { w1: true } }), fetch: freeSourceFetch([]) }, async ({ background, failNextWrites, values }) => {
+    await background.handleMessage({ type: 'discovery.configure', enabled: true, topics: [] });
+    failNextWrites(1);
+    const result = await background.handleMessage({ type: 'discovery.find' });
+    assert.equal(result.kind, 'found');
+    assert.equal(result.storageWarning, true);
+    assert.equal(values['kalimat.profile'].wordSnapshots, undefined);
+    const recovered = await background.handleMessage({ type: 'discovery.get' });
+    assert.equal(recovered.word.id, result.word.id);
+    assert.equal(recovered.storageWarning, undefined);
+    assert.equal(values['kalimat.profile'].wordSnapshots[result.word.id].word, 'استنزاف');
+    assert.equal(values['kalimat.profile'].favorites.w1, true);
+  });
+});
+
+test('an unavailable daily source can retry immediately when the source recovers', async () => {
+  const calls = [];
+  let offline = true;
+  await withBackground({ profile: sourceProfile(), fetch: url => freeSourceFetch(calls, { offline })(url) }, async ({ background, values }) => {
+    const failed = await background.handleMessage({ type: 'assignment.get' });
+    assert.equal(failed.kind, 'no-new-word');
+    assert.equal(failed.discoveryStatus, 'unavailable');
+    assert.equal(Object.keys(values['kalimat.profile'].assignments).length, 0);
+    const count = calls.length;
+    offline = false;
+    assert.equal((await background.handleMessage({ type: 'assignment.get' })).kind, 'no-new-word');
+    assert.equal(calls.length, count, 'Automatic reopens retain the short network cooldown');
+    const retried = await background.handleMessage({ type: 'assignment.get', retry: true });
+    assert.equal(retried.kind, 'assigned');
+    assert.equal(retried.word.word, 'استنزاف');
+    assert.ok(calls.length > count);
+    assert.equal(Object.keys(values['kalimat.profile'].assignments).length, 1);
+  });
+});
+
+test('saving cannot make an otherwise valid source backup exceed its import budget', async () => {
+  const state = require('../shared/state.js');
+  let source;
+  await withBackground({ fetch: freeSourceFetch([]) }, async ({ background }) => {
+    await background.handleMessage({ type: 'discovery.configure', enabled: true, topics: [] });
+    source = (await background.handleMessage({ type: 'discovery.find' })).word;
+  });
+  const large = profile({ wordSnapshots: {}, discovery: { enabled: false, topics: [], knownKeys: [] } });
+  for (let i = 1; i <= 512; i++) {
+    const id = `wk_${i}_abcdef12`;
+    large.wordSnapshots[id] = { ...source, id, meaningAr: 'ك'.repeat(680), exampleAr: 'ك'.repeat(800) };
+  }
+  const limit = 2 * 1024 * 1024;
+  let size = Buffer.byteLength(state.serializeExport(large));
+  for (let i = 0; i < 2048; i++) {
+    const key = String(i) + 'ك'.repeat(70);
+    const added = Buffer.byteLength(JSON.stringify(key)) + (i ? 1 : 0);
+    if (size + added > limit - 8) {
+      const last = 'ن'.repeat(Math.floor((limit - 8 - size - 3) / 2));
+      if (last) large.discovery.knownKeys.push(last);
+      break;
+    }
+    large.discovery.knownKeys.push(key); size += added;
+  }
+  const text = state.serializeExport(large);
+  assert.ok(Buffer.byteLength(text) > limit - 20 && Buffer.byteLength(text) <= limit);
+  state.parseImport(text, [word('w1'), word('w2')]);
+  await withBackground({ profile: large }, async ({ background, values }) => {
+    await assert.rejects(background.handleMessage({ type: 'word.save', wordId: 'w1', saved: true }), /capacity/);
+    assert.equal(values['kalimat.profile'].favorites.w1, undefined);
+    const retained = await background.handleMessage({ type: 'state.export' });
+    assert.equal(retained.text, text);
+    assert.doesNotThrow(() => state.parseImport(retained.text, [word('w1'), word('w2')]));
+  });
+});
+
+test('fresh installs require explicit source consent and disabled profiles never assign bundled words', async () => {
+  await withBackground({ hostPermissions: true }, async ({ background, values, calls }) => {
+    const fresh = await background.handleMessage({ type: 'discovery.get' });
+    assert.equal(fresh.needsSetup, true);
+    assert.equal(fresh.enabled, false);
+    assert.equal(fresh.configured, false);
+    assert.equal(values['kalimat.profile'], undefined);
+    const first = await background.handleMessage({ type: 'assignment.get' });
+    assert.equal(first.kind, 'no-new-word');
+    assert.equal(first.discoveryStatus, 'setup-required');
+    assert.equal(values['kalimat.profile'], undefined);
+    assert.equal(calls.permissionRequests, 0, 'A browser grant alone is not source consent');
+    await background.handleMessage({ type: 'discovery.configure', enabled: false, topics: [] });
+    const offline = await background.handleMessage({ type: 'discovery.get' });
+    assert.equal(offline.needsSetup, false);
+    assert.equal(offline.configured, true);
+    assert.equal(offline.enabled, false);
+    assert.equal((await background.handleMessage({ type: 'assignment.get' })).discoveryStatus, 'disabled');
+    assert.equal(Object.keys(values['kalimat.profile'].assignments).length, 0);
+  });
+});
+
+test('enabling daily sources preserves the existing day and automatically assigns the next day once', async () => {
+  let stored, previous;
+  await withLocalDay('2026-10-16', async () => {
+    await withBackground({ profile: retainedProfile('2026-10-16') }, async ({ background, values }) => {
+      previous = await background.handleMessage({ type: 'assignment.get' });
+      await background.handleMessage({ type: 'word.save', wordId: previous.wordId, saved: true });
+      assert.equal((await background.handleMessage({ type: 'discovery.get' })).needsSetup, false);
+      await background.handleMessage({ type: 'discovery.configure', enabled: true, topics: ['culture'] });
+      assert.equal((await background.handleMessage({ type: 'assignment.get' })).wordId, previous.wordId);
+      stored = JSON.parse(JSON.stringify(values['kalimat.profile']));
+    });
+  });
+  const calls = [];
+  await withLocalDay('2026-10-17', async () => {
+    await withBackground({ profile: stored, fetch: freeSourceFetch(calls) }, async ({ background, values }) => {
+      const [popup, atlas] = await Promise.all([
+        background.handleMessage({ type: 'assignment.get' }),
+        background.handleMessage({ type: 'assignment.get' }),
+      ]);
+      assert.equal(popup.word.contentVersion, 3);
+      assert.equal(popup.word.word, 'استنزاف');
+      assert.equal(atlas.wordId, popup.wordId);
+      assert.equal(Object.keys(values['kalimat.profile'].wordSnapshots).length, 1);
+      assert.equal(values['kalimat.profile'].assignments['2026-10-16'].wordId, previous.wordId);
+      assert.equal(values['kalimat.profile'].favorites[previous.wordId], true);
+      const requestCount = calls.length;
+      assert.equal((await background.handleMessage({ type: 'assignment.get' })).wordId, popup.wordId);
+      assert.equal(calls.length, requestCount, 'Opening either view again must reuse the daily assignment');
+    });
+  });
+});
+
+test('stricter quality preserves legacy saved history but skips the card for new assignments', async () => {
+  const legacy = require('../../tests/fixtures/legacy-theory-card.json');
+  const seed = profile({
+    discovery: { enabled: true, topics: [], knownKeys: [] },
+    wordSnapshots: { [legacy.id]: legacy }, favorites: { [legacy.id]: true }, wordStates: { [legacy.id]: { saved: true } },
+    assignments: { '2026-10-15': { wordId: legacy.id } }, assignmentOrdinal: 1,
+  });
+  await withLocalDay('2026-10-16', async () => {
+    await withBackground({ profile: seed, fetch: freeSourceFetch([]) }, async ({ background, values }) => {
+      const historical = await background.handleMessage({ type: 'assignment.get', dateKey: '2026-10-15' });
+      assert.deepEqual(historical.word, legacy);
+      assert.equal(historical.saved, true);
+      const current = await background.handleMessage({ type: 'assignment.get' });
+      assert.equal(current.word.word, 'استنزاف');
+      assert.deepEqual(values['kalimat.profile'].wordSnapshots[legacy.id], legacy);
+      assert.equal(values['kalimat.profile'].favorites[legacy.id], true);
+      const exported = (await background.handleMessage({ type: 'state.export' })).text;
+      await background.handleMessage({ type: 'state.import', text: exported });
+      assert.deepEqual((await background.handleMessage({ type: 'assignment.get', dateKey: '2026-10-15' })).word, legacy);
+      assert.equal((await background.handleMessage({ type: 'assignment.get' })).wordId, current.wordId);
+    });
+    // An unassigned old snapshot must not bypass new eligibility through the cache.
+    await withBackground({ profile: { ...seed, assignments: {}, assignmentOrdinal: 0 }, fetch: freeSourceFetch([]) }, async ({ background, values }) => {
+      assert.equal((await background.handleMessage({ type: 'assignment.get' })).word.word, 'استنزاف');
+      assert.deepEqual(values['kalimat.profile'].wordSnapshots[legacy.id], legacy);
+    });
+  });
+});
+
+
+test("deliberate review commits on the current local day despite a stale surface date", async () => {
+  await withBackground({ profile: retainedProfile("2026-10-16") }, async ({ background, values, extension }) => {
+    let assigned;
+    await withLocalDay("2026-10-16", async () => {
+      assigned = await background.handleMessage({ type: "assignment.get" });
+      await background.handleMessage({ type: "word.feedback", wordId: assigned.wordId, dateKey: assigned.dateKey, status: "difficult" });
+    });
+    // The queued request starts before midnight; profile loading finishes after it.
+    const originalGet = extension.storage.local.get;
+    let release;
+    let entered;
+    const reading = new Promise(resolve => { entered = resolve; });
+    const gate = new Promise(resolve => { release = resolve; });
+    extension.storage.local.get = async (...args) => {
+      entered();
+      await gate;
+      return originalGet(...args);
+    };
+    await withLocalDay("2026-10-16", async () => {
+      const pending = background.handleMessage({ type: "word.review", wordId: assigned.wordId, rating: "good", dateKey: assigned.dateKey });
+      await reading;
+      await withLocalDay("2026-10-17", async () => {
+        release();
+        const result = await pending;
+        assert.equal(result.kind, "ok");
+        assert.equal(result.srs.lastReviewedDate, "2026-10-17");
+        assert.equal(result.srs.nextReviewDate, "2026-10-18");
+        assert.equal(result.dueCount, 0);
+      });
+    });
+    assert.equal(values["kalimat.profile"].srs[assigned.wordId].history.at(-1).date, "2026-10-17");
+  });
+});
+
+
+for (const [zone, instant, localDay] of [
+  ["Pacific/Kiritimati", "2026-10-16T10:01:00Z", "2026-10-17"],
+  ["Pacific/Honolulu", "2026-10-17T09:59:00Z", "2026-10-16"],
+]) {
+  test(`review date follows local midnight rather than UTC in ${zone}`, async () => {
+    const priorTZ = process.env.TZ;
+    const RealDate = globalThis.Date;
+    process.env.TZ = zone;
+    globalThis.Date = class FixedDate extends RealDate {
+      constructor(...args) { super(...(args.length ? args : [instant])); }
+    };
+    try {
+      await withBackground({ profile: retainedProfile(localDay) }, async ({ background }) => {
+        const assigned = await background.handleMessage({ type: "assignment.get" });
+        assert.equal(assigned.dateKey, localDay);
+        await background.handleMessage({ type: "word.feedback", wordId: assigned.wordId, dateKey: localDay, status: "difficult" });
+        const reviewed = await background.handleMessage({ type: "word.review", wordId: assigned.wordId, rating: "good", dateKey: instant.slice(0, 10) });
+        assert.equal(reviewed.srs.lastReviewedDate, localDay);
+      });
+    } finally {
+      globalThis.Date = RealDate;
+      if (priorTZ === undefined) delete process.env.TZ; else process.env.TZ = priorTZ;
+    }
+  });
+}
+
+test('unencountered archive words remain eligible while encountered spellings are excluded', async () => {
+  const archiveWord = word('w1', { word: 'استنزاف', normalized: 'استنزاف' });
+  await withBackground({ vocabulary: [archiveWord], profile: sourceProfile(), fetch: freeSourceFetch([]) }, async ({ background }) => {
+    assert.equal((await background.handleMessage({ type: 'assignment.get' })).word.word, 'استنزاف');
+  });
+  await withBackground({ vocabulary: [archiveWord], profile: sourceProfile({ assignments: { '2020-01-01': { wordId: 'w1' } }, assignmentOrdinal: 1 }), fetch: freeSourceFetch([]) }, async ({ background, values }) => {
+    const result = await background.handleMessage({ type: 'assignment.get' });
+    assert.equal(result.kind, 'no-new-word');
+    assert.equal(values['kalimat.profile'].assignments['2020-01-01'].wordId, 'w1');
+  });
+});
+
+test('automatic unavailable discovery requests retain the short cooldown', async () => {
+  const calls = [];
+  await withBackground({ profile: sourceProfile(), fetch: freeSourceFetch(calls, { offline: true }) }, async ({ background }) => {
+    assert.equal((await background.handleMessage({ type: 'discovery.find' })).kind, 'unavailable');
+    const count = calls.length;
+    assert.equal((await background.handleMessage({ type: 'discovery.find' })).kind, 'unavailable');
+    assert.equal(calls.length, count);
+  });
+});
+
+test('unconfigured old installs retain today without forcing source consent or modifying stored state', async () => {
+  const old = retainedProfile();
+  const calls = [];
+  await withBackground({ profile: old, hostPermissions: false, fetch: freeSourceFetch(calls) }, async ({ background, values }) => {
+    const before = JSON.stringify(values['kalimat.profile']);
+    assert.equal((await background.handleMessage({ type: 'discovery.get' })).needsSetup, false);
+    assert.equal((await background.handleMessage({ type: 'assignment.get' })).wordId, 'w1');
+    assert.equal(JSON.stringify(values['kalimat.profile']), before);
+    assert.equal(calls.length, 0);
   });
 });

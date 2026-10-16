@@ -13,7 +13,7 @@ const REVIEW_POLICY_PATH = path.resolve("./extension/shared/review-policy.js");
 const SPEECH_PATH = path.resolve("./extension/shared/speech.js");
 const APP_PATH = path.resolve("./app.js");
 const WEB_UI_PATH = path.resolve("./web-ui.js");
-const INDEX_HTML_PATH = path.resolve("./index.html");
+const INDEX_HTML_PATH = path.resolve("./legacy.html");
 const WORD_HTML_PATH = path.resolve("./word.html");
 const STYLE_CSS_PATH = path.resolve("./style.css");
 
@@ -415,11 +415,11 @@ test("Shared install prompt helper renders and consumes the PWA prompt", async (
 // -----------------------------------------------------------------------------
 // Test 1: HTML Semantic & Accessibility Invariants for Spaced Repetition Review
 // -----------------------------------------------------------------------------
-test("1. HTML Markup & Accessibility Attributes (index.html & word.html)", () => {
-    // Check #due-review-badge in index.html
-    assert.match(indexHtml, /id="due-review-badge"/, "index.html must include #due-review-badge");
-    assert.match(indexHtml, /id="due-count"/, "index.html must include #due-count");
-    assert.match(indexHtml, /class="due-icon badge-icon"/, "index.html must style badge icon");
+test("1. HTML Markup & Accessibility Attributes (legacy.html & word.html)", () => {
+    // Check #due-review-badge in legacy.html
+    assert.match(indexHtml, /id="due-review-badge"/, "legacy.html must include #due-review-badge");
+    assert.match(indexHtml, /id="due-count"/, "legacy.html must include #due-count");
+    assert.match(indexHtml, /class="due-icon badge-icon"/, "legacy.html must style badge icon");
     assert.match(indexHtml, /<section class="hero"[\s\S]*?<p class="local-data-note">لا حسابات؛ تبقى بيانات تعلّمك على هذا الجهاز\.<\/p>/, "local-data note must be in the hero viewport");
     assert.equal((indexHtml.match(/class="local-data-note"/g) || []).length, 1, "homepage must show one local-data note");
     assert.match(indexHtml, /<section class="manifesto"[\s\S]*?<p class="channel-boundary">الموقع والامتداد تجربتان محليتان منفصلتان/, "channel boundary must remain explicit");
@@ -1131,7 +1131,7 @@ test("6. WCAG 2.1 AA Color Contrast Ratios (>= 4.5:1) for Rating Tokens across T
 
 test("semantic hidden visibility wins over completion, gloss and empty-state layout", () => {
     assert.match(styleCss, /(?:^|\n)\[hidden\]\s*\{\s*display:\s*none\s*!important\s*;?\s*\}/, "hidden must apply globally with priority over author display layouts");
-    for (const [page, id] of [["word.html", "completion-banner"], ["index.html", "lexicon-empty-state"]]) {
+    for (const [page, id] of [["word.html", "completion-banner"], ["legacy.html", "lexicon-empty-state"]]) {
         assert.match(fs.readFileSync(page, "utf8"), new RegExp(`<[^>]+id="${id}"[^>]*hidden`), `${id} must start hidden`);
     }
 });

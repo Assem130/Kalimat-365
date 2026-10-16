@@ -7,8 +7,12 @@
   const views = ["today", "explore", "history", "settings", "onboarding", "recovery", "empty", "error"];
   const state = {
     vocabulary: [],
+    baseVocabulary: [],
+    discovery: { enabled: false, topics: [], word: null },
+    discoveryBusy: false,
     profile: null,
     today: null,
+    loadedDay: null,
     exploreWord: null,
     reminder: { enabled: false, time: "09:00" },
     reminderWarning: false,
@@ -27,12 +31,152 @@
   if (typeof canonicalSearchKey !== "function") throw new TypeError("KalimatVocabulary.canonicalSearchKey is required.");
   const normalize = canonicalSearchKey;
 
+  function mergeSnapshots() {
+    const cards = [];
+    for (const [id, raw] of Object.entries(state.profile?.wordSnapshots || {})) {
+      try {
+        const card = globalThis.KalimatVocabulary.validateDiscoveryCard(raw);
+        if (card.id === id) cards.push(card);
+      } catch (_) { /* Only validated snapshots enter search and history. */ }
+    }
+    state.vocabulary = [...state.baseVocabulary, ...cards];
+  }
+
+  function discoveryKey(word) {
+    return String(word || "").normalize("NFC").replace(/[\u064b-\u065f\u0670\u0640]/g, "").replace(/\s+/g, " ").trim().replace(/^ال(?=.{3})/u, "");
+  }
+
+  function syncDiscoveryProfile() {
+    const completeSetup = state.discovery.needsSetup === true && !state.discoveryBusy && !state.today && Boolean(state.profile?.discovery);
+    if (state.profile?.discovery) {
+      state.discovery = { ...state.discovery, ...state.profile.discovery, configured: true, needsSetup: false };
+      if (!state.discoveryBusy) {
+        for (const input of document.querySelectorAll('input[name="discovery-topic"]')) input.checked = state.discovery.topics?.includes(input.value) === true;
+      }
+    }
+    renderDiscovery();
+    return completeSetup;
+  }
+
+  function addSourceLink(container, source, label) {
+    if (!source) return;
+    try {
+      const url = new URL(source.url);
+      if (url.protocol !== "https:" || url.username || url.password || !["ar.wiktionary.org", "ar.wikipedia.org", "www.wikidata.org", "lindat.mff.cuni.cz"].includes(url.hostname)) return;
+      const link = document.createElement("a");
+      link.href = url.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.className = "source-link";
+      link.textContent = `${label}: ${source.title}${source.license ? ` · ${source.license}` : ""}${source.revisionId ? ` · نسخة ${source.revisionId}` : ""}${source.senseId ? ` · ${source.senseId}` : ""}`;
+      container.append(link);
+    } catch (_) { /* Invalid source URLs are never navigation targets. */ }
+  }
+
+  function discoveryStatus(message) {
+    for (const id of ["discovery-status", "today-source-setup-status"]) if (elements[id]) elements[id].textContent = message;
+    if (!state.discovery.needsSetup) actionStatus(message);
+  }
+
+  function selectedDiscoveryTopics() {
+    return [...document.querySelectorAll('input[name="discovery-topic"]')].filter((input) => input.checked).map((input) => input.value).slice(0, 6);
+  }
+
+  function renderDiscovery() {
+    if (!elements["discovery-panel"]) return;
+    const enabled = state.discovery.enabled === true;
+    const needsPermission = enabled && state.discovery.permissionGranted === false;
+    const setup = (state.discovery.needsSetup === true || state.discoveryBusy) && !state.today;
+    for (const id of ["discovery-enable", "discovery-disable", "discovery-save-topics", "today-source-start", "today-source-offline", "today-source-enable"]) {
+      if (elements[id]) { elements[id].disabled = state.discoveryBusy || state.profileReplacing; elements[id].setAttribute("aria-busy", String(state.discoveryBusy)); }
+    }
+    elements["discovery-enable"].hidden = enabled && !needsPermission;
+    elements["discovery-enable"].textContent = needsPermission ? "السماح بالمصادر مجددًا" : "تفعيل المصادر";
+    elements["discovery-disable"].hidden = !enabled;
+    if (elements["discovery-save-topics"]) elements["discovery-save-topics"].hidden = !enabled || needsPermission;
+    if (elements["today-source-setup"]) elements["today-source-setup"].hidden = !setup;
+    if (elements["today-source-summary"]) elements["today-source-summary"].hidden = setup;
+    if (elements["today-source-enable"]) {
+      elements["today-source-enable"].hidden = enabled && !needsPermission;
+      elements["today-source-enable"].textContent = needsPermission ? "السماح بالمصادر مجددًا" : "تفعيل المصادر";
+    }
+    if (elements["today-source-status"]) {
+      elements["today-source-status"].textContent = state.today?.word?.contentVersion === 3
+        ? "كلمة اليوم من المصادر العربية المتاحة."
+        : state.today?.discoveryStatus && !["disabled", "permission-required"].includes(state.today.discoveryStatus)
+          ? "لم نجد كلمة مناسبة الآن. تحقّق من الاتصال ثم أعد المحاولة."
+          : needsPermission ? "إذن المصادر غير متاح. كلمة اليوم الحالية محفوظة."
+            : enabled ? "كلمة اليوم محفوظة. ستأتي كلمات الأيام التالية من المصادر تلقائيًا."
+              : "المصادر معطّلة. فعّلها لجلب كلمات جديدة. كلماتك السابقة محفوظة.";
+    }
+    if (setup) {
+      elements["today-card"].hidden = true;
+      elements["today-empty"].hidden = true;
+      if (elements["today-export-card"]) elements["today-export-card"].hidden = true;
+      setTodayActions(false);
+    }
+  }
+
+  async function loadDiscovery() {
+    if (!elements["discovery-panel"]) return;
+    const result = await ExtApi.runtime.sendMessage({ type: "discovery.get" });
+    if (result?.kind === "recovery") { renderRecovery(result.recoveryRaw); return result; }
+    if (result?.kind !== "discovery") return;
+    state.discovery = result;
+    const topics = result.topics?.length ? result.topics : ["culture", "science", "society"];
+    for (const input of document.querySelectorAll('input[name="discovery-topic"]')) input.checked = topics.includes(input.value);
+    if (result.storageWarning) warning(true);
+    renderDiscovery();
+    return result;
+  }
+
+  async function configureDiscovery(enabled, requestPermission = false) {
+    if (state.discoveryBusy || state.profileReplacing) return;
+    const topics = selectedDiscoveryTopics();
+    if (enabled && !topics.length) return discoveryStatus("اختر اهتمامًا واحدًا على الأقل.");
+    const firstChoice = state.discovery.needsSetup === true;
+    state.discoveryBusy = true;
+    renderDiscovery();
+    discoveryStatus(enabled && firstChoice ? "نجهّز كلمة اليوم من المصادر…" : "جارٍ حفظ تفضيلات المصادر…");
+    try {
+      if (requestPermission) {
+        // Keep the real permission request directly within the activation gesture.
+        const granted = await ExtApi.permissions?.request({ origins: ["https://ar.wikipedia.org/*", "https://ar.wiktionary.org/*"] });
+        if (!granted) return discoveryStatus("لم تُفعّل المصادر. تحتاج إذن الوصول إلى ويكيبيديا وويكاموس. يمكنك المحاولة مجددًا أو إبقاء المصادر معطّلة.");
+      }
+      const result = await ExtApi.runtime.sendMessage({ type: "discovery.configure", enabled, topics });
+      if (result?.kind === "recovery") return renderRecovery(result.recoveryRaw);
+      if (result?.kind === "permission-required") {
+        state.discovery.permissionGranted = false;
+        return discoveryStatus("إذن المصادر غير متاح. اختر السماح بالمصادر مجددًا للمتابعة.");
+      }
+      if (result?.kind !== "ok" || result.storageWarning) throw new Error("Configuration not saved.");
+      const loaded = await loadDiscovery();
+      if (loaded?.kind === "recovery") return;
+      if (firstChoice || !state.today?.word) {
+        state.discovery.needsSetup = false;
+        await loadAssignment();
+      }
+      discoveryStatus(enabled ? "حُفظت تفضيلات المصادر. تُجلب كلمات الأيام التالية تلقائيًا." : "المصادر معطّلة. تبقى كلماتك السابقة والمحفوظة متاحة.");
+    } catch (_) {
+      if (firstChoice && !state.today) state.discovery.needsSetup = true;
+      discoveryStatus("تعذّر تحديث المصادر. تحقّق من الاتصال وحاول مجددًا.");
+    }
+    finally { state.discoveryBusy = false; renderDiscovery(); }
+  }
+
+  function enableDiscovery() { return configureDiscovery(true, true); }
+  function disableDiscovery() { return configureDiscovery(false); }
+  function saveDiscoveryTopics() { return configureDiscovery(true); }
+
   function validTime(value) {
     return typeof value === "string" && /^\d{2}:\d{2}$/.test(value) && Number(value.slice(0, 2)) < 24 && Number(value.slice(3)) < 60;
   }
 
   function collect() {
     return Object.fromEntries([
+      "discovery-panel", "discovery-enable", "discovery-disable", "discovery-save-topics", "discovery-status",
+      "today-source-setup", "today-source-start", "today-source-offline", "today-source-setup-status", "today-source-summary", "today-source-enable", "today-source-status",
       "status", "warning", "today", "explore", "history", "settings",
       "today-view", "explore-view", "history-view", "settings-view",
       "onboarding", "recovery", "empty", "error",
@@ -63,6 +207,7 @@
   function actionStatus(message, isError = false) {
     elements.status?.setAttribute("role", "none");
     elements.status?.setAttribute("aria-live", "off");
+    if (elements.status) elements.status.textContent = "";
     const target = elements["today-action-status"];
     if (!target) return;
     target.textContent = message;
@@ -138,9 +283,28 @@
     return Boolean(globalThis.speechSynthesis) && typeof globalThis.SpeechSynthesisUtterance === "function";
   }
 
+  function updateWordSpeechLabel(button) {
+    const remote = state.profile?.preferences?.allowRemoteSpeech === true;
+    const label = remote ? "استمع (قد يستخدم الإنترنت)" : "استمع للنطق المحلي";
+    button.textContent = button.dataset.daily === "true" ? (remote ? "استمع عبر الإنترنت" : "استمع") : label;
+    button.setAttribute("aria-label", `${label}: ${button.dataset.word}`);
+    button.title = button.getAttribute("aria-label");
+  }
+
   function renderWord(container, word) {
+    const daily = container === elements?.["today-card"];
+    const sameWord = container.dataset.wordId === String(word?.id);
+    const openDetails = new Set(sameWord ? [...container.children].filter((node) => node.tagName === "DETAILS" && node.open).map((node) => node.className) : []);
     container.replaceChildren();
+    container.dataset.wordId = String(word?.id ?? "");
     if (!word) return;
+    function disclosure(label, className) {
+      const details = document.createElement("details");
+      details.className = className;
+      details.open = openDetails.has(className);
+      addText(details, "summary", label);
+      return details;
+    }
     const title = document.createElement("h3");
     title.lang = "ar";
     title.textContent = word.word;
@@ -149,24 +313,38 @@
     speakButton.className = "word-speak";
     speakButton.type = "button";
     speakButton.setAttribute("aria-label", `استمع لنطق ${word.word}`);
-    speakButton.textContent = state.profile?.preferences?.allowRemoteSpeech === true ? "🔊 استمع (قد يستخدم الإنترنت)" : "🔊 استمع للنطق المحلي";
-    speakButton.setAttribute("aria-label", `${speakButton.textContent}: ${word.word}`);
+    speakButton.dataset.daily = String(daily);
+    speakButton.dataset.word = word.word;
+    updateWordSpeechLabel(speakButton);
     speakButton.disabled = !speechAvailable();
     speakButton.addEventListener("click", () => speak(word.word));
-    container.append(speakButton);
+    if (word.senseContext) addText(container, "p", `في هذا الاستعمال: ${word.senseContext}`, "sense-context", "rtl");
     addText(container, "p", word.meaningAr, "meaning", "rtl");
-    addText(container, "p", word.vocalization, "vocalization", "rtl");
-    if (state.profile?.showEnglish !== false) {
-      const translation = document.createElement("details");
+    if (word.editorialChecked === false) addText(container, "p", "من المجموعة السابقة؛ لم تكتمل مراجعة المعنى والشاهد.", "source-note", "rtl");
+    container.append(speakButton);
+    if (daily) container.append(elements["today-save"]);
+    const morphology = daily ? disclosure(word.contentVersion === 3 && !word.root && !word.pattern && !word.vocalization ? "معلومات الكلمة" : "أصل الكلمة وضبطها", "daily-morphology") : container;
+    const example = daily ? disclosure(word.exampleKind === "quotation" && word.exampleSource ? "شاهد ومصدره" : "مثال وتفاصيل الاستعمال", "daily-example") : container;
+    if (word.contentVersion === 3) {
+      addText(example, "p", "تعريف من مصدر معجمي · لم يراجعه فريق كلمات", "source-note", "rtl");
+      addSourceLink(example, word.source, "مصدر التعريف");
+      addText(example, "p", word.discoveryReason, "source-note", "rtl");
+    }
+    addText(morphology, "p", word.vocalization, "vocalization", "rtl");
+    let translation;
+    if (state.profile?.showEnglish !== false && (word.meaningEn || word.pronunciation || word.contextEn)) {
+      translation = document.createElement("details");
+      if (daily) { translation.className = "daily-translation"; translation.open = openDetails.has(translation.className); }
       addText(translation, "summary", "شرح بالإنجليزية والنطق اللاتيني");
       addText(translation, "p", word.meaningEn, "english", "ltr");
       addText(translation, "p", word.pronunciation, "pronunciation", "ltr");
       addLabeledText(translation, word.contextEn, "context english", "Usage", "ltr");
-      container.append(translation);
+      if (!daily) container.append(translation);
     }
-    addLabeledText(container, word.contextAr, "context", "في الاستعمال", "rtl");
-    addLabeledText(container, word.usageNote, "usage-note", "في الاستعمال", "rtl");
-    addLabeledText(container, word.exampleAr, "example", word.exampleKind === "original" ? "مثال من تحرير كلمات" : word.exampleKind === "quotation" && word.exampleSource ? "شاهد" : "مثال", "rtl");
+    const visibleContext = word.contextAr || (daily && word.contentVersion === 3 ? word.exampleAr : "");
+    addLabeledText(container, visibleContext, "context", word.contentVersion === 3 ? "شاهد من المصدر" : "في الاستعمال", "rtl");
+    addLabeledText(example, word.usageNote, "usage-note", "في الاستعمال", "rtl");
+    if (!daily || word.exampleAr !== visibleContext) addLabeledText(example, word.exampleAr, "example", word.exampleKind === "original" ? "مثال من تحرير كلمات" : word.exampleKind === "quotation" && word.exampleSource ? "شاهد" : "مثال", "rtl");
     if (word.exampleKind === "quotation" && word.exampleSource) {
       try {
         const url = new URL(word.exampleSource.url);
@@ -176,7 +354,7 @@
           link.target = "_blank";
           link.rel = "noopener noreferrer";
           link.textContent = `${word.exampleSource.title} · ${word.exampleSource.reference}`;
-          container.append(link);
+          example.append(link);
         }
       } catch (_) { /* Invalid links never become navigation targets. */ }
     }
@@ -185,14 +363,14 @@
       details.className = "root metadata";
       if (word.root) addText(details, "span", `الجذر: ${word.root}`);
       if (word.pattern) addText(details, "span", `الوزن: ${word.pattern}`);
-      container.append(details);
+      morphology.append(details);
     }
     if (word.register || word.partOfSpeech) {
       const details = document.createElement("p");
       details.className = "metadata";
       if (word.register) addText(details, "span", `السجل: ${REGISTER_LABELS[word.register] ?? word.register}`);
       if (word.partOfSpeech) addText(details, "span", `نوع الكلمة: ${PART_LABELS[word.partOfSpeech] ?? word.partOfSpeech}`);
-      container.append(details);
+      morphology.append(details);
     }
     if (Array.isArray(word.relatedIds)) {
       const related = document.createElement("div");
@@ -205,7 +383,12 @@
         button.addEventListener("click", () => { viewWord(other); show("explore"); });
         related.append(button);
       }
-      if (related.childElementCount) container.append(related);
+      if (related.childElementCount) morphology.append(related);
+    }
+    if (daily) {
+      if (morphology.childElementCount > 1) container.append(morphology);
+      if (example.childElementCount > 1) container.append(example);
+      if (translation) container.append(translation);
     }
     if (container === elements?.["explore-card"]) {
       const wordState = state.profile?.wordStates?.[String(word.id)] || state.profile?.wordStates?.[`w${word.id}`];
@@ -223,12 +406,15 @@
       cardExportBtn.type = "button";
       cardExportBtn.textContent = "بطاقة للمشاركة";
       cardExportBtn.addEventListener("click", () => exportSocialCard(word, cardExportBtn));
+      cardExportBtn.hidden = word.contentVersion === 3;
       container.append(cardExportBtn);
     }
   }
 
   function renderToday() {
     const word = state.today?.word;
+    if (byId("today-source-retry")) byId("today-source-retry").hidden = !!word || state.discovery.needsSetup === true;
+    if (elements["today-export-card"]) elements["today-export-card"].hidden = !word || word.contentVersion === 3;
     actionStatus("");
     const dateText = formatDateKey(state.today?.dateKey);
     if (elements["today-date"]) {
@@ -239,9 +425,11 @@
     elements["today-card"].hidden = !word;
     elements["today-empty"].hidden = !!word;
     setTodayActions(!!word);
+    renderDiscovery();
     const wordState = word && (state.profile?.wordStates?.[String(word.id)] || state.profile?.wordStates?.[`w${word.id}`]);
     elements["today-save"].setAttribute("aria-pressed", String(wordState?.saved === true));
-    elements["today-known"].setAttribute("aria-pressed", String(wordState?.status === "known"));
+    elements["today-save"].textContent = wordState?.saved === true ? "محفوظة" : "حفظ";
+    elements["today-known"].setAttribute("aria-pressed", String(word?.contentVersion === 3 ? state.profile?.discovery?.knownKeys?.includes(discoveryKey(word.word)) === true : wordState?.status === "known"));
     elements["today-difficult"].setAttribute("aria-pressed", String(wordState?.status === "difficult"));
   }
 
@@ -584,7 +772,7 @@
     const badge = elements?.["streak-badge"];
     if (!badge) return;
     const assignments = state.profile?.assignments ?? state.profile;
-    const todayKey = optionalTodayKey || state.today?.dateKey || (globalThis.KalimatDate?.todayDateKey ? globalThis.KalimatDate.todayDateKey() : new Date().toISOString().slice(0, 10));
+    const todayKey = optionalTodayKey || globalThis.KalimatDate.todayDateKey();
     const streak = globalThis.KalimatStreak?.calculateStreak
       ? globalThis.KalimatStreak.calculateStreak(assignments, todayKey)
       : { currentStreak: 0 };
@@ -658,6 +846,7 @@
   }
 
   function beginProfileReplacement() {
+    if (state.discoveryBusy) { status("جارٍ تحديث الاكتشاف. حاول مجددًا بعد اكتماله."); return false; }
     if (state.profileReplacing || state.pendingSaves || state.settingsBusy
       || ReviewSession.isSubmitting(reviewSession)
       || ["today-known", "today-difficult"].some((id) => elements[id]?.getAttribute("aria-busy") === "true")) {
@@ -678,6 +867,7 @@
 
   function endProfileReplacement() {
     state.profileReplacing = false;
+    renderDiscovery();
     for (const id of ["clear", "import-file", "recovery-clear", "recovery-import", "settings-save"]) {
       if (elements[id]) elements[id].disabled = false;
     }
@@ -730,7 +920,11 @@
         return status("المسح مؤقت ولم يُحفظ. حاول مجددًا." + (state.reminder.enabled ? " التذكير ما زال مفعّلًا." : ""));
       }
       state.profile = null;
+      state.vocabulary = state.baseVocabulary;
+      state.discovery = { enabled: false, topics: [], word: null };
+      renderDiscovery();
       state.today = null;
+      renderDiscovery();
       state.exploreWord = null;
       state.recoveryRaw = null;
       show("onboarding");
@@ -749,7 +943,8 @@
     feedbackButtons.forEach((feedbackButton) => { feedbackButton.setAttribute("aria-busy", "true"); feedbackButton.disabled = true; });
     actionStatus("جارٍ حفظ تقييمك…");
     try {
-      const result = await ExtApi.runtime.sendMessage({
+      const sourceKnown = statusName === "known" && state.today.word.contentVersion === 3;
+      const result = await ExtApi.runtime.sendMessage(sourceKnown ? { type: "discovery.known", wordId: state.today.word.id } : {
         type: "word.feedback",
         dateKey: state.today.dateKey,
         wordId: state.today.word.id,
@@ -757,6 +952,12 @@
       });
       if (result?.kind === "recovery") { restoreFocus = false; return renderRecovery(result.recoveryRaw); }
       if (result?.kind !== "ok") throw new Error("Feedback unchanged.");
+      if (sourceKnown && !result.storageWarning) {
+        await refreshProfile();
+        elements["today-known"].setAttribute("aria-pressed", "true");
+        actionStatus("استُبعدت هذه الكلمة من الاكتشافات المقبلة.");
+        return;
+      }
       state.storageWarning = result.storageWarning === true;
       if (state.storageWarning) {
         warning(true);
@@ -853,15 +1054,27 @@
     }
   }
 
-  async function loadAssignment(dateKey) {
+  async function loadAssignment(dateKey, preserveView = false, retry = false) {
     if (state.profileReplacing) return;
-    const result = await ExtApi.runtime.sendMessage({ type: "assignment.get", dateKey });
+    if (!dateKey && !state.today) {
+      const discovery = await loadDiscovery();
+      if (discovery?.kind === "recovery") return;
+      if (state.discovery.needsSetup) { renderToday(); show("today"); return; }
+    }
+    const result = await ExtApi.runtime.sendMessage({ type: "assignment.get", dateKey, ...(retry ? { retry: true } : {}) });
     if (result?.kind === "recovery") return renderRecovery(result.recoveryRaw);
+    if (result?.kind === "no-new-word" && !dateKey) {
+      state.today = { ...result, word: null };
+      renderToday();
+      show("today");
+      return;
+    }
     if (result?.kind !== "assigned") {
       show("empty");
       return status("لا توجد كلمة محفوظة لهذا التاريخ.");
     }
-    const word = wordById(result.wordId);
+    await refreshProfile();
+    const word = result.word || wordById(result.wordId);
     if (!word) {
       show("error");
       return status("الكلمة غير متاحة.");
@@ -880,14 +1093,16 @@
         state.profile = confirmed ?? { level: 1, interests: [], showEnglish: false, preferences: { allowRemoteSpeech: false }, assignments: {}, wordStates: {} };
       } else state.profile = JSON.parse(exported.text);
       if (!state.profile || typeof state.profile !== "object") throw new Error("Profile unavailable.");
+    mergeSnapshots();
     }
     state.storageWarning = result.storageWarning === true || profileWarning;
     warning(state.storageWarning || state.reminderWarning);
     if (!dateKey) {
       mergeAssignment(result);
       state.today = { ...result, word };
+      state.loadedDay = globalThis.KalimatDate.todayDateKey();
       renderToday();
-      show("today");
+      if (!preserveView) show("today");
       return;
     }
     viewWord(word);
@@ -906,6 +1121,10 @@
   }
 
   function returnToToday() {
+    if (state.loadedDay && state.loadedDay !== globalThis.KalimatDate.todayDateKey()) {
+      return loadAssignment().catch(() => renderError("تعذّر تحميل كلمة اليوم."));
+    }
+    if (state.discovery.needsSetup) { show("today"); renderDiscovery(); return; }
     if (!state.today?.word) return loadAssignment().catch(() => renderError("تعذّر تحميل كلمة اليوم."));
     elements["return-today"].hidden = true;
     elements["explore-card"].hidden = true;
@@ -916,24 +1135,32 @@
   async function load() {
     const response = await fetch(ExtApi.runtime.getURL("data/vocabulary.json"));
     if (!response.ok) throw new Error("Vocabulary unavailable.");
-    state.vocabulary = await response.json();
+    state.discovery = { enabled: false, topics: [], word: null };
+    state.today = null;
+    state.loadedDay = globalThis.KalimatDate.todayDateKey();
+    renderDiscovery();
+    state.baseVocabulary = await response.json();
+    state.vocabulary = state.baseVocabulary;
     const params = new URLSearchParams(globalThis.location.search);
     const query = params.get("date");
     const dateKey = globalThis.KalimatDate.isDateKey(query) ? query : undefined;
     const requestedView = params.get("view");
     const requestedQuery = params.get("q") ?? "";
     const requestedId = params.get("id");
-    const directWord = requestedId && requestedId.length <= 64 && !/[\u0000-\u001F\u007F]/.test(requestedId)
+    let directWord = requestedId && requestedId.length <= 64 && !/[\u0000-\u001F\u007F]/.test(requestedId)
       ? wordById(requestedId)
       : null;
-    if (requestedId && !directWord) return renderError("الكلمة غير متاحة.");
+
     const exploreRequested = !params.has("date")
       && requestedView === "explore"
       && requestedQuery.length <= 256
       && !/[\u0000-\u001F\u007F]/.test(requestedQuery);
+    const discoveryResult = await loadDiscovery();
+    if (discoveryResult?.kind === "recovery") return;
+    const needsSetup = state.discovery.needsSetup === true && !dateKey;
     const assignmentRequest = dateKey ? { type: "assignment.get", dateKey } : { type: "assignment.get" };
     const [assignment, exported, settings] = await Promise.all([
-      ExtApi.runtime.sendMessage(assignmentRequest),
+      needsSetup ? Promise.resolve({ kind: "no-new-word" }) : ExtApi.runtime.sendMessage(assignmentRequest),
       ExtApi.runtime.sendMessage({ type: "state.export" }),
       ExtApi.runtime.sendMessage({ type: "settings.get" }),
     ]);
@@ -950,6 +1177,9 @@
       state.profile = confirmed ?? { level: 1, interests: [], showEnglish: false, preferences: { allowRemoteSpeech: false }, assignments: {}, wordStates: {} };
     } else state.profile = JSON.parse(exported.text);
     if (!state.profile || typeof state.profile !== "object") throw new Error("Profile unavailable.");
+    mergeSnapshots();
+    directWord = requestedId ? wordById(requestedId) : null;
+    if (requestedId && !directWord) return renderError("الكلمة غير متاحة.");
     state.reminder = settings.reminder;
     state.reminderWarning = settings?.storageWarning === true;
     state.storageWarning = exported.storageWarning === true || assignment.storageWarning === true;
@@ -965,10 +1195,13 @@
       state.today = { ...assignment, word: assignedWord };
       renderToday();
     }
-    if (requestedView === "settings" && !dateKey) { show("settings"); return; }
+    if (["settings", "discovery"].includes(requestedView) && !dateKey) { show("settings"); return; }
+    if (!dateKey && assignedWord && !directWord) show("today");
+    // Recall remains available even when sources cannot provide a new word.
+    const reviewResult = await loadDueReviews({ force: true });
+    if (reviewResult?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) return;
+    if (needsSetup && !directWord && !exploreRequested) { state.today = null; renderToday(); show("today"); return; }
     if (directWord) {
-      const reviewResult = await loadDueReviews({ force: true });
-      if (reviewResult?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) return;
       viewWord(directWord);
       show("explore");
       return;
@@ -979,9 +1212,7 @@
         viewWord(assignedWord);
         show("explore");
       } else {
-        show("today");
-        const reviewResult = await loadDueReviews({ force: true });
-        if (reviewResult?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) return;
+        if (state.view !== "today") show("today");
         if (exploreRequested) {
           elements["atlas-search"].value = requestedQuery;
           search();
@@ -994,9 +1225,13 @@
       search();
       show("explore");
       elements["atlas-search"].focus();
+    } else if (!dateKey) {
+      state.today = { ...assignment, word: null };
+      renderToday();
+      show("today");
     } else {
       show("empty");
-      status(dateKey ? "لا توجد كلمة محفوظة لهذا التاريخ." : "لا توجد كلمة جديدة اليوم.");
+      status("لا توجد كلمة محفوظة لهذا التاريخ.");
     }
   }
 
@@ -1094,24 +1329,27 @@
       if (exported?.kind !== "export") return;
       if (exported.storageWarning === true) { warning(true); return; }
       state.profile = JSON.parse(exported.text);
-      const label = state.profile?.preferences?.allowRemoteSpeech === true ? "🔊 استمع (قد يستخدم الإنترنت)" : "🔊 استمع للنطق المحلي";
+      mergeSnapshots();
+      const completeSetup = syncDiscoveryProfile();
+      const label = state.profile?.preferences?.allowRemoteSpeech === true ? "استمع (قد يستخدم الإنترنت)" : "استمع للنطق المحلي";
       for (const button of document.querySelectorAll(".word-speak")) {
-        button.textContent = label;
-        button.setAttribute("aria-label", label);
+        updateWordSpeechLabel(button);
       }
       if (elements["card-front-speak"]) {
         elements["card-front-speak"].textContent = label;
         elements["card-front-speak"].setAttribute("aria-label", label);
       }
       warning(exported.storageWarning === true || state.reminderWarning || state.storageWarning);
-      if (state.today) {
+      if (state.today?.word) {
         const assignment = state.profile.assignments?.[state.today.dateKey];
         state.today.status = assignment?.status;
         const wordState = state.profile.wordStates?.[String(state.today.word.id)] || state.profile.wordStates?.[`w${state.today.word.id}`];
-        elements["today-known"].setAttribute("aria-pressed", String(assignment?.status === "known"));
+        elements["today-known"].setAttribute("aria-pressed", String(state.today.word.contentVersion === 3 ? state.profile?.discovery?.knownKeys?.includes(discoveryKey(state.today.word.word)) === true : assignment?.status === "known"));
         elements["today-difficult"].setAttribute("aria-pressed", String(assignment?.status === "difficult"));
         if (elements["today-save"].getAttribute("aria-busy") !== "true") {
-          elements["today-save"].setAttribute("aria-pressed", String(wordState?.saved === true || (wordState?.saved === undefined && state.profile.favorites?.[String(state.today.word.id)] === true)));
+          const saved = wordState?.saved === true || (wordState?.saved === undefined && state.profile.favorites?.[String(state.today.word.id)] === true);
+          elements["today-save"].setAttribute("aria-pressed", String(saved));
+          elements["today-save"].textContent = saved ? "محفوظة" : "حفظ";
         }
       }
       const exploreSave = byId("explore-save");
@@ -1123,6 +1361,17 @@
       }
       if (state.view === "history") renderHistory();
       updateStreakBadge();
+      if (completeSetup) {
+        state.discoveryBusy = true;
+        renderDiscovery();
+        discoveryStatus("نجهّز كلمة اليوم…");
+        try { await loadAssignment(undefined, true); }
+        catch (_) {
+          if (!state.today) state.discovery.needsSetup = true;
+          discoveryStatus("تعذّر تحميل كلمة اليوم. حاول مجددًا.");
+        }
+        finally { state.discoveryBusy = false; renderDiscovery(); }
+      }
     } catch (_) { warning(true); }
   }
 
@@ -1276,7 +1525,7 @@
     if (elements["card-front-vocalization"]) elements["card-front-vocalization"].textContent = word.vocalization || word.pronunciation || "";
     if (elements["card-front-weight"]) elements["card-front-weight"].textContent = word.sarfWeight || word.weight || "";
     if (elements["card-front-root"]) elements["card-front-root"].textContent = word.root ? `الجذر: ${word.root}` : "";
-    if (elements["card-back-meaning-ar"]) elements["card-back-meaning-ar"].textContent = word.meaningAr || word.meaning || "";
+    if (elements["card-back-meaning-ar"]) elements["card-back-meaning-ar"].textContent = (word.senseContext ? `في هذا الاستعمال: ${word.senseContext}\n` : "") + (word.meaningAr || word.meaning || "");
     if (elements["card-back-meaning-en"]) {
       elements["card-back-meaning-en"].textContent = word.meaningEn || word.englishMeaning || "";
       elements["card-back-meaning-en"].hidden = state.profile?.showEnglish === false || !elements["card-back-meaning-en"].textContent;
@@ -1328,7 +1577,7 @@
         type: "word.review",
         wordId,
         rating,
-        dateKey: state.today?.dateKey || (globalThis.KalimatDate?.todayDateKey ? globalThis.KalimatDate.todayDateKey() : new Date().toISOString().slice(0, 10)),
+        dateKey: globalThis.KalimatDate.todayDateKey(),
       });
       if (result?.kind === "recovery") return renderRecovery(result.recoveryRaw);
       if (result?.kind === "stale") {
@@ -1408,6 +1657,20 @@
   }
 
   function listen() {
+    elements["discovery-enable"]?.addEventListener("click", enableDiscovery);
+    byId("today-source-retry")?.addEventListener("click", async () => {
+      const button = byId("today-source-retry");
+      button.disabled = true;
+      status("نبحث عن كلمة مناسبة…");
+      try { await loadAssignment(undefined, false, true); status(""); }
+      catch (_) { renderError("تعذّر تحميل كلمة اليوم."); }
+      finally { button.disabled = false; }
+    });
+    elements["today-source-start"]?.addEventListener("click", enableDiscovery);
+    elements["today-source-enable"]?.addEventListener("click", enableDiscovery);
+    elements["today-source-offline"]?.addEventListener("click", disableDiscovery);
+    elements["discovery-disable"]?.addEventListener("click", disableDiscovery);
+    elements["discovery-save-topics"]?.addEventListener("click", saveDiscoveryTopics);
     elements.today.addEventListener("click", returnToToday);
     elements.explore.addEventListener("click", () => { show("explore"); search(); });
     elements.history.addEventListener("click", () => { show("history"); renderHistory(); });
@@ -1472,6 +1735,17 @@
     if (elements["rate-easy"]) elements["rate-easy"].addEventListener("click", () => submitRating("easy"));
 
     document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible" || state.view !== "today" || !state.today || !state.loadedDay
+        || state.loadedDay === globalThis.KalimatDate.todayDateKey() || state.discoveryBusy || state.profileReplacing
+        || state.settingsBusy || state.pendingSaves || practiceIsActive()) return;
+      const pressed = ["today-save", "today-known", "today-difficult"].some((id) => elements[id]?.getAttribute("aria-busy") === "true");
+      if (pressed) return;
+      state.discoveryBusy = true;
+      renderDiscovery();
+      loadAssignment(undefined, true).catch(() => status("تعذّر تحديث كلمة اليوم. اختر اليوم للمحاولة مجددًا."))
+        .finally(() => { state.discoveryBusy = false; renderDiscovery(); });
+    });
   }
 
   let themeController = null;
@@ -1493,6 +1767,7 @@
   }
 
   globalThis.KalimatAtlas = {
+    loadDiscovery, enableDiscovery, disableDiscovery, saveDiscoveryTopics,
     canonicalSearchKey,
     normalize,
     load,

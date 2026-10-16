@@ -241,3 +241,85 @@ test("optional example provenance is validated without labelling older entries",
     assert.throws(() => validateVocabulary([validWord({ exampleKind: "quotation", exampleSource: { ...source, url } })]), /exampleSource.url/);
   }
 });
+
+function discoveryCard(overrides = {}) {
+  return {
+    id: "wk_123_abcdef012345", contentVersion: 3,
+    word: "استدامة", normalized: "استدامة", meaningAr: "استمرار الشيء وبقاؤه.",
+    exampleAr: "تسهم الاستدامة في حفظ الموارد.", topics: ["environment"],
+    partOfSpeech: "noun", register: "standard", reviewed: false,
+    source: { title: "استدامة", url: "https://ar.wiktionary.org/wiki/استدامة", revisionId: 12, license: "CC-BY-SA-4.0" },
+    exampleKind: "quotation", exampleSource: { title: "استدامة", url: "https://ar.wikipedia.org/wiki/استدامة", reference: "مقدمة المقالة" },
+    discoveryReason: "مصطلح مفيد لفهم نقاشات البيئة.", ...overrides,
+  };
+}
+
+test("source cards remain unreviewed and searchable beside the reviewed corpus", () => {
+  const api = vocabularyApi();
+  const words = api.validateVocabulary([validWord(), discoveryCard()]);
+  assert.equal(words[1].reviewed, false);
+  assert.equal(api.rankVocabulary(words, "استدامة")[0].id, words[1].id);
+  assert.equal(api.rankVocabulary(words, "").length, 2);
+  assert.equal(api.rankVocabulary([{ ...validWord(), reviewed: false }], "").length, 0);
+  assert.ok(Object.isFrozen(words[1].source));
+});
+
+test("discovery validation rejects unsafe sources, extra keys, false review claims and oversized content", () => {
+  const api = vocabularyApi();
+  const card = discoveryCard();
+  const bad = [
+    { reviewed: true }, { extra: "unexpected" }, { word: "x".repeat(81) },
+    { meaningAr: "x".repeat(701) }, { exampleAr: "x".repeat(1001) },
+    { discoveryReason: "x".repeat(201) }, { topics: ["untrusted"] },
+    { source: { ...card.source, revisionId: 0 } },
+    { source: { ...card.source, license: "unknown" } },
+    { source: { ...card.source, url: "https://ar.wiktionary.org.evil.test/wiki/a" } },
+    { source: { ...card.source, url: "https://ar.wiktionary.org@evil.test/wiki/a" } },
+    { source: { ...card.source, url: "https://ar.wiktionary.org/w/api.php?action=edit" } },
+    { source: { ...card.source, url: "https://ar.wiktionary.org/wiki/a#unsafe" } },
+    { source: { ...card.source, url: "javascript:alert(1)" } },
+    { exampleSource: { ...card.exampleSource, url: "https://evil.test/wiki/a" } },
+    { source: Object.assign(Object.create({ injected: true }), card.source) },
+  ];
+  for (const overrides of bad) assert.throws(() => api.validateDiscoveryCard(discoveryCard(overrides)), /Invalid vocabulary/);
+  assert.throws(() => api.validateDiscoveryCard(JSON.parse(JSON.stringify(card).replace('"revisionId":12', '"revisionId":12,"__proto__":{}'))), /Invalid vocabulary/);
+  assert.doesNotThrow(() => api.validateDiscoveryCard(discoveryCard({ source: { ...card.source, url: "https://ar.wiktionary.org/w/index.php?oldid=12" } })));
+  assert.doesNotThrow(() => api.validateDiscoveryCard(discoveryCard({ id: "wd_123_abcdef012345", source: { ...card.source, url: "https://www.wikidata.org/wiki/Q123", license: "CC0-1.0" } })));
+});
+
+test("source card byte budget includes UTF-8 content and nested provenance", () => {
+  const card = discoveryCard({ meaningAr: "ع".repeat(700), exampleAr: "ع".repeat(1000), discoveryReason: "ع".repeat(200) });
+  assert.throws(() => vocabularyApi().validateDiscoveryCard(card), /card size/);
+});
+
+test("LMF snapshots accept historical dataset hashes but reject mismatched provenance", () => {
+  const api = vocabularyApi();
+  const url = "https://lindat.mff.cuni.cz/repository/items/d4d8ef1a-0e51-42d1-9a94-113cb81afa76";
+  const card = discoveryCard({id:`lmf_${'a'.repeat(32)}`,
+    source:{title:"Arabic LMF",url,license:"CC-BY-NC-4.0",sha256:'b'.repeat(64),entryId:"entry-1",senseId:"sense-1",recordId:'a'.repeat(32)},
+    exampleSource:{title:"Arabic LMF",url,reference:"LMF: entry-1 / sense-1"}});
+  assert.doesNotThrow(() => api.validateDiscoveryCard(card));
+  const context = "استجمع أفكاره / استجمع قواه";
+  assert.equal(api.validateDiscoveryCard({...card,senseContext:context}).senseContext,context);
+  for (const senseContext of [undefined,null,17,""," ","x".repeat(513),"context\nline","context\tline","context\u0000","context\u007f"]) {
+    assert.throws(() => api.validateDiscoveryCard({...card,senseContext}), /Invalid vocabulary/);
+  }
+  for (const old of [discoveryCard(),discoveryCard({id:"wd_123_abcdef012345"})]) {
+    assert.throws(() => api.validateDiscoveryCard({...old,senseContext:context}), /Invalid vocabulary/);
+  }
+  assert.doesNotThrow(() => api.validateDiscoveryCard({...card,source:{...card.source,sha256:'c'.repeat(64)}}));
+  for (const source of [
+    {...card.source,url:url+'?download=1'}, {...card.source,url:url.replace('lindat.mff.cuni.cz','evil.test')},
+    {...card.source,license:"CC-BY-SA-4.0"}, {...card.source,sha256:'B'.repeat(64)},
+    {...card.source,sha256:'b'.repeat(63)}, {...card.source,recordId:'c'.repeat(32)},
+    {...card.source,entryId:" "}, {...card.source,senseId:"sense\n1"},
+    {...card.source,revisionId:1},
+  ]) assert.throws(() => api.validateDiscoveryCard({...card,source}), /Invalid vocabulary/);
+  for (const exampleSource of [
+    {...card.exampleSource,url:"https://ar.wiktionary.org/wiki/a"},
+    {...card.exampleSource,reference:"LMF: entry-1 / sense-2"},
+    {...card.exampleSource,extra:true},
+  ]) assert.throws(() => api.validateDiscoveryCard({...card,exampleSource}), /Invalid vocabulary/);
+  assert.throws(() => api.validateDiscoveryCard({...card,id:"wk_123_abcdef012345"}), /Invalid vocabulary/);
+  assert.throws(() => api.validateDiscoveryCard({...discoveryCard(),id:card.id}), /Invalid vocabulary/);
+});

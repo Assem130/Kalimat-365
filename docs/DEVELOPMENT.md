@@ -34,7 +34,7 @@ For the current source, run verification first. To package separately:
 python3 extension/tools/package.py
 ```
 
-Outputs are `extension/dist/kalimat-chrome-0.4.0.zip`, `extension/dist/kalimat-firefox-0.4.0.zip`, and unpacked `extension/dist/chrome` and `extension/dist/firefox` folders. The packager takes the version from both manifests and rejects mismatches before replacing output. Keep generated packages out of Git. GitHub release notes identify the source revision; store submission is a separate step.
+Outputs are `extension/dist/kalimat-chrome-0.4.1.zip`, `extension/dist/kalimat-firefox-0.4.1.zip`, and unpacked `extension/dist/chrome` and `extension/dist/firefox` folders. The packager takes the version from both manifests and rejects mismatches before replacing output. Keep generated packages out of Git. GitHub release notes identify the source revision; store submission is a separate step.
 
 - **Chrome:** open `chrome://extensions`, enable Developer mode, select **Load unpacked**, and choose `extension/dist/chrome`.
 - **Firefox:** open `about:debugging#/runtime/this-firefox`, select **Load Temporary Add-on**, and choose `extension/dist/firefox/manifest.json`.
@@ -53,7 +53,7 @@ This compares every generated field and its serialized output without writing th
 
 ## Product boundaries
 
-See the authoritative [product context](../CONTEXT.md) for the Arabic-first extension direction and [editorial scope](EDITORIAL.md). The website runtime is frozen; [its supporting-site transition](WEBSITE-TRANSITION.md) is a proposal only. Website learning data stays in `localStorage`; extension data stays separately in `storage.local`. Do not introduce sync, telemetry, or corpus expansion as part of routine maintenance.
+See the authoritative [product context](../CONTEXT.md) for the Arabic-first extension direction and [editorial scope](EDITORIAL.md). The website supports the extension; [its transition record](WEBSITE-TRANSITION.md) documents the preserved legacy pages and export route. Website learning data stays in `localStorage`; extension data stays separately in `storage.local`. Do not introduce sync, telemetry, or corpus expansion as part of routine maintenance.
 
 Atlas imports extension JSON only; website JSON is a distinct format with no automatic migration. Extension clear-data attempts profile deletion and reminder disabling independently and reports partial or unknown outcomes if either cannot be confirmed.
 
@@ -63,7 +63,9 @@ Website clear-data removes learning state, onboarding, and reminder settings whi
 
 | Path | Responsibility |
 | --- | --- |
-| [`index.html`](../index.html) | Editorial home, lexicon, and website review entry point |
+| [`index.html`](../index.html) | Extension introduction, installation and help |
+| [`support.css`](../support.css), [`support.js`](../support.js) | Support-page styling, appearance and legacy-link routing |
+| [`legacy.html`](../legacy.html) | Preserved website home, lexicon and review entry point |
 | [`word.html`](../word.html) | Daily-word permalink, history, export/import, and review |
 | [`words.js`](../words.js) | Canonical 365-word website corpus |
 | [`app-core.js`](../app-core.js) | Date selection, local state, and review policy adapters |

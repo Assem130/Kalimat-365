@@ -8,7 +8,7 @@
   const REQUIRED_KEYS = ["id", "contentVersion", "word", "normalized", "pronunciation", "difficultyBand", "usefulnessBand", "topics", "partOfSpeech", "register", "reviewed"];
   const V2_KEYS = ["contextAr", "contextEn"];
   const ALIAS_KEYS = ["vocalization", "category", "weight", "pattern", "meaning", "meaningAr", "englishMeaning", "meaningEn", "example", "exampleAr", "context", "contextAr", "contextEnglish", "contextEn", "root", "relatedIds"];
-  const ALLOWED_KEYS = new Set([...REQUIRED_KEYS, ...V2_KEYS, ...ALIAS_KEYS, "exampleKind", "exampleSource", "usageNote"]);
+  const ALLOWED_KEYS = new Set([...REQUIRED_KEYS, ...V2_KEYS, ...ALIAS_KEYS, "exampleKind", "exampleSource", "usageNote", "editorialChecked"]);
   const ENUMS = {
     difficultyBand: new Set(["beginner", "intermediate", "advanced"]),
     usefulnessBand: new Set(["low", "medium", "high"]),
@@ -28,11 +28,88 @@
     return value;
   }
 
+  const DISCOVERY_TOPICS = new Set(["science", "culture", "society", "environment", "economics", "language"]);
+  const DISCOVERY_KEYS = new Set(["id", "contentVersion", "word", "normalized", "meaningAr", "exampleAr", "topics", "partOfSpeech", "register", "reviewed", "source", "exampleKind", "exampleSource", "discoveryReason"]);
+  const LMF_SOURCE_URL = "https://lindat.mff.cuni.cz/repository/items/d4d8ef1a-0e51-42d1-9a94-113cb81afa76";
+
+  function exactObject(value, keys, label) {
+    if (!value || typeof value !== "object" || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype
+      || Object.keys(value).length !== keys.size || Object.keys(value).some((key) => !keys.has(key))) fail(label);
+  }
+
+  function sourceUrl(value, hosts, label) {
+    text(value, label, 2048);
+    let url;
+    try { url = new URL(value); } catch (_) { fail(label); }
+    if (url.protocol !== "https:" || !hosts.includes(url.hostname) || url.username || url.password || url.port || url.hash
+      || /[\s\\]/.test(value) || !value.startsWith(url.origin + "/")) fail(label);
+    const wikiPath = /^\/wiki\/[^/]+(?:\/[^/]+)*$/.test(url.pathname) && !url.search;
+    const revisionPath = url.pathname === "/w/index.php" && /^[1-9][0-9]*$/.test(url.searchParams.get("oldid") || "")
+      && [...url.searchParams.keys()].every((key) => key === "oldid" || key === "title")
+      && new Set(url.searchParams.keys()).size === [...url.searchParams.keys()].length;
+    if (!wikiPath && !revisionPath) fail(label);
+  }
+
+  function validateDiscoveryCard(record) {
+    const withSenseContext = typeof record?.id === "string" && record.id.startsWith("lmf_") && Object.hasOwn(record, "senseContext");
+    exactObject(record, withSenseContext ? new Set([...DISCOVERY_KEYS, "senseContext"]) : DISCOVERY_KEYS, "discovery card keys");
+    if (record.contentVersion !== 3 || !/^(?:(?:wk_[1-9][0-9]*|wd_[1-9][0-9]*)_[a-f0-9]{8,16}|lmf_[a-f0-9]{32})$/.test(record.id) || record.id.length > 64) fail("discovery id");
+    const lmf = record.id.startsWith("lmf_");
+    if (withSenseContext) {
+      text(record.senseContext, "senseContext", 512);
+      if (!record.senseContext.trim() || /[\u0000-\u001F\u007F]/.test(record.senseContext)) fail("senseContext");
+    }
+    if (record.reviewed !== false) fail("discovery reviewed");
+    for (const [field, max] of [["word", 80], ["normalized", 80], ["meaningAr", 700], ["exampleAr", 1000], ["discoveryReason", 200]]) {
+      text(record[field], field, max);
+      if (!record[field].trim() || /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(record[field])) fail(field);
+    }
+    if (!ENUMS.partOfSpeech.has(record.partOfSpeech) || !["standard", "classical"].includes(record.register)) fail("discovery metadata");
+    if (!Array.isArray(record.topics) || !record.topics.length || record.topics.length > 6 || new Set(record.topics).size !== record.topics.length
+      || record.topics.some((topic) => !DISCOVERY_TOPICS.has(topic))) fail("discovery topics");
+    exactObject(record.source, new Set(lmf ? ["title", "url", "license", "sha256", "entryId", "senseId", "recordId"] : ["title", "url", "revisionId", "license"]), "discovery source");
+    text(record.source.title, "source title", 512);
+    if (lmf) {
+      if (record.source.url !== LMF_SOURCE_URL || record.source.license !== "CC-BY-NC-4.0"
+        || typeof record.source.sha256 !== "string" || !/^[a-f0-9]{64}$/.test(record.source.sha256)
+        || typeof record.source.recordId !== "string" || !/^[a-f0-9]{32}$/.test(record.source.recordId)
+        || record.id !== `lmf_${record.source.recordId}`) fail("discovery source metadata");
+      for (const field of ["entryId", "senseId"]) {
+        text(record.source[field], `source ${field}`, 128);
+        if (!record.source[field].trim() || /[\u0000-\u001F\u007F]/.test(record.source[field])) fail("discovery source metadata");
+      }
+    } else {
+      if (!Number.isSafeInteger(record.source.revisionId) || record.source.revisionId < 1 || !["CC-BY-SA-4.0", "CC0-1.0"].includes(record.source.license)) fail("discovery source metadata");
+      sourceUrl(record.source.url, ["ar.wiktionary.org", "www.wikidata.org"], "discovery source URL");
+    }
+    if (record.exampleKind !== "quotation") fail("discovery example kind");
+    exactObject(record.exampleSource, new Set(["title", "url", "reference"]), "discovery example source");
+    text(record.exampleSource.title, "example source title", 512);
+    text(record.exampleSource.reference, "example reference", 512);
+    if (lmf) {
+      if (record.exampleSource.url !== LMF_SOURCE_URL || record.exampleSource.reference !== `LMF: ${record.source.entryId} / ${record.source.senseId}`) fail("discovery example source");
+    } else sourceUrl(record.exampleSource.url, ["ar.wikipedia.org", "ar.wiktionary.org"], "discovery example URL");
+    if (new TextEncoder().encode(JSON.stringify(record)).byteLength > 4096) fail("discovery card size");
+    return Object.freeze({ ...record, topics: Object.freeze([...record.topics]), source: Object.freeze({ ...record.source }), exampleSource: Object.freeze({ ...record.exampleSource }) });
+  }
+
+  function searchable(record) {
+    if (record?.reviewed === true) return true;
+    if (record?.contentVersion !== 3) return false;
+    try { validateDiscoveryCard(record); return true; } catch (_) { return false; }
+  }
+
   function validateVocabulary(raw) {
     if (!Array.isArray(raw) || raw.length < 1 || raw.length > 10000) fail("records");
     const ids = new Set();
     const records = raw.map((record) => {
       if (!record || typeof record !== "object" || Array.isArray(record) || Object.getPrototypeOf(record) !== Object.prototype) fail("record");
+      if (record.contentVersion === 3) {
+        const checked = validateDiscoveryCard(record);
+        if (ids.has(checked.id)) fail("unique IDs");
+        ids.add(checked.id);
+        return checked;
+      }
       const keys = Object.keys(record);
       if (keys.some((key) => !ALLOWED_KEYS.has(key))) fail("record keys");
       if (REQUIRED_KEYS.some((key) => !Object.hasOwn(record, key))) fail("record keys");
@@ -61,6 +138,7 @@
 
       for (const field of ["difficultyBand", "usefulnessBand", "partOfSpeech", "register"]) if (!ENUMS[field].has(record[field])) fail(field);
       if (!Array.isArray(record.topics) || record.topics.length < 1 || record.topics.length > 8 || record.topics.some((topic) => text(topic, "topics", 64) !== topic)) fail("topics");
+      if (Object.hasOwn(record, "editorialChecked") && typeof record.editorialChecked !== "boolean") fail("editorialChecked");
       if (record.reviewed !== true) throw new TypeError("Vocabulary records must be reviewed.");
 
       for (const field of ["root", "pattern", "weight", "vocalization", "category"]) {
@@ -140,12 +218,12 @@
     if (!Array.isArray(vocabulary)) return [];
     const canonicalQuery = canonicalSearchKey(query);
     if (!canonicalQuery) {
-      return [...vocabulary].filter((word) => word && word.reviewed === true);
+      return [...vocabulary].filter((word) => searchable(word));
     }
 
     const scored = [];
     for (const item of vocabulary) {
-      if (!item || item.reviewed !== true) continue;
+      if (!searchable(item)) continue;
 
       const headword = cachedCanonicalKey(item, "word");
       const normalized = cachedCanonicalKey(item, "normalized");
@@ -212,5 +290,5 @@
     return scored.map((entry) => entry.item);
   }
 
-  return { validateVocabulary, findWord, canonicalSearchKey, rankVocabulary };
+  return { validateVocabulary, validateDiscoveryCard, findWord, canonicalSearchKey, rankVocabulary };
 });

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" class="daily-ui">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,23 +11,31 @@
 <body>
   <a class="skip-link" href="#main">تجاوز إلى المحتوى</a>
   <main id="main" tabindex="-1">
-    <header class="masthead"><h1>كَلِمات</h1><p>كلمة تثري تعبيرك كل يوم</p><p id="assignment-date" class="assignment-date" hidden></p></header>
+    <header class="masthead"><h1>كَلِمات</h1><button id="open-settings" class="daily-icon-button icon-settings" type="button" aria-label="إعدادات الأطلس" title="إعدادات الأطلس"></button></header>
     <p id="status" class="status" aria-live="polite"></p>
     <p id="warning" class="warning" hidden>تُعرض بياناتك، لكن تعذّر حفظ آخر تغيير.</p>
     <section id="assigned" aria-label="كلمتك اليومية" hidden>
+      <p class="daily-caption">كلمة اليوم</p>
       <article class="word-card">
-        <p id="register" class="register" hidden></p>
         <h2 id="word" lang="ar"></h2>
+        <p id="sense-context" class="sense-context" lang="ar" hidden></p>
         <p id="meaning-ar" class="meaning" lang="ar"></p>
-        <section class="example-card" aria-label="في الاستعمال"><h3>في الاستعمال</h3><p id="example" lang="ar"></p></section>
-        <div class="actions"><button id="speak" type="button">استمع للنطق المحلي</button><button id="save" type="button" aria-pressed="false">حفظ</button></div>
+        <section class="example-card" aria-label="في الاستعمال"><h3>في الاستعمال</h3><p id="example" lang="ar"></p><div id="source-attribution" class="source-attribution" hidden></div></section>
+        <div class="actions"><button id="speak" class="icon-speak" type="button">استمع</button><button id="save" class="icon-bookmark" type="button" aria-pressed="false">حفظ</button></div>
       </article>
       <p id="action-status" class="action-status" role="status" aria-live="polite"></p>
-      <button id="explore" class="atlas-link" type="button">فتح الأطلس</button>
-      <details id="vocalization-details"><summary>ضبط الكلمة</summary><p id="vocalization" lang="ar" hidden></p></details>
+      <button id="explore" class="atlas-link" type="button">اكتشف الكلمة في الأطلس</button>
+      <details id="vocalization-details"><summary>ضبط الكلمة</summary><p id="vocalization" lang="ar" hidden></p><p id="register" class="register" hidden></p><p id="assignment-date" class="assignment-date" hidden></p></details>
       <details id="translation" hidden><summary>شرح بالإنجليزية والنطق اللاتيني</summary><p id="meaning-en" class="english" lang="en" dir="ltr"></p><p id="pronunciation" class="pronunciation" lang="en" dir="ltr"></p><p id="example-en" class="english" lang="en" dir="ltr"></p></details>
     </section>
-    <section id="empty" aria-labelledby="empty-title" hidden><h2 id="empty-title" tabindex="-1">لا توجد كلمة جديدة الآن</h2><p>كلماتك السابقة والمحفوظة في الأطلس.</p><button id="explore-empty" type="button">فتح الأطلس</button></section>
+    <section id="daily-source-setup" class="daily-source-setup" aria-labelledby="daily-source-title" hidden>
+      <h2 id="daily-source-title" tabindex="-1">كلمة اليوم من المصادر</h2>
+      <p id="daily-source-description">نختار كلمة جديدة تلقائيًا من مصادر عربية متاحة. المعاني والشواهد غير مراجعة. بعد التفعيل، نتصل بويكيبيديا وويكاموس، بما في ذلك في الخلفية. يتطلب ذلك اتصالًا وإذن الوصول إلى الموقعين.</p>
+      <button id="daily-source-enable" type="button">تفعيل المصادر</button>
+      <button id="daily-source-offline" type="button">الإبقاء على المصادر معطّلة</button>
+      <p id="daily-source-status" role="status" aria-live="polite"></p>
+    </section>
+    <section id="empty" aria-labelledby="empty-title" hidden><h2 id="empty-title" tabindex="-1">لا توجد كلمة جديدة الآن</h2><p>كلماتك السابقة والمحفوظة في الأطلس.</p><button id="empty-retry" type="button">إعادة المحاولة</button><button id="explore-empty" type="button">فتح الأطلس</button></section>
     <section id="error" aria-labelledby="error-title" hidden><h2 id="error-title" tabindex="-1">تعذّر تحميل الكلمة</h2><p>حاول مجددًا أو افتح الأطلس للوصول إلى بياناتك.</p><button id="error-retry" type="button">إعادة المحاولة</button><button id="error-atlas" type="button">فتح إعدادات الأطلس</button></section>
     <section id="recovery" aria-labelledby="recovery-title" hidden><h2 id="recovery-title" tabindex="-1">نحتاج إلى استعادة بياناتك</h2><p>لم نغيّر بياناتك المحلية. افتح الأطلس لتصدير النسخة الخام أو استيراد نسخة صالحة أو مسحها بنفسك.</p><button id="recovery-atlas" type="button">فتح الأطلس لاستعادة البيانات</button></section>
   </main>

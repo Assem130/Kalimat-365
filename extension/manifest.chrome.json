@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Kalimat",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Explore one Arabic word each day with meanings, examples, and review.",
   "permissions": ["storage", "contextMenus"],
   "optional_permissions": ["alarms", "notifications"],
-  "optional_host_permissions": ["https://ar.wiktionary.org/*"],
+  "optional_host_permissions": ["https://ar.wikipedia.org/*", "https://ar.wiktionary.org/*"],
   "omnibox": { "keyword": "km" },
   "action": { "default_popup": "popup/popup.html" },
   "background": { "service_worker": "background.js" },

@@ -23,16 +23,6 @@ const FIELD_MAP = [
   ["contextEnglish", "contextEn"],
 ];
 
-const EXAMPLE_OVERRIDES = {
-  24: "فاحَ أَرِيجُ الياسمين في الفناء بعد أن سُقيت الأزهار.",
-  25: "أثارَت الرسالةُ القديمةُ في نفسه شَجَنًا ممزوجًا بالشوق.",
-  32: "سادَ الوِئامُ بين أفراد الفريق بعد حوار صريح.",
-  41: "أضاءَ القمرُ الطريقَ وسطَ الدُّجى.",
-  46: "بدا وجهُ الطفل نَضيرًا بعد نوم هادئ.",
-};
-
-const GENERIC_ATTRIBUTION = /— شاعر (?:قديم|حديث)$/;
-
 function indexByNumericId(records) {
   return new Map(records.map((record) => [Number(record.id), record]));
 }
@@ -56,22 +46,9 @@ test("website and extension vocabularies stay lexically identical by ID", () => 
       );
     }
 
-    if (Object.hasOwn(EXAMPLE_OVERRIDES, id)) {
-      assert.match(website.example, GENERIC_ATTRIBUTION, `Record ${id} must retain its generic attribution in the website corpus`);
-      assert.equal(extension.exampleAr, EXAMPLE_OVERRIDES[id], `Corpus parity mismatch for record ${id}, field example -> exampleAr`);
-      assert.notEqual(extension.exampleAr, website.example, `Record ${id} must use the moderated extension example`);
-      assert.doesNotMatch(extension.exampleAr, GENERIC_ATTRIBUTION, `Record ${id} extension example must not keep generic attribution`);
-    } else {
-      assert.equal(extension.exampleAr, website.example, `Corpus parity mismatch for record ${id}, field example -> exampleAr`);
-    }
+    assert.equal(extension.exampleAr, website.example, `Corpus example mismatch for record ${id}`);
+    assert.equal(extension.example, extension.exampleAr, `Example alias mismatch for record ${id}`);
   }
-
-  const differingExampleIds = websiteIds.filter((id) => websiteById.get(id).example !== extensionById.get(id).exampleAr);
-  assert.deepEqual(
-    differingExampleIds,
-    Object.keys(EXAMPLE_OVERRIDES).map(Number).sort((a, b) => a - b),
-    "Only the documented generic-attribution examples may differ"
-  );
 });
 
 
@@ -81,7 +58,7 @@ test("converter check accepts CRLF and detects metadata drift without rewriting 
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "kalimat-corpus-"));
   try {
     const root = path.join(__dirname, "..");
-    for (const relative of ["words.js", "extension/tools/convert-vocabulary.js", "extension/shared/vocabulary.js", "extension/data/vocabulary.json", "extension/data/vocabulary-metadata.json"]) {
+    for (const relative of ["words.js", "extension/tools/convert-vocabulary.js", "extension/shared/vocabulary.js", "extension/data/vocabulary.json", "extension/data/vocabulary-metadata.json", "extension/data/editorial-review.json"]) {
       const destination = path.join(temporary, relative);
       fs.mkdirSync(path.dirname(destination), { recursive: true });
       fs.copyFileSync(path.join(root, relative), destination);

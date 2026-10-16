@@ -423,7 +423,7 @@ assert.equal(Array.isArray(browser.globalThis.WORDS_DB), true);
 assert.equal(browser.globalThis.WORDS_DB.length, 365);
 assert.deepEqual(Array.from(browser.globalThis.WORDS_DB, word => word.id), Array.from({ length: 365 }, (_, index) => index + 1));
 const wordPage = fs.readFileSync("word.html", "utf8");
-const homePage = fs.readFileSync("index.html", "utf8");
+const homePage = fs.readFileSync("legacy.html", "utf8");
 const css = fs.readFileSync("style.css", "utf8");
 const popupCss = fs.readFileSync("extension/popup/popup.css", "utf8");
 const revamp = fs.readFileSync("revamp.js", "utf8");
@@ -443,7 +443,7 @@ assert.match(wordPage, /<button class="inline-review-button" id="btn-inline-revi
 assert.match(wordPage, /id="word-context-en"[^>]*lang="en"[^>]*dir="ltr"/, "English usage context must declare language and direction");
 assert.match(wordPage, /id="btn-toggle-menu"[^>]*aria-expanded="false"/, "menu trigger must expose its collapsed state");
 assert.match(wordPage, /<div class="app-menu-dropdown(?:\s+word-menu-dropdown)?" id="app-menu-dropdown" hidden>/, "menu must be hidden before it is opened");
-assert.match(wordPage, /<div class="app-menu-dropdown(?:\s+word-menu-dropdown)?" id="app-menu-dropdown" hidden>[\s\S]*?<a class="nav-explorer-link" href="index\.html#lexicon-explorer"[^>]*>[\s\S]*?<use href="#i-search"\/>[\s\S]*?معجم الجذور[\s\S]*?<\/a>/, "word-page menu must link directly to the lexicon explorer");
+assert.match(wordPage, /<div class="app-menu-dropdown(?:\s+word-menu-dropdown)?" id="app-menu-dropdown" hidden>[\s\S]*?<a class="nav-explorer-link" href="legacy\.html#lexicon-explorer"[^>]*>[\s\S]*?<use href="#i-search"\/>[\s\S]*?معجم الجذور[\s\S]*?<\/a>/, "word-page menu must link directly to the lexicon explorer");
 for (const page of [wordPage, homePage]) {
     assert.match(page, /class="skip-link" href="#main-content"/, "each page needs a skip link");
     assert.match(page, /<main class="page-shell" id="main-content" tabindex="-1">/, "each page needs a main target");
@@ -546,7 +546,7 @@ assert.match(css, /\.word-experience,\s*\n?\s*\.word-card,\s*\n?\s*\.word-readin
 const homeCoreIndex = homePage.indexOf('<script src="app-core.js"');
 const homeWebUiIndex = homePage.indexOf('<script src="web-ui.js"');
 const homeRevampIndex = homePage.indexOf('<script src="revamp.js"');
-assert.equal(homeCoreIndex >= 0 && homeCoreIndex < homeWebUiIndex && homeWebUiIndex < homeRevampIndex, true, "index.html must load the core before its browser adapter");
+assert.equal(homeCoreIndex >= 0 && homeCoreIndex < homeWebUiIndex && homeWebUiIndex < homeRevampIndex, true, "legacy.html must load the core before its browser adapter");
 
 assert.equal(typeof WebUI.setupThemeController, "function", "KalimatWebUI must export setupThemeController");
 assert.equal(typeof WebUI.setupInstallPrompt, "function", "KalimatWebUI must export setupInstallPrompt");
@@ -1206,7 +1206,7 @@ assert.equal(streakTwoApp.elements["streak-badge"].getAttribute("aria-label"), "
 // ==========================================
 // T8 acceptance: Open Graph / Twitter meta on both pages
 // ==========================================
-for (const [pageName, pageSource] of [["index.html", homePage], ["word.html", wordPage]]) {
+for (const [pageName, pageSource] of [["legacy.html", homePage], ["word.html", wordPage]]) {
     assert.match(pageSource, /property="og:title"/, `${pageName} must declare og:title`);
     assert.match(pageSource, /property="og:url" content="https:\/\//, `${pageName} must declare an absolute og:url`);
     assert.match(pageSource, /property="og:image" content="https:\/\//, `${pageName} must declare an absolute og:image`);
@@ -1230,6 +1230,16 @@ assert.equal(Boolean(onboardingReturning.elements["onboarding-dialog"].open), fa
 
 const onboardingWithHistory = loadBrowserApp({ state: savedState });
 assert.equal(Boolean(onboardingWithHistory.elements["onboarding-dialog"].open), false, "learners with history skip the explainer");
+
+// Support-site export access must not add a daily word or overwrite legacy data.
+const exportOnlyState = Core.createDefaultState();
+exportOnlyState.history[3] = { firstSeen: "2026-09-20" };
+exportOnlyState.favorites[3] = true;
+const exportOnlyApp = loadBrowserApp({ state: exportOnlyState, search: "?action=history" });
+assert.equal(exportOnlyApp.elements["history-dialog"].open, true, "history link opens export controls");
+assert.equal(Boolean(exportOnlyApp.elements["onboarding-dialog"].open), false, "export access must not open onboarding");
+assert.equal(exportOnlyApp.localStorage.writeCount(), 0, "export access must not write any stored state");
+assert.deepEqual(JSON.parse(exportOnlyApp.localStorage.value("arabic_words_state")), exportOnlyState);
 
 const freshProfile = loadBrowserApp();
 assert.equal(freshProfile.localStorage.writeCount(), 1, "a fresh profile should persist only after today's word is enrolled");

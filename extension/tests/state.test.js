@@ -427,3 +427,111 @@ test("only newly created profiles default to Arabic-first English visibility", (
   assert.equal(createProfile().preferences.showEnglish, false);
   assert.equal(createProfile({ showEnglish: true }).showEnglish, true);
 });
+
+function sourceSnapshot() {
+  return {
+    id: "wk_123_abcdef012345", contentVersion: 3,
+    word: "استدامة", normalized: "استدامة", meaningAr: "استمرار الشيء وبقاؤه.",
+    exampleAr: "تسهم الاستدامة في حفظ الموارد.", topics: ["environment"],
+    partOfSpeech: "noun", register: "standard", reviewed: false,
+    source: { title: "استدامة", url: "https://ar.wiktionary.org/wiki/استدامة", revisionId: 12, license: "CC-BY-SA-4.0" },
+    exampleKind: "quotation", exampleSource: { title: "استدامة", url: "https://ar.wikipedia.org/wiki/استدامة", reference: "مقدمة المقالة" },
+    discoveryReason: "مصطلح مفيد لفهم نقاشات البيئة.",
+  };
+}
+
+test("optional discovery fields do not alter legacy serialized profiles", () => {
+  const original = profileWithAssignment("2026-08-17");
+  const before = serializeExport(original);
+  const restored = parseImport(before, vocabulary);
+  assert.equal(serializeExport(restored), before);
+  assert.equal(Object.hasOwn(restored, "wordSnapshots"), false);
+  assert.equal(Object.hasOwn(restored, "discovery"), false);
+});
+
+test("source snapshots restore assignment, save, history and reviews using only the bundled vocabulary", () => {
+  const card = sourceSnapshot();
+  const raw = profileWithAssignment("2026-08-17", card.id, {
+    wordSnapshots: { [card.id]: card },
+    discovery: { enabled: true, topics: ["environment"], knownKeys: ["استدامة"] },
+    recentIds: [card.id], wordStates: { [card.id]: { saved: true } },
+  });
+  const imported = parseImport(JSON.stringify(raw), vocabulary);
+  assert.equal(imported.assignments["2026-08-17"].wordId, card.id);
+  assert.equal(imported.favorites[card.id], true);
+  const feedback = applyFeedback(imported, { dateKey: "2026-08-17", wordId: card.id, status: "difficult" }, vocabulary);
+  const exported = serializeExport(feedback);
+  const restart = validateStoredProfile(JSON.parse(exported), vocabulary);
+  assert.equal(restart.canPersist, true);
+  assert.equal(restart.profile.history[card.id].firstSeen, "2026-08-17");
+  assert.equal(restart.profile.srs[card.id].wordId, card.id);
+  assert.equal(getDueReviewWords(restart.profile, vocabulary, "2026-08-18")[0].word.id, card.id);
+  const reviewed = recordReview(restart.profile, card.id, "good", "2026-08-18", vocabulary);
+  assert.equal(reviewed.srs[card.id].reviewCount, 2);
+  assert.equal(parseImport(serializeExport(reviewed), vocabulary).wordSnapshots[card.id].meaningAr, card.meaningAr);
+});
+
+test("invalid discovery imports preserve raw recovery data and reject bad snapshots or known keys", () => {
+  const card = sourceSnapshot();
+  const original = profileWithAssignment("2026-08-17");
+  const invalid = [
+    { wordSnapshots: { wrong: card } },
+    { wordSnapshots: { [card.id]: { ...card, reviewed: true } } },
+    { wordSnapshots: { [card.id]: { ...card, source: { ...card.source, url: "https://evil.test/wiki/a" } } } },
+    { discovery: { enabled: true, topics: ["science"], knownKeys: ["x", "x"] } },
+    { discovery: { enabled: true, topics: ["science"], knownKeys: ["x\u0000"] } },
+    { discovery: { enabled: true, topics: ["science"], knownKeys: ["x".repeat(81)] } },
+    { discovery: { enabled: true, topics: ["science"], knownKeys: Array.from({ length: 2049 }, (_, i) => String(i)) } },
+    { discovery: { enabled: true, topics: ["science"], knownKeys: [], extra: true } },
+    { discovery: { enabled: true, topics: ["unknown"], knownKeys: [] } },
+  ];
+  for (const fields of invalid) {
+    const raw = { ...original, ...fields };
+    assert.throws(() => parseImport(JSON.stringify(raw), vocabulary), /Invalid import/);
+    const checked = validateStoredProfile(raw, vocabulary);
+    assert.equal(checked.canPersist, false);
+    assert.equal(checked.recoveryRaw, raw);
+  }
+});
+
+test("mixed LMF and Wikimedia snapshots preserve learner data without the source catalog", () => {
+  const wiki = sourceSnapshot();
+  const wd = {...wiki,id:"wd_123_abcdef012345",source:{...wiki.source,url:"https://www.wikidata.org/wiki/Q123",license:"CC0-1.0"}};
+  const url = "https://lindat.mff.cuni.cz/repository/items/d4d8ef1a-0e51-42d1-9a94-113cb81afa76";
+  const lmf = {...wiki,id:`lmf_${'a'.repeat(32)}`,
+    source:{title:"Historical LMF",url,license:"CC-BY-NC-4.0",sha256:'b'.repeat(64),entryId:"entry-old",senseId:"sense-old",recordId:'a'.repeat(32)},
+    exampleSource:{title:"Historical LMF",url,reference:"LMF: entry-old / sense-old"}};
+  const raw = profileWithAssignment("2026-08-17", lmf.id, {
+    assignments:{"2026-08-15":{wordId:wiki.id},"2026-08-16":{wordId:wd.id}},
+    wordSnapshots:Object.fromEntries([wiki,wd,lmf].map(card=>[card.id,card])),
+    discovery:{enabled:true,topics:["environment"],knownKeys:["استدامة"]},
+    recentIds:[wiki.id,wd.id,lmf.id],favorites:{[wiki.id]:true,[lmf.id]:true},
+  });
+  const imported = parseImport(JSON.stringify(raw), vocabulary);
+  const learned = applyFeedback(imported,{dateKey:"2026-08-17",wordId:lmf.id,status:"difficult"},vocabulary);
+  const saved = serializeExport(learned);
+  const restored = parseImport(saved,vocabulary);
+  assert.equal(serializeExport(restored),saved);
+  assert.deepEqual(restored.wordSnapshots,learned.wordSnapshots);
+  for (const field of ["assignments","favorites","srs","history","discovery","recentIds"]) assert.deepEqual(restored[field],learned[field]);
+  const restarted = validateStoredProfile(JSON.parse(saved),vocabulary);
+  assert.equal(restarted.canPersist,true);
+  assert.equal(restarted.profile.wordSnapshots[lmf.id].source.sha256,'b'.repeat(64));
+  assert.equal(getDueReviewWords(restarted.profile,vocabulary,"2026-08-18")[0].word.id,lmf.id);
+});
+
+test("snapshot bounds and collisions cannot replace existing word content", () => {
+  const api = require("../shared/state.js");
+  const card = sourceSnapshot();
+  const raw = { ...createProfile(), wordSnapshots: { [card.id]: card } };
+  assert.equal(api.mergeVocabulary(vocabulary, raw).length, vocabulary.length + 1);
+  assert.equal(api.mergeVocabulary([...vocabulary, card], raw).length, vocabulary.length + 1);
+  assert.throws(() => api.mergeVocabulary([...vocabulary, { ...card, meaningAr: "معنى مختلف" }], raw), /collision/);
+  const oversized = Object.fromEntries(Array.from({ length: 513 }, (_, index) => {
+    const entry = { ...card, id: `wk_${index + 1}_abcdef012345` };
+    return [entry.id, entry];
+  }));
+  assert.throws(() => parseImport(JSON.stringify({ ...raw, wordSnapshots: oversized }), vocabulary), /Invalid import/);
+  const missing = { ...profileWithAssignment("2026-08-17", card.id), wordSnapshots: {} };
+  assert.equal(validateStoredProfile(missing, vocabulary).canPersist, false);
+});

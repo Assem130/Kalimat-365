@@ -1,5 +1,5 @@
 if (!globalThis.KalimatVocabulary && typeof importScripts === "function") {
-  importScripts("shared/date.js", "shared/vocabulary.js", "shared/review-policy.js", "shared/state.js", "shared/selector.js", "shared/lookup.js");
+  importScripts("shared/date.js", "shared/vocabulary.js", "shared/review-policy.js", "shared/state.js", "shared/lookup.js", "shared/discovery.js");
 }
 
 const dependencies = typeof module === "object" && module.exports
@@ -7,15 +7,15 @@ const dependencies = typeof module === "object" && module.exports
     date: require("./shared/date.js"),
     vocabulary: require("./shared/vocabulary.js"),
     state: require("./shared/state.js"),
-    selector: require("./shared/selector.js"),
     lookup: require("./shared/lookup.js"),
+    discovery: require("./shared/discovery.js"),
   }
   : {
     date: globalThis.KalimatDate,
     vocabulary: globalThis.KalimatVocabulary,
     state: globalThis.KalimatState,
-    selector: globalThis.KalimatSelector,
     lookup: globalThis.KalimatLookup,
+    discovery: globalThis.KalimatDiscovery,
   };
 const ExtApi = globalThis.browser ?? globalThis.chrome;
 const PROFILE_KEY = "kalimat.profile";
@@ -26,6 +26,9 @@ const DEFAULT_REMINDER = Object.freeze({ enabled: false, time: "09:00" });
 let queue = Promise.resolve();
 let sessionFallback = null;
 let vocabularyPromise = null;
+let discoveryIndexPromise = null;
+let discoverySearchRound = 0;
+let discoveryAttempt = null;
 let reminderWarningFallback = false;
 let alarmListenerRegistered = false;
 let notificationListenerRegistered = false;
@@ -128,6 +131,9 @@ async function saveProfile(profile, base = null) {
 }
 
 async function persistProfile(profile, loaded) {
+  if (new TextEncoder().encode(dependencies.state.serializeExport(profile)).length > 2 * 1024 * 1024) {
+    throw new RangeError("Profile backup capacity reached. Existing data was preserved.");
+  }
   if (loaded.warning) {
     sessionFallback = { profile, base: loaded.base };
     return true;
@@ -153,32 +159,172 @@ function warning(result, hasWarning) {
   return hasWarning ? { ...result, storageWarning: true } : result;
 }
 
-async function assignment(requestedDateKey) {
-  const vocabulary = await getVocabulary();
+const DISCOVERY_ORIGINS = ["https://ar.wikipedia.org/*", "https://ar.wiktionary.org/*"];
+const defaultDiscovery = () => ({ enabled: false, topics: [], knownKeys: [] });
+
+async function discoveryPermission() {
+  try { return await ExtApi.permissions.contains({ origins: DISCOVERY_ORIGINS }); }
+  catch (_) { return false; }
+}
+
+async function getDiscoveryIndex() {
+  if (!discoveryIndexPromise) {
+    discoveryIndexPromise = Promise.all(["data/discovery-index.json", "data/lmf-index.json"].map(path =>
+      fetch(ExtApi.runtime.getURL(path)).then(response => { if (!response.ok) throw new Error("Index unavailable."); return response.json(); })))
+      .then(indexes => dependencies.discovery.mergeIndexes(...indexes))
+      .catch(error => { discoveryIndexPromise = null; throw error; });
+  }
+  return discoveryIndexPromise;
+}
+
+// Retain every referenced card. Only unused discoveries can make room for another.
+function withSnapshot(profile, word) {
+  word = dependencies.vocabulary.validateDiscoveryCard(word);
+  const snapshots = { ...(profile.wordSnapshots || {}) };
+  if (Object.hasOwn(snapshots, word.id)) return profile;
+  if (Object.keys(snapshots).length >= 512) {
+    const referenced = new Set([
+      ...Object.values(profile.assignments).map(value => String(value.wordId)),
+      ...profile.recentIds.map(String),
+      ...Object.keys(profile.wordStates), ...Object.keys(profile.favorites), ...Object.keys(profile.srs),
+    ]);
+    const unused = Object.keys(snapshots).find(id => !referenced.has(id));
+    if (!unused) return null;
+    delete snapshots[unused];
+  }
+  snapshots[word.id] = word;
+  const candidate = { ...profile, wordSnapshots: snapshots };
+  // Keep every retained profile exportable under the existing import budget.
+  if (new TextEncoder().encode(dependencies.state.serializeExport(candidate)).length > 1792 * 1024) return null;
+  return candidate;
+}
+
+// Exclude encounters and known words, not the retained bundled archive.
+function encounteredKeys(profile, vocabulary) {
+  const ids = new Set([
+    ...Object.values(profile.assignments).map(value => String(value.wordId)),
+    ...profile.recentIds.map(String),
+    ...Object.entries(profile.wordStates).filter(([, value]) => value.status).map(([id]) => id),
+  ]);
+  return [...(profile.discovery?.knownKeys || []), ...vocabulary.filter(word => ids.has(String(word.id))).map(word => dependencies.discovery.lexicalKey(word.word))];
+}
+
+async function discoverWord(profile, vocabulary, dateKey, retry = false) {
+  if (!profile.discovery?.enabled || !await discoveryPermission()) return { kind: "permission-required" };
+  const attemptKey = JSON.stringify([profile.seedHex, dateKey, profile.discovery.topics,
+    encounteredKeys(profile, vocabulary), Object.keys(profile.wordSnapshots || {})]);
+  if (!retry && discoveryAttempt?.key === attemptKey && Date.now() - discoveryAttempt.time < 60000) return discoveryAttempt.result;
+  try {
+    const result = await dependencies.discovery.discover({
+      index: await getDiscoveryIndex(),
+      excludeKeys: encounteredKeys(profile, vocabulary),
+      topics: profile.discovery.topics, dateKey,
+      seedHex: `${profile.seedHex}:${Object.keys(profile.wordSnapshots || {}).length}:${profile.discovery.knownKeys.length}:${discoverySearchRound++}`,
+    });
+    discoveryAttempt = result.kind === "found" ? null : { key: attemptKey, time: Date.now(), result };
+    return result;
+  } catch (_) {
+    const result = { kind: "unavailable" };
+    discoveryAttempt = { key: attemptKey, time: Date.now(), result };
+    return result;
+  }
+}
+
+async function assignment(requestedDateKey, retry = false) {
+  let vocabulary = await getVocabulary();
   const loaded = await loadProfile(vocabulary);
   if (loaded.recoveryRaw !== undefined) return recovery(loaded);
-  const currentDateKey = dependencies.date.getLocalDateKey(new Date());
-  const dateKey = requestedDateKey ?? currentDateKey;
-  if (requestedDateKey && !Object.hasOwn(loaded.profile.assignments, dateKey)) return warning({ kind: "no-new-word", dateKey }, loaded.warning);
-  const selected = await dependencies.selector.selectDaily({ vocabulary, profile: loaded.profile, dateKey });
-  if (selected.kind !== "assigned") return warning(selected, loaded.warning);
-  if (Object.hasOwn(loaded.profile.assignments, dateKey)) return warning(assignedResult(loaded.profile, dateKey, selected.wordId, vocabulary), loaded.warning);
-  if (loaded.profile.assignmentOrdinal === Number.MAX_SAFE_INTEGER) throw new RangeError("Assignment counter exhausted.");
-  const profile = dependencies.state.pruneAssignments({
-    ...loaded.profile,
-    assignments: { ...loaded.profile.assignments, [dateKey]: { wordId: selected.wordId } },
-    assignmentOrdinal: loaded.profile.assignmentOrdinal + 1,
-    recentIds: [selected.wordId, ...loaded.profile.recentIds.filter((id) => id !== selected.wordId)].slice(0, 16),
+  vocabulary = dependencies.state.mergeVocabulary(vocabulary, loaded.profile);
+  const dateKey = requestedDateKey ?? dependencies.date.getLocalDateKey(new Date());
+  const existing = loaded.profile.assignments[dateKey];
+  if (existing) return warning(assignedResult(loaded.profile, dateKey, existing.wordId, vocabulary), loaded.warning);
+  if (requestedDateKey) return warning({ kind: "no-new-word", dateKey }, loaded.warning);
+  let profile = loaded.profile;
+  let wordId;
+  let discoveryStatus = profile.discovery?.enabled ? undefined : profile.discovery ? "disabled" : "setup-required";
+  if (profile.discovery?.enabled) {
+    // An already discovered, unseen card remains useful even without a connection.
+    const assignedIds = new Set(Object.values(profile.assignments).map(value => String(value.wordId)));
+    const known = new Set(encounteredKeys(profile, vocabulary));
+    // Old cards stay readable. New assignments must pass the current catalog gate.
+    const qualityIndex = await getDiscoveryIndex().catch(() => []);
+    const cached = Object.values(profile.wordSnapshots || {}).find(word =>
+      dependencies.discovery.isEligibleSnapshot(word, qualityIndex) &&
+      !assignedIds.has(word.id) && !profile.wordStates[word.id]?.status
+      && !known.has(dependencies.discovery.lexicalKey(word.word)));
+    if (cached) wordId = cached.id;
+    else {
+      const result = await discoverWord(profile, vocabulary, dateKey, retry);
+      discoveryStatus = result.kind;
+      if (result.kind === "found") {
+        const next = withSnapshot(profile, result.word);
+        if (next) { profile = next; wordId = result.word.id; vocabulary = dependencies.state.mergeVocabulary(vocabulary, profile); }
+        else discoveryStatus = "capacity";
+      }
+    }
+  }
+  if (wordId === undefined) {
+    return warning({ kind: "no-new-word", dateKey, discoveryStatus }, loaded.warning);
+  }
+  if (profile.assignmentOrdinal === Number.MAX_SAFE_INTEGER) throw new RangeError("Assignment counter exhausted.");
+  profile = dependencies.state.pruneAssignments({
+    ...profile,
+    assignments: { ...profile.assignments, [dateKey]: { wordId } },
+    assignmentOrdinal: profile.assignmentOrdinal + 1,
+    recentIds: [wordId, ...profile.recentIds.filter(id => id !== wordId)].slice(0, 16),
   });
-  return warning(assignedResult(profile, dateKey, selected.wordId, vocabulary), await persistProfile(profile, loaded));
+  return warning({ ...assignedResult(profile, dateKey, wordId, vocabulary), ...(discoveryStatus && discoveryStatus !== "found" ? { discoveryStatus } : {}) }, await persistProfile(profile, loaded));
 }
 
 async function updateProfile(change, resultFields = () => ({})) {
+  let vocabulary = await getVocabulary();
+  const loaded = await loadProfile(vocabulary);
+  if (loaded.recoveryRaw !== undefined) return recovery(loaded);
+  vocabulary = dependencies.state.mergeVocabulary(vocabulary, loaded.profile);
+  const profile = await change(loaded.profile, vocabulary);
+  return warning({ kind: "ok", ...resultFields(profile, vocabulary) }, await persistProfile(profile, loaded));
+}
+
+async function handleDiscovery(message) {
   const vocabulary = await getVocabulary();
   const loaded = await loadProfile(vocabulary);
   if (loaded.recoveryRaw !== undefined) return recovery(loaded);
-  const profile = await change(loaded.profile, vocabulary);
-  return warning({ kind: "ok", ...resultFields(profile, vocabulary) }, await persistProfile(profile, loaded));
+  const settings = loaded.profile.discovery || defaultDiscovery();
+  if (message.type === "discovery.get") {
+    if (!exactMessage(message, new Set(["type"]))) throw new TypeError("Invalid discovery request.");
+    const word = Object.values(loaded.profile.wordSnapshots || {}).reverse()
+      .find(card => !settings.knownKeys.includes(dependencies.discovery.lexicalKey(card.word)));
+    return warning({ kind: "discovery", enabled: settings.enabled, topics: settings.topics, word,
+      configured: !!loaded.profile.discovery,
+      needsSetup: !loaded.profile.discovery && !loaded.profile.assignments[dependencies.date.getLocalDateKey(new Date())],
+      permissionGranted: await discoveryPermission() }, loaded.warning);
+  }
+  if (message.type === "discovery.configure") {
+    if (!exactMessage(message, new Set(["type", "enabled", "topics"])) || typeof message.enabled !== "boolean") throw new TypeError("Invalid discovery settings.");
+    if (message.enabled && !await discoveryPermission()) return { kind: "permission-required" };
+    const checked = dependencies.state.validateStoredProfile({ ...loaded.profile,
+      discovery: { ...settings, enabled: message.enabled, topics: message.topics ?? settings.topics },
+    }, vocabulary);
+    if (!checked.canPersist) throw new TypeError("Invalid discovery settings.");
+    return warning({ kind: "ok" }, await persistProfile(checked.profile, loaded));
+  }
+  if (message.type === "discovery.known") {
+    if (!exactMessage(message, new Set(["type", "wordId"])) || !Object.hasOwn(loaded.profile.wordSnapshots || {}, message.wordId)) throw new TypeError("Invalid discovered word.");
+    const key = dependencies.discovery.lexicalKey(loaded.profile.wordSnapshots[message.wordId].word);
+    if (settings.knownKeys.includes(key)) return warning({ kind: "ok" }, loaded.warning);
+    if (settings.knownKeys.length >= 2048) return { kind: "capacity" };
+    const profile = { ...loaded.profile, discovery: { ...settings, knownKeys: [...settings.knownKeys, key] } };
+    return warning({ kind: "ok" }, await persistProfile(profile, loaded));
+  }
+  if (message.type === "discovery.find") {
+    if (!exactMessage(message, new Set(["type"]))) throw new TypeError("Invalid discovery request.");
+    const result = await discoverWord(loaded.profile, dependencies.state.mergeVocabulary(vocabulary, loaded.profile), dependencies.date.getLocalDateKey(new Date()));
+    if (result.kind !== "found") return warning(result, loaded.warning);
+    const profile = withSnapshot(loaded.profile, result.word);
+    if (!profile) return { kind: "capacity" };
+    return warning(result, await persistProfile(profile, loaded));
+  }
+  throw new TypeError("Invalid discovery request.");
 }
 
 function exactMessage(message, keys) {
@@ -445,9 +591,10 @@ function registerReminderListeners() {
 function handleMessage(message) {
   return serialized(async () => {
     if (!message || typeof message.type !== "string") throw new TypeError("Invalid message.");
+    if (message.type.startsWith("discovery.")) return handleDiscovery(message);
     if (message.type === "assignment.get") {
-      if (!exactMessage(message, new Set(["type", "dateKey"])) || (message.dateKey !== undefined && !dependencies.date.isDateKey(message.dateKey))) throw new TypeError("Invalid assignment.");
-      return assignment(message.dateKey);
+      if (!exactMessage(message, new Set(["type", "dateKey", "retry"])) || (message.retry !== undefined && typeof message.retry !== "boolean") || (message.dateKey !== undefined && !dependencies.date.isDateKey(message.dateKey))) throw new TypeError("Invalid assignment.");
+      return assignment(message.dateKey, message.retry === true);
     }
     if (message.type === "review.queue") {
       if (!exactMessage(message, new Set(["type", "dateKey", "limit"]))) throw new TypeError("Invalid review queue.");
@@ -472,8 +619,10 @@ function handleMessage(message) {
       const vocabulary = await getVocabulary();
       const loaded = await loadProfile(vocabulary);
       if (loaded.recoveryRaw !== undefined) return recovery(loaded);
-      const dateKey = message.dateKey;
-      const targetId = dependencies.state.normalizeWordId(message.wordId, dependencies.state.vocabularyIndex(vocabulary));
+      // A surface can stay open across midnight, or wait in this queue.
+      // Commit deliberate practice on the current local day, after loading.
+      const dateKey = dependencies.date.todayDateKey();
+      const targetId = dependencies.state.normalizeWordId(message.wordId, dependencies.state.vocabularyIndex(dependencies.state.mergeVocabulary(vocabulary, loaded.profile)));
       dependencies.state.canonicalReviewRating(message.rating);
       // The queue is enrolled from SRS. Clear or replacement import can remove
       // that enrollment while a surface still holds its old active card.

@@ -705,3 +705,109 @@ hr {
 
 .word-card .english, .word-card .pronunciation { unicode-bidi: isolate; }
 .word-card summary { min-height: 44px; cursor: pointer; padding: 8px 0; }
+
+/* Daily encounter and its shared Atlas navigation. Other views keep their controls. */
+html.daily-ui { background: var(--daily-bg); color: var(--daily-ink); }
+.daily-ui body { max-width: 1120px; padding: 0 32px 32px; background: var(--daily-bg); color: var(--daily-ink); }
+.daily-ui .masthead { gap: 24px; padding: 14px 0; border-color: var(--daily-line); flex-wrap: nowrap; }
+.daily-ui .masthead-brand { flex-direction: row; align-items: center; gap: 22px; white-space: nowrap; }
+.daily-ui .masthead-brand p { font: 700 32px/1.5 var(--serif); color: var(--daily-ink); }
+.daily-ui .masthead-brand h1 { font: 400 18px/1.6 var(--serif); }
+.daily-ui .masthead nav { margin: 0; gap: 22px; }
+.daily-ui .masthead nav button { padding: 12px 4px; background: transparent; color: var(--daily-ink); border: 0; border-bottom: 2px solid transparent; font: 18px/1.5 var(--serif); }
+.daily-ui .masthead nav button[aria-pressed="true"] { border-bottom-color: var(--daily-accent); }
+.daily-ui .masthead-controls { margin-inline-start: auto; flex-wrap: nowrap; }
+.daily-ui .masthead .due-review-badge { color: var(--daily-ink); background: var(--daily-soft); border: 0; font-family: var(--serif); }
+.daily-ui #settings[aria-pressed="true"] { background: var(--daily-soft); }
+.daily-ui .status:empty, .daily-ui .action-status:empty { display: none; }
+.daily-ui main > .status { margin: 12px 0; }
+.daily-ui #today-view { background: transparent; border: 0; padding: 24px 0 0; }
+.today-heading { position: relative; text-align: center; min-height: 44px; padding-inline: 100px; }
+#today-title { margin: 0; font: 400 18px/2 var(--serif); }
+.daily-ui #today-export-card { position: absolute; inset-inline-end: 0; top: 0; border: 0; padding: 8px; font-size: 16px; }
+.daily-ui .today-date { text-align: center; color: var(--daily-muted); font: 14px/1.6 var(--serif); margin: 0 0 8px; }
+.daily-ui #today-card { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; background: transparent; color: var(--daily-ink); padding: 0; margin: 0; border: 0; }
+#today-card > * { min-width: 0; }
+#today-card > h3 { grid-area: 1 / 1 / 2 / -1; font: 700 clamp(48px, 7vw, 72px)/1.5 var(--serif); padding: 0; text-align: center; margin: 8px 0 10px; overflow-wrap: anywhere; }
+#today-card > .meaning { grid-area: 2 / 1 / 3 / -1; text-align: center; font: 400 26px/1.8 var(--serif); margin: 0 auto 24px; max-width: 42ch; }
+.daily-ui #today-card > .word-speak { grid-area: 3 / 1; justify-self: end; width: 160px; max-width: 100%; margin: 0 0 28px; background: var(--daily-accent); border-color: var(--daily-accent); color: var(--daily-on-accent); }
+.daily-ui #today-save { grid-area: 3 / 2; justify-self: start; width: 160px; max-width: 100%; margin: 0 0 28px; }
+.daily-ui #today-save[aria-pressed="true"] { background: var(--daily-soft); border-color: var(--daily-soft); }
+#today-card > .context { grid-area: 4 / 1 / 5 / -1; border-top: 1px solid var(--daily-line); padding: 20px 12px 26px; margin: 0; text-align: center; }
+#today-card > .context .label { color: var(--daily-ink); font: 400 16px/1.7 var(--serif); margin-bottom: 12px; }
+#today-card > .context .text { display: block; max-width: 58ch; margin: auto; font: 400 25px/1.9 var(--serif); }
+#today-card > details { grid-column: 1 / -1; border-top: 1px solid var(--daily-line); font: 18px/1.8 var(--serif); padding-inline: 12px; }
+#today-card > .daily-morphology { grid-row: 5; }
+#today-card > .daily-example { grid-row: 6; }
+#today-card > .daily-translation { grid-row: 7; }
+#today-card > details p { margin-block: 10px 18px; }
+#today-card .label, #today-card .metadata { color: var(--daily-muted); }
+#today-card a { color: var(--daily-ink); text-underline-offset: 4px; }
+#today-card .english, #today-card .pronunciation { font-family: var(--sans); text-align: left; unicode-bidi: isolate; }
+.daily-ui .today-actions { border-top: 1px solid var(--daily-line); margin: 0; padding: 8px 12px 0; }
+.today-feedback { font: 16px/1.8 var(--serif); color: var(--daily-muted); }
+.today-feedback summary { min-height: 44px; padding: 9px 0; cursor: pointer; }
+.today-feedback div { display: flex; flex-wrap: wrap; gap: 8px; padding-block: 8px; }
+.daily-ui .today-feedback button[aria-pressed="true"] { background: var(--daily-soft); }
+#today-action-status { font: 17px/1.8 var(--serif); }
+.daily-ui #settings-view #theme-select { margin-bottom: 20px; }
+@media (max-width: 760px) {
+  .daily-ui body { padding-inline: 20px; }
+  .daily-ui .masthead { flex-wrap: wrap; gap: 4px 12px; }
+  .daily-ui .masthead-brand { gap: 14px; }
+  .daily-ui .masthead nav { order: 3; flex-basis: 100%; justify-content: center; gap: 32px; }
+  .daily-ui .masthead-controls { gap: 6px; }
+  .daily-ui .masthead-brand h1 { font-size: 16px; }
+  #today-card > .meaning { font-size: 23px; }
+  #today-card > .context .text { font-size: 22px; }
+  .today-heading { padding-inline: 70px; }
+}
+@media (max-width: 400px) {
+  .daily-ui body { padding-inline: 16px; }
+  .daily-ui .masthead-brand { gap: 8px; }
+  .daily-ui .masthead-brand p { font-size: 27px; }
+  .daily-ui .masthead-brand h1 { font-size: 14px; }
+  .daily-ui .masthead-controls { flex-wrap: wrap; }
+  #today-card > .context { padding-inline: 0; }
+}
+
+/* Daily source preferences and the first-use choice share the Atlas visual language. */
+.daily-ui .discovery-panel {
+  margin: 40px 0 12px;
+  padding-block-start: 28px;
+  border-block-start: 1px solid var(--daily-line);
+}
+.daily-ui .discovery-panel h3 { margin: 4px 0 12px; font-family: var(--serif); font-size: 30px; }
+.daily-ui .discovery-panel > p { max-width: 65ch; line-height: 1.9; }
+.daily-ui .discovery-eyebrow { font-size: 12px; color: var(--daily-muted); margin: 0; }
+.daily-ui .discovery-note, .daily-ui .source-note { font-size: 13px; color: var(--daily-muted); }
+.daily-ui #discovery-topics { display: flex; flex-wrap: wrap; gap: 10px 20px; margin: 20px 0; padding: 12px 0; border: 0; }
+.daily-ui #discovery-topics legend { padding: 0; margin-bottom: 10px; font-weight: 600; }
+.daily-ui #discovery-topics label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.daily-ui #discovery-topics input { width: 18px; height: 18px; accent-color: var(--daily-ink); }
+.daily-ui .discovery-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.daily-ui .discovery-actions[hidden] { display: none; }
+.daily-ui #discovery-disable { color: var(--daily-muted); }
+.daily-ui #discovery-status { min-height: 1.8em; font-size: 14px; }
+.daily-ui .source-link { display: block; overflow-wrap: anywhere; font-size: 13px; line-height: 1.8; margin-block: 8px; text-underline-offset: 3px; }
+.daily-ui .discovery-actions button:active { transform: scale(.98); }
+.daily-ui .discovery-panel a { color: var(--daily-accent); }
+.daily-ui .source-setup { padding: clamp(24px, 5vw, 56px) 0; max-width: 680px; }
+.daily-ui .source-setup h3 { margin: 12px 0 20px; font: 400 clamp(30px, 5vw, 46px)/1.5 var(--serif); }
+.daily-ui .source-setup p { line-height: 1.9; }
+.daily-ui .source-setup .discovery-actions { margin-top: 24px; }
+.daily-ui .source-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.daily-ui .source-summary p { margin: 0; color: var(--daily-muted); font-size: 13px; line-height: 1.8; }
+.daily-ui .source-summary button { font-size: 13px; flex-shrink: 0; }
+.daily-ui .source-summary[hidden], .daily-ui .source-setup[hidden] { display: none; }
+@media (max-width: 540px) { .daily-ui .source-summary { align-items: start; flex-direction: column; gap: 8px; } }
+
+/* Source constructions must precede dependent dictionary definitions. */
+#today-card > .sense-context { grid-area: 2 / 1 / 3 / -1; text-align: center; margin: 0 auto 8px; }
+#today-card:has(> .sense-context) > .meaning { grid-row: 3 / 4; }
+.daily-ui #today-card:has(> .sense-context) > .word-speak,
+.daily-ui #today-card:has(> .sense-context) > #today-save { grid-row: 4 / 5; }
+#today-card:has(> .sense-context) > .context { grid-row: 5 / 6; }
+#today-card:has(> .sense-context) > .daily-morphology { grid-row: 6; }
+#today-card:has(> .sense-context) > .daily-example { grid-row: 7; }
+#today-card:has(> .sense-context) > .daily-translation { grid-row: 8; }
