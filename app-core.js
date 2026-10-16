@@ -592,10 +592,6 @@
         return calculateNextReview(item, rating, reviewDateKey);
     }
 
-    function formatReviewInterval(interval) {
-        return ReviewPolicy.formatInterval(interval);
-    }
-
     function getReviewOptions(item, reviewDateKey) {
         return ReviewPolicy.getOptions(item, reviewDateKey, { isDateKey, getLocalDateKey, addDaysToDateKey });
     }

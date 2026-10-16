@@ -218,19 +218,6 @@ h3:focus-visible,
   cursor: pointer;
 }
 
-.streak-badge {
-  background: var(--atlas-surface);
-  border: 1px solid var(--atlas-input-border);
-  color: var(--atlas-text);
-  font: 700 13px/1.2 var(--sans);
-  padding: 6px 12px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
 .history-controls {
   display: flex;
   align-items: center;

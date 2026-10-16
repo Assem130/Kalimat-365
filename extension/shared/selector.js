@@ -159,7 +159,6 @@
     let candidates = eligible.filter((candidate) => !blocked.has(candidate.id));
     const cooldownRelaxed = !candidates.length;
     if (cooldownRelaxed) candidates = eligible;
-    if (!candidates.length) return { kind: "no-new-word" };
 
     // Existing assignment history is the encounter record; no new stored progress.
     const lastSeen = new Map();
