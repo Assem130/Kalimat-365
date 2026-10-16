@@ -1,0 +1,2357 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": 1,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، سمدع",
+          "url": "https://islamweb.net/ar/library/content/122/3973/سمدع"
+        }
+      ],
+      "notes": "Retains the earlier five-entry source check documented in docs/EDITORIAL.md. This is an agent source check, not human certification."
+    },
+    {
+      "id": 2,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، خنذ",
+          "url": "https://islamweb.net/ar/library/content/122/2335/خنذ"
+        }
+      ],
+      "notes": "Retains the earlier five-entry source check documented in docs/EDITORIAL.md. This is an agent source check, not human certification."
+    },
+    {
+      "id": 3,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، دوم",
+          "url": "https://www.islamweb.org/ar/library/index.php?ID=2848&bk_no=122&idfrom=2845&page=bookcontents"
+        },
+        {
+          "title": "Sahih al-Bukhari 6466",
+          "url": "https://sunnah.com/bukhari:6466"
+        }
+      ],
+      "notes": "Retains the earlier five-entry source check documented in docs/EDITORIAL.md. This is an agent source check, not human certification."
+    },
+    {
+      "id": 4,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، عرم",
+          "url": "https://islamweb.net/ar/library/content/122/5429/عرم"
+        }
+      ],
+      "notes": "Retains the earlier five-entry source check documented in docs/EDITORIAL.md. This is an agent source check, not human certification."
+    },
+    {
+      "id": 5,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، وصب",
+          "url": "https://islamweb.net/ar/library/content/122/9049/وصب"
+        },
+        {
+          "title": "Sahih al-Bukhari 5641–5642",
+          "url": "https://sunnah.com/bukhari:5641"
+        }
+      ],
+      "notes": "Retains the earlier five-entry source check documented in docs/EDITORIAL.md. This is an agent source check, not human certification."
+    },
+    {
+      "id": 6,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، صبب",
+          "url": "https://islamweb.net/ar/library/content/122/4515/صبب"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations. Separates fathah longing from dammah liquid residue and fixes the incorrect shadda explanation."
+    },
+    {
+      "id": 7,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 8,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 9,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Example appears to splice a verse with an added headword. Check original text and attribution."
+    },
+    {
+      "id": 10,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 11,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 12,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 13,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، عبق",
+          "url": "https://islamweb.net/ar/library/content/122/5272/عبق"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 14,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 15,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 16,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 17,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 18,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 19,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 20,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 21,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 22,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Example combines lines with an unverified addition. Check original text."
+    },
+    {
+      "id": 23,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 24,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference. Existing extension-only original example was moved into the shared source to keep aliases equal. Lexical approval is still pending."
+    },
+    {
+      "id": 25,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference. Existing extension-only original example was moved into the shared source to keep aliases equal. Lexical approval is still pending."
+    },
+    {
+      "id": 26,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Example appears to append the headword to a separate poem. Check original text."
+    },
+    {
+      "id": 27,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Anatomical definition includes an unsupported immediate-death claim. Needs lexical and medical wording review."
+    },
+    {
+      "id": 28,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 29,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 30,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، جود",
+          "url": "https://islamweb.net/ar/library/content/122/1518/جود"
+        },
+        {
+          "title": "زهير بن أبي سلمى، المعلقة، النص الرقمي",
+          "url": "https://ar.wikisource.org/wiki/معلقة_زهير_بن_أبي_سلمى"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations. Removes a stitched example misattributed to Imru al-Qays. Its opening belongs to Zuhayr; no unsupported replacement attribution is made."
+    },
+    {
+      "id": 31,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 32,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، وأم",
+          "url": "https://islamweb.net/ar/library/content/122/8874/وأم"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 33,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 34,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 35,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 36,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 37,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 38,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Hadith requires a precise source and authenticity context. Replace if evidence remains uncertain."
+    },
+    {
+      "id": 39,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 40,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 41,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference. Existing extension-only original example was moved into the shared source to keep aliases equal. Lexical approval is still pending."
+    },
+    {
+      "id": 42,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 43,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 44,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 45,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 46,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference. Existing extension-only original example was moved into the shared source to keep aliases equal. Lexical approval is still pending."
+    },
+    {
+      "id": 47,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 48,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 49,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Definition may conflate earring and a different vowel-dependent sense. Check vowel, meaning, and source."
+    },
+    {
+      "id": 50,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 51,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 52,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 53,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 54,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 55,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 56,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، سمر",
+          "url": "https://islamweb.net/ar/library/content/122/3974/سمر"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 57,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 58,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Rain sense is doubtful for this vocalized headword. Check against a dictionary before release."
+    },
+    {
+      "id": 59,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 60,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 61,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، وبل",
+          "url": "https://islamweb.net/ar/library/content/122/8889/وبل"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 62,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 63,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، رذذ",
+          "url": "https://islamweb.net/ar/library/content/122/3106/رذذ"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 64,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 65,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، طلل",
+          "url": "https://islamweb.net/ar/library/content/122/5134/طلل"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 66,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 67,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 68,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 69,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 70,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 71,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 72,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 73,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 74,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 75,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 76,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 77,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 78,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 79,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 80,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 81,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 82,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، أفق",
+          "url": "https://islamweb.net/ar/library/content/122/178/أفق"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 83,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، شفق",
+          "url": "https://islamweb.net/ar/library/content/122/4314/شفق"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 84,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Example does not contain the headword. Check morphology of the dual and usage."
+    },
+    {
+      "id": 85,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 86,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 87,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 88,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 89,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 90,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 91,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، سدد",
+          "url": "https://islamweb.net/ar/library/content/122/3759/سدد"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 92,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 93,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، حلم",
+          "url": "https://islamweb.net/ar/library/content/122/1886/حلم"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 94,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 95,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Popular attribution requires a primary reference. Do not treat circulation as proof."
+    },
+    {
+      "id": 96,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 97,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 98,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 99,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 100,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 101,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 102,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 103,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 104,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 105,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 106,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 107,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Example uses اليقين in a context commonly glossed as death. Clarify the selected sense before use."
+    },
+    {
+      "id": 108,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 109,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 110,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 111,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 112,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 113,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 114,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 115,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 116,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 117,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Poetic attribution needs checking. Do not retain Hatim attribution without a primary text."
+    },
+    {
+      "id": 118,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 119,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 120,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، صبر",
+          "url": "https://islamweb.net/ar/library/content/122/4519/صبر"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 121,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 122,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 123,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، صدق",
+          "url": "https://islamweb.net/ar/library/content/122/4555/صدق"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 124,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 125,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 126,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 127,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 128,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 129,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 130,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، رفق",
+          "url": "https://islamweb.net/ar/library/content/122/3230/رفق"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 131,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 132,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 133,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 134,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 135,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 136,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 137,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، عزم",
+          "url": "https://islamweb.net/ar/library/content/122/5449/عزم"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 138,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 139,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 140,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 141,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 142,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 143,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 144,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 145,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 146,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 147,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 148,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 149,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 150,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 151,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 152,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 153,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 154,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 155,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 156,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 157,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 158,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 159,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، فرج",
+          "url": "https://islamweb.net/ar/library/content/122/6161/فرج"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 160,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، وصل",
+          "url": "https://islamweb.net/ar/library/content/122/9056/وصل"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations. Corrects the pattern to عِلَة after deletion of the initial root waw."
+    },
+    {
+      "id": 161,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 162,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 163,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 164,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 165,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 166,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 167,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 168,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Definition restricts الرواية to reliable transmitted reports and omits modern narrative senses. Reassess scope."
+    },
+    {
+      "id": 169,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 170,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 171,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، فهم",
+          "url": "https://islamweb.net/ar/library/content/122/6394/فهم"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 172,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 173,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 174,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 175,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 176,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 177,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 178,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 179,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 180,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 181,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 182,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 183,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، تقن",
+          "url": "https://islamweb.net/ar/library/content/122/876/تقن"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 184,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 185,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، علم",
+          "url": "https://islamweb.net/ar/library/content/122/5689/علم"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 186,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 187,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 188,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 189,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 190,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 191,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 192,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 193,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 194,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 195,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 196,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 197,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 198,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 199,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 200,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 201,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 202,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 203,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 204,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 205,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 206,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Example refers to its attributed author in the third person. No primary citation established."
+    },
+    {
+      "id": 207,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 208,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 209,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 210,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 211,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 212,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 213,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 214,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 215,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 216,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 217,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 218,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 219,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 220,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 221,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 222,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، ألف",
+          "url": "https://islamweb.net/ar/library/content/122/207/ألف"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 223,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 224,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Headword and vowels need checking against the intended companionship sense."
+    },
+    {
+      "id": 225,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Example is presented as Ibn al-Kalbi but may be a transmitted religious report. Verify source."
+    },
+    {
+      "id": 226,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 227,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 228,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 229,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Example resembles an altered verse with a different attribution. Verify text and author."
+    },
+    {
+      "id": 230,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 231,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 232,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 233,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 234,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 235,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 236,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 237,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 238,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 239,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 240,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 241,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 242,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 243,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 244,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 245,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 246,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 247,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 248,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 249,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Example appears to splice and alter a known Abu Firas verse. Check text."
+    },
+    {
+      "id": 250,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 251,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 252,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 253,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 254,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 255,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 256,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 257,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 258,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 259,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 260,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 261,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 262,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 263,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 264,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 265,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 266,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 267,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، شفق",
+          "url": "https://islamweb.net/ar/library/content/122/4314/شفق"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 268,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 269,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 270,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Definition combines a general period with an asserted eighty-year duration. Distinguish reported senses."
+    },
+    {
+      "id": 271,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 272,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 273,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 274,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 275,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 276,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 277,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 278,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. A proverb is attributed to Imru al-Qays without evidence. Replace or cite a primary source."
+    },
+    {
+      "id": 279,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 280,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 281,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 282,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 283,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 284,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 285,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 286,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 287,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 288,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 289,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 290,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 291,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 292,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 293,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 294,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 295,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Famous verse is attributed to al-Mutanabbi. Check Ahmad Shawqi attribution against a primary edition."
+    },
+    {
+      "id": 296,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 297,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 298,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 299,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Headword has damma while its Quran example has kasra. Check acceptable forms and align explanation."
+    },
+    {
+      "id": 300,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 301,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 302,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 303,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 304,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 305,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 306,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 307,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Definition frames الفتك as honorable defense. Check core lexical sense and neutral wording."
+    },
+    {
+      "id": 308,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 309,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 310,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، حزم",
+          "url": "https://islamweb.net/ar/library/content/122/1734/حزم"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 311,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 312,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 313,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 314,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 315,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 316,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 317,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 318,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 319,
+      "status": "source-checked",
+      "sources": [
+        {
+          "title": "ابن منظور، لسان العرب، عزم",
+          "url": "https://islamweb.net/ar/library/content/122/5449/عزم"
+        }
+      ],
+      "notes": "Lexical sense checked against the cited dictionary. Headword vowels, root, pattern, English gloss, example and practical usage were assessed editorially. New examples are editorial originals, not attested quotations."
+    },
+    {
+      "id": 320,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 321,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 322,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 323,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 324,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 325,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 326,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 327,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 328,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 329,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 330,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 331,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 332,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 333,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 334,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 335,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 336,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 337,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 338,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 339,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 340,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 341,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 342,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 343,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 344,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 345,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Claim that ض is unique to Arabic requires phonetic evidence. Root and pattern need checking."
+    },
+    {
+      "id": 346,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 347,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 348,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 349,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 350,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 351,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 352,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Headword vowel and stated pattern disagree. Needs morphological check."
+    },
+    {
+      "id": 353,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 354,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 355,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 356,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Scripture or hadith excerpt needs an exact reference and a check that it illustrates the selected sense."
+    },
+    {
+      "id": 357,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 358,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 359,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 360,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 361,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 362,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 363,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 364,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    },
+    {
+      "id": 365,
+      "status": "needs-review",
+      "sources": [],
+      "notes": "Inventory screened. Meaning, vowels, root, pattern, English, example provenance and usefulness still need a source check. Named attribution needs a primary text and exact reference."
+    }
+  ]
+}

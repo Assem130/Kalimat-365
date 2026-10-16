@@ -446,3 +446,43 @@ test("CSV export neutralizes formula-injection prefixes", () => {
   assert.equal(csv.includes("\"'=HYPERLINK"), true, "leading '=' must be neutralized with a quote prefix");
   assert.equal(csv.includes("\"'@risk"), true, "leading '@' must be neutralized with a quote prefix");
 });
+test("source-card CSV retains dictionary and quotation attribution within the existing seven columns", () => {
+  const card = {
+    id: "wk_123_abcdef012345", contentVersion: 3, word: "استدامة",
+    meaningAr: "استمرار الشيء وبقاؤه.", exampleAr: "تسهم الاستدامة في حفظ الموارد.",
+    source: { title: 'استدامة، "تعريف"', url: "https://ar.wiktionary.org/wiki/استدامة", license: "CC-BY-SA-4.0" },
+    exampleSource: { title: "استدامة", url: "https://ar.wikipedia.org/wiki/استدامة", reference: "مقدمة المقالة" },
+  };
+  const csv = serializeAnkiCSV(null, [card]);
+  const row = csv.split("\r\n")[1];
+  const cells = [...row.matchAll(/"((?:[^"]|"")*)"(?:,|$)/g)].map((match) => match[1].replaceAll('""', '"'));
+  assert.equal(cells.length, 7);
+  assert.ok(cells[4].startsWith(card.meaningAr));
+  assert.ok(cells[4].includes(card.source.title));
+  assert.ok(cells[4].includes(card.source.url));
+  assert.ok(cells[4].includes(card.source.license));
+  assert.match(cells[4], /unreviewed/);
+  assert.ok(cells[6].startsWith(card.exampleAr));
+  assert.ok(cells[6].includes(card.exampleSource.title));
+  assert.ok(cells[6].includes(card.exampleSource.url));
+  assert.ok(cells[6].includes(card.exampleSource.reference));
+  assert.match(cells[6], /CC-BY-SA-4\.0/);
+  const legacy = { word: "كلمة", meaningAr: "معنى", exampleAr: "مثال" };
+  assert.equal(serializeAnkiCSV(null, [legacy]), '\uFEFF"Word","Root","Weight","Vocalization","Meaning","English Meaning","Example"\r\n"كلمة","","","","معنى","","مثال"\r\n');
+});
+
+test("source cards do not create social images with truncated quotations or missing attribution", async () => {
+  const canvas = new MockCanvasElement();
+  const result = await renderSocialCard({ contentVersion: 3, word: "استدامة", exampleAr: "ع".repeat(1000) }, { canvas, download: true });
+  assert.equal(result, null);
+  assert.equal(canvas.context.calls.length, 0);
+  assert.equal(canvas.width, 0);
+});
+
+test("LMF CSV preserves construction, source identity and noncommercial example licence", () => {
+  const csv = serializeAnkiCSV(null,[{contentVersion:3,id:"lmf_"+"a".repeat(32),word:"استثمر",senseContext:"استثمر ماله",meaningAr:"نمّاه",exampleAr:"استثمر التاجر ماله في عمل مفيد.",source:{title:"المعجم",url:"https://lindat.mff.cuni.cz/repository/items/d4d8ef1a-0e51-42d1-9a94-113cb81afa76",license:"CC-BY-NC-4.0",sha256:"b".repeat(64),entryId:"entry",senseId:"sense"},exampleSource:{title:"المعجم",reference:"LMF: entry / sense"}}]);
+  assert.match(csv,/Source construction: استثمر ماله/);
+  assert.match(csv,/Entry: entry. Sense: sense/);
+  assert.equal((csv.match(/CC-BY-NC-4.0/g)||[]).length,2);
+  assert.ok(!csv.includes("CC-BY-SA"));
+});

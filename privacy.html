@@ -5,19 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="سياسة خصوصية كَلِمات: بيانات محلية ونطق اختياري بلا حسابات أو تحليلات.">
   <title>كَلِمات | سياسة الخصوصية</title>
+  <link rel="stylesheet" href="support.css">
+  <script src="support.js" defer></script>
   <style>
-    :root { color-scheme: light; --ink: #14211b; --paper: #f3efe5; --panel: #fffdf7; --line: #c9c0af; --accent: #166534; }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; background: var(--paper); color: var(--ink); font-family: "Amiri", "Traditional Arabic", Georgia, serif; }
     .policy { width: min(860px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 64px; }
     .masthead { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
     .brand { color: inherit; font-size: 1.5rem; font-weight: 700; text-decoration: none; }
     .masthead p, .updated { margin: 0; font-family: system-ui, sans-serif; font-size: .85rem; }
-    article { margin-top: 42px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: clamp(24px, 5vw, 56px); box-shadow: 0 18px 42px rgb(20 33 27 / 8%); }
-    h1 { margin: 0 0 8px; font-size: clamp(2.5rem, 7vw, 4.8rem); font-weight: 400; line-height: 1.1; }
+    article { margin-top: 42px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: clamp(24px, 5vw, 56px); box-shadow: 0 18px 42px rgb(20 33 27 / 8%); }
+    h1 { margin: 0 0 8px; font-size: clamp(2.5rem, 7vw, 4.8rem); font-weight: 400; line-height: 1.4; }
     h2 { margin: 2.2em 0 .65em; font-size: clamp(1.45rem, 4vw, 2.15rem); }
     h3 { margin: 1.7em 0 .45em; font-size: 1.3rem; }
-    p, li { font-size: 1.08rem; line-height: 1.85; }
+    p, li { font-size: 1.25rem; line-height: 1.85; }
     ul { padding-inline-start: 1.4em; }
     a { color: var(--accent); }
     .english { direction: ltr; text-align: left; font-family: system-ui, sans-serif; }
@@ -28,21 +29,22 @@
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#policy-content">تخطَّ إلى السياسة</a>
   <main class="policy">
     <header class="masthead">
-      <a class="brand" href="https://assem130.github.io/Kalimat-365/">كَلِمات</a>
-      <p>تجربة عربية محلية أولاً</p>
+      <a class="brand" href="index.html">كَلِمات</a>
+      <button class="theme-toggle" id="theme-toggle" type="button" hidden aria-label="تفعيل المظهر الداكن" aria-pressed="false">المظهر الداكن</button>
     </header>
-    <article>
+    <article id="policy-content" tabindex="-1">
       <h1>سياسة الخصوصية</h1>
-      <p class="updated">آخر تحديث: ٢ أكتوبر ٢٠٢٦.</p>
+      <p class="updated">آخر تحديث: ١٦ أكتوبر ٢٠٢٦.</p>
 
       <h2>بالعربية</h2>
       <p>صُممت كَلِمات لتعمل محلياً. لا نطلب حساباً، ولا نشغّل تحليلات أو إعلانات، ولا نملك خادماً أو مزامنة تجمع بياناتك.</p>
 
       <h3>ما الذي يُحفظ على جهازك؟</h3>
       <ul>
-        <li>يحفظ الموقع سجل الكلمات والتفضيلات في <code>localStorage</code> داخل متصفحك. تبقى تعيينات الموقع ومراجعاته منفصلة عن الامتداد.</li>
+        <li>الموقع الرئيسي للتعريف بالامتداد وتثبيته. لا يقرأ سجل كلماتك ولا ينقله. يحفظ اختيار المظهر فقط في <code>kalimat-support-theme</code>. تبقى بيانات <a href="legacy.html">الموقع السابق</a> في <code>localStorage</code> منفصلة عن الامتداد.</li>
         <li>يحفظ امتداد Chrome أو Firefox الملف المحلي في <code>storage.local</code> داخل المتصفح: المستوى، الاهتمامات، التعيينات، المراجعات، الكلمات المحفوظة، وإعدادات التذكير.</li>
         <li>يُحتفظ بهذه البيانات حتى تحذفها أنت. يمكنك تصدير نسخة JSON، أو استخدام أدوات مسح البيانات في الموقع أو أطلس الامتداد لحذفها.</li>
       </ul>
@@ -50,9 +52,15 @@
       <h3>طلبات الشبكة الاختيارية</h3>
       <ul>
         <li>يستخدم الموقع خطوط WOFF2 محلية مضمّنة ولا يطلب خطوطاً خارجية.</li>
-        <li>التذكير في الموقع اختياري ويستخدم إشعار المتصفح، ولا يعمل إلا مع بقاء علامة تبويب كَلِمات مفتوحة. تذكير الامتداد منفصل ويستخدم إعداد منبّهات وإشعارات MV3 الخاص به.</li>
-        <li>في Chrome فقط، وعند ضغطك صراحةً على «بحث خارجي في القاموس»، وبعد منح إذن القاموس الاختياري، يُرسل مصطلح البحث المنقح إلى <a href="https://ar.wiktionary.org/">Wiktionary العربية</a>. قد يعالج مزوّد القاموس معلومات اتصال الشبكة المعتادة. لا تُرسل التعيينات أو السجل أو الصفحات التي تزورها، ولا يُحفظ سجل البحث في ملفك. بحث القاموس في Firefox محلي. يستخدم نطق الامتداد افتراضياً صوتاً عربياً يصفه المتصفح بأنه محلي. يمكن السماح بالنطق عن بُعد من إعدادات الأطلس بعد الاطلاع على التنبيه؛ عندها قد يُرسل النص المنطوق إلى مزوّد النطق في Chrome أو Firefox. نطق الموقع يتبع المتصفح ونظام التشغيل، وقد يستخدم مزوّداً عبر الشبكة.</li>
+        <li>التذكير في الموقع اختياري ويستخدم إشعار المتصفح، ولا يعمل إلا مع بقاء علامة تبويب الموقع السابق مفتوحة. تذكير الامتداد منفصل ويستخدم إعداد منبّهات وإشعارات MV3 الخاص به.</li>
+        <li>في Chrome فقط، وعند ضغطك صراحةً على «بحث خارجي في القاموس»، وبعد منح إذن القاموس الاختياري، يُرسل مصطلح البحث المنقح إلى <a href="https://ar.wiktionary.org/">Wiktionary العربية</a>. قد يعالج مزوّد القاموس معلومات اتصال الشبكة المعتادة. في البحث اليدوي لا تُرسل التعيينات أو السجل أو الصفحات التي تزورها، ولا يُحفظ سجل البحث في ملفك. بحث القاموس في Firefox محلي. يستخدم نطق الامتداد افتراضياً صوتاً عربياً يصفه المتصفح بأنه محلي. يمكن السماح بالنطق عن بُعد من إعدادات الأطلس بعد الاطلاع على التنبيه؛ عندها قد يُرسل النص المنطوق إلى مزوّد النطق في Chrome أو Firefox. نطق الموقع يتبع المتصفح ونظام التشغيل، وقد يستخدم مزوّداً عبر الشبكة.</li>
       </ul>
+
+      <h3>المصادر اليومية في الإصدار التجريبي 0.4.1</h3>
+      <p>هذه الميزة ضمن إصدار GitHub التجريبي 0.4.1. تختلف الميزات في إصدارات المتاجر الأقدم بحسب النسخة المثبتة.</p>
+      <p>لا تعمل المصادر اليومية قبل تفعيلها ومنح إذن الوصول الاختياري إلى ويكيبيديا العربية وويكاموس العربية. تطلب النسخة نصوصًا عربية عامة مباشرة من Wikimedia، وقد ترسل الطلبات في الخلفية عند إعداد كلمة اليوم. تكشف الطلبات عنوان IP ومعلومات الاتصال المعتادة وعناوين عامة أو كلمات بحث مرتبطة بالموضوع. لا تُرسل كلماتك المحفوظة أو سجل قراءتك أو صفحات تصفحك أو ملفك المحلي، ولا تُرسل ملفات تعريف الارتباط مع هذه الطلبات.</p>
+      <p>تساعد مادة معجمية مضمّنة من ويكاموس ومن معجم اللغة العربية المعاصرة بصيغة LMF في الاختيار محليًا. مصدر مادة LMF هو <a href="https://lindat.mff.cuni.cz/repository/items/d4d8ef1a-0e51-42d1-9a94-113cb81afa76">سجل LINDAT المنشور باسم Driss Namly عام 2015</a>، بترخيص <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> ضمن الاستخدام غير التجاري لكَلِمات. لا ترسل قراءة هذه المادة طلبات إلى LINDAT أو ناشر المعجم. طلبات الاكتشاف عبر الإنترنت إلى Wikimedia منفصلة عن هذه البيانات المضمّنة.</p>
+      <p>تُحفظ اهتمامات المصادر والكلمات المعروفة والبطاقات المقبولة وتفاصيل مصادرها على جهازك. تدخل هذه البيانات في النسخة الاحتياطية للامتداد، وتُحذف عند مسح بياناته. يمكنك إيقاف المصادر من إعدادات الأطلس مع الاحتفاظ بالكلمات السابقة. المقتطفات الآلية غير مراجعة بشريًا. تبقى الكلمات السابقة متاحة دون اتصال، ولا تختار النسخة التجريبية كلمة جديدة من قائمة ثابتة عند تعذّر الاكتشاف.</p>
 
       <h3>الحذف والدعم</h3>
       <p>التصدير والحذف متاحان من عناصر التحكم المخصصة. مسح بيانات الموقع يزيل حالة التعلّم <code>arabic_words_state</code> وحالة التعريف الأولي <code>kalimat_onboarded</code> وإعداد التذكير <code>kalimat_reminder</code>، ويحافظ على تفضيل المظهر <code>kalimat_theme</code>. يحاول مسح بيانات الامتداد حذف الملف وإيقاف التذكير بشكل مستقل. قد ينجح الحذف بينما يفشل إيقاف التذكير أو يتعذّر قراءة حالته؛ تعرض الواجهة النتيجة الجزئية أو غير المؤكدة، وكذلك المسح المؤقت غير المحفوظ. تختلف صيغة JSON للموقع عن صيغة الامتداد؛ استيراد الأطلس مخصص لبيانات الامتداد ولا ينقل بيانات الموقع تلقائياً. يمكنك طلب المساعدة عبر صفحة <a href="https://github.com/Assem130/Kalimat-365/issues">الدعم والمشكلات</a>.</p>
@@ -62,22 +70,28 @@
         <p>Kalimat is local-first. It has no account, analytics, advertising, backend, telemetry, or sync service.</p>
         <h3>Local data</h3>
         <ul>
-          <li>The website keeps reading history and preferences in browser <code>localStorage</code>.</li>
+          <li>The main website explains the extension and provides installation links. It does not read or transfer your word history. It stores only its appearance preference in <code>kalimat-support-theme</code>. The <a href="legacy.html">legacy website</a> keeps its separate reading data in <code>localStorage</code>.</li>
           <li>The Chrome and Firefox extensions keep the local profile in <code>storage.local</code>. Website and extension stores, assignments, and reviews remain separate.</li>
           <li>Data is retained until you delete it. JSON export and clear-data controls are provided on the website and in the Atlas settings.</li>
         </ul>
         <h3>Optional network requests</h3>
         <ul>
           <li>The website uses bundled local WOFF2 fonts and makes no external font request.</li>
-          <li>The website reminder is an opt-in browser <code>Notification</code> that fires only while a Kalimat tab is open. The extension reminder remains a separate MV3 <code>alarms</code>/<code>notifications</code> setting.</li>
-          <li>On Chrome only, an explicit external-dictionary search with optional host permission sends only the normalized search term to <a href="https://ar.wiktionary.org/">Arabic Wiktionary</a>. Wikimedia may process standard network connection metadata. No profile, history, visited-page data, cookies, or background requests are sent, and lookup history is not retained. Firefox dictionary lookup is local. Extension speech uses an Arabic voice reported as local by the browser by default. After the Atlas disclosure, you can opt in to remote speech, which may send spoken text to the browser speech provider on Chrome or Firefox. Website speech remains browser/OS dependent and may use a network provider.</li>
+          <li>The website reminder is an opt-in browser <code>Notification</code> that fires only while a legacy website tab is open. The extension reminder remains a separate MV3 <code>alarms</code>/<code>notifications</code> setting.</li>
+          <li>On Chrome only, an explicit external-dictionary search with optional host permission sends only the normalized search term to <a href="https://ar.wiktionary.org/">Arabic Wiktionary</a>. Wikimedia may process standard network connection metadata. Manual dictionary lookup sends no profile, history, visited-page data, cookies, or background requests, and does not retain lookup history. Firefox dictionary lookup is local. Extension speech uses an Arabic voice reported as local by the browser by default. After the Atlas disclosure, you can opt in to remote speech, which may send spoken text to the browser speech provider on Chrome or Firefox. Website speech remains browser/OS dependent and may use a network provider.</li>
         </ul>
+        <h3>Daily sources in beta 0.4.1</h3>
+        <p>This feature is included in GitHub beta 0.4.1. Older store releases can differ. Available features depend on your installed version.</p>
+        <p>Daily sources remain off until you enable them and grant optional access to Arabic Wikipedia and Wiktionary. The beta requests public Arabic material directly from Wikimedia, including background requests when preparing a daily word. Requests disclose your IP address, ordinary connection metadata, and public titles or topic search terms. They do not transmit your saved words, reading history, visited pages, local profile, or browser cookies. Wikimedia handles requests under its own policies.</p>
+        <p>Bundled reference data from Arabic Wiktionary and the LMF Contemporary Arabic dictionary support local selection. The LMF data come from the <a href="https://lindat.mff.cuni.cz/repository/items/d4d8ef1a-0e51-42d1-9a94-113cb81afa76">LINDAT record by Driss Namly, 2015</a>, under <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> for Kalimat's non-commercial use. Reading the bundled LMF data sends no request to LINDAT or the dictionary publisher. Online Wikimedia discovery requests are separate from these bundled data.</p>
+        <p>Source interests, known-word exclusions, accepted cards, and their source details remain in local extension storage. They are included in extension backups and removed by clear-data. You can disable daily sources in Atlas settings without removing existing words. Automated excerpts are not human-reviewed. Previously stored words remain available offline. The beta does not substitute a fixed-list word when discovery is unavailable.</p>
+
         <h3>Deletion and support</h3>
         <p>Use the website or Atlas controls to export or delete data. Website clear-data removes learning state <code>arabic_words_state</code>, onboarding <code>kalimat_onboarded</code>, and reminder settings <code>kalimat_reminder</code> while preserving the separate <code>kalimat_theme</code> preference. Extension clear-data attempts profile deletion and reminder disabling independently. Deletion may succeed while reminder disabling fails or its state is unreadable; the interface reports partial or unknown outcomes, including temporary unpersisted deletion. Website and extension JSON formats are distinct; Atlas imports extension JSON only, with no automatic website migration. Contact support through the <a href="https://github.com/Assem130/Kalimat-365/issues">GitHub issues page</a>.</p>
       </section>
 
       <nav class="links" aria-label="روابط السياسة">
-        <a href="https://assem130.github.io/Kalimat-365/">العودة إلى كَلِمات</a>
+        <a href="index.html">العودة إلى كَلِمات</a>
         <a href="https://github.com/Assem130/Kalimat-365/issues">الدعم / Support</a>
       </nav>
     </article>

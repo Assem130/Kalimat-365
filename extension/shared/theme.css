@@ -159,3 +159,111 @@ h3:focus-visible,
     outline-offset: 3px;
   }
 }
+
+/* Approved daily encounter. Scoped so the legacy website is unaffected. */
+html.daily-ui {
+  --daily-bg: #f7f4eb;
+  --daily-ink: #183e34;
+  --daily-muted: #52685d;
+  --daily-line: #d5d7cd;
+  --daily-soft: #e7eade;
+  --daily-accent: #205545;
+  --daily-on-accent: #fffdf6;
+  color-scheme: light;
+}
+html.daily-ui[data-theme="emerald"] {
+  --daily-bg: #102b26;
+  --daily-ink: #f3f1e5;
+  --daily-muted: #bccdc1;
+  --daily-line: #456358;
+  --daily-soft: #26483b;
+  --daily-accent: #d8e8c6;
+  --daily-on-accent: #102b26;
+  color-scheme: dark;
+}
+html.daily-ui[data-theme="midnight"] {
+  --daily-bg: #111e2b;
+  --daily-ink: #edf2f1;
+  --daily-muted: #b7c9cc;
+  --daily-line: #405565;
+  --daily-soft: #263b49;
+  --daily-accent: #bfdbd7;
+  --daily-on-accent: #111e2b;
+  color-scheme: dark;
+}
+.daily-ui ::selection { background: var(--daily-accent); color: var(--daily-on-accent); }
+.daily-ui { scrollbar-color: var(--daily-muted) var(--daily-bg); }
+.daily-ui button, .daily-ui summary { -webkit-tap-highlight-color: transparent; }
+.daily-ui button { min-height: 44px; min-width: 44px; }
+.daily-ui .daily-icon-button,
+.daily-ui :where(#assigned, #today-view, #empty, #error, #recovery) button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--daily-line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--daily-ink);
+  padding: 8px 16px;
+  font: 18px/1.5 var(--serif);
+  cursor: pointer;
+}
+.daily-ui .daily-icon-button { border-color: transparent; padding: 8px; }
+@media (hover: hover) and (pointer: fine) {
+  .daily-ui button:hover:not(:disabled) { filter: brightness(.96); }
+}
+.daily-ui button:active:not(:disabled) { filter: brightness(.9); }
+.daily-ui button:disabled { opacity: .6; cursor: default; }
+.daily-ui button[aria-busy="true"] { cursor: progress; }
+.daily-ui :focus-visible { outline: 2px solid var(--daily-accent); outline-offset: 4px; box-shadow: none; }
+.daily-ui #assigned summary, .daily-ui #today-card summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  padding-block: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.daily-ui summary::-webkit-details-marker { display: none; }
+.daily-ui #assigned summary::after, .daily-ui #today-card summary::after {
+  content: "";
+  flex: 0 0 7px;
+  height: 7px;
+  border: solid currentColor;
+  border-width: 1.5px 1.5px 0 0;
+  transform: rotate(45deg);
+  margin-inline-end: 5px;
+}
+.daily-ui #assigned details[open] > summary::after,
+.daily-ui #today-card details[open] > summary::after { transform: rotate(135deg); }
+.daily-ui .icon-speak::before, .daily-ui .word-speak::before,
+.daily-ui .icon-bookmark::before, .daily-ui .icon-settings::before,
+.daily-ui .icon-share::before {
+  content: "";
+  display: inline-block;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  background: currentColor;
+  mask: var(--daily-icon) center / contain no-repeat;
+}
+.daily-ui .icon-speak, .daily-ui .word-speak {
+  --daily-icon: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4 6 8H3v8h3l5 4V4Z M15 8a6 6 0 0 1 0 8 M18 5a10 10 0 0 1 0 14'/%3E%3C/svg%3E");
+}
+.daily-ui .icon-bookmark {
+  --daily-icon: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M6 3h12v18l-6-4-6 4V3Z'/%3E%3C/svg%3E");
+}
+.daily-ui .icon-bookmark[aria-pressed="true"] {
+  --daily-icon: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v18l-6-4-6 4V3Z'/%3E%3C/svg%3E");
+}
+.daily-ui .icon-settings {
+  --daily-icon: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='m9 3 1-2h4l1 2 2 1 2-1 2 3-1 2 1 2 2 1v4l-2 1-1 2 1 2-3 2-2-1-2 1-1 2h-4l-1-2-2-1-2 1-2-3 1-2-1-2-2-1v-4l2-1 1-2-1-2 3-2 2 1 2-1Z' transform='translate(1 0) scale(.9)'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+}
+.daily-ui .icon-share {
+  --daily-icon: url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 15V2m-4 4 4-4 4 4 M7 10H4v11h16V10h-3'/%3E%3C/svg%3E");
+}
+
+.sense-context { color: var(--ink-soft); font-size: 1rem; line-height: 1.65; margin-block: 0.6rem; }

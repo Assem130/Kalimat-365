@@ -114,15 +114,24 @@
 
     for (const w of wordsList) {
       if (!w || typeof w !== "object") continue;
+      let meaning = w.meaning || w.meaningAr || "";
+      let example = w.example || w.exampleAr || "";
+      if (w.contentVersion === 3) {
+        if (w.senseContext) meaning = `Source construction: ${w.senseContext}\n${meaning}`;
+        const source = w.source || {};
+        const quotation = w.exampleSource || {};
+        meaning += `\n\nSource: ${source.title || ""} (${source.url || ""}). License: ${source.license || ""}.${source.sha256 ? ` Dataset SHA256: ${source.sha256}. Entry: ${source.entryId}. Sense: ${source.senseId}.` : ""} Automatically sourced; unreviewed.`;
+        example += `\n\nQuotation: ${quotation.title || ""} (${quotation.url || ""}). ${quotation.reference || ""}. License: ${source.license === "CC-BY-NC-4.0" ? "CC-BY-NC-4.0" : "CC-BY-SA-4.0"}.`;
+      }
       rows.push(
         [
           w.word || "",
           w.root || "",
           w.weight || w.pattern || "",
           w.vocalization || w.pronunciation || "",
-          w.meaning || w.meaningAr || "",
+          meaning,
           w.englishMeaning || w.meaningEn || "",
-          w.example || w.exampleAr || "",
+          example,
         ]
           .map(escapeField)
           .join(",")
@@ -143,7 +152,8 @@
    * @returns {Promise<Blob|string|null>}
    */
   async function renderSocialCard(word, options = {}) {
-    if (!word || typeof word !== "object") return null;
+    // Source quotations and attribution can exceed this fixed image layout.
+    if (!word || typeof word !== "object" || word.contentVersion === 3) return null;
 
     if (typeof document !== "undefined" && document.fonts && document.fonts.ready) {
       try {

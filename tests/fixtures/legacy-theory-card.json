@@ -1,0 +1,27 @@
+{
+  "contentVersion": 3,
+  "id": "wk_9740_0c78494d",
+  "word": "نَظَرِيَّة",
+  "normalized": "نظرية",
+  "meaningAr": "قضية غير مثبتة ولا مبرهنة لتفسير أمر ما.",
+  "exampleAr": "لدي الشرطة نَظَرْيَّة قد توصلهم إلى حل الجريمة. - نَظَرْيَّة المؤامرة ليس فيها ما يثبتها، لذا فهي مجرد نَظَرْيَّة.",
+  "topics": [
+    "science"
+  ],
+  "partOfSpeech": "other",
+  "register": "standard",
+  "reviewed": false,
+  "source": {
+    "title": "نَظَرِيَّة",
+    "url": "https://ar.wiktionary.org/w/index.php?oldid=1086519",
+    "revisionId": 1086519,
+    "license": "CC-BY-SA-4.0"
+  },
+  "exampleKind": "quotation",
+  "exampleSource": {
+    "title": "نَظَرِيَّة",
+    "url": "https://ar.wiktionary.org/w/index.php?oldid=1086519",
+    "reference": "مثال ويكاموس للمعنى المختار، نَظَرِيَّة"
+  },
+  "discoveryReason": "اكتُشفت في قراءة عربية. المعنى ومثاله من ويكاموس، ولا يُنسب هذا المعنى إلى سياق المقال. لم تخضع لمراجعة بشرية."
+}

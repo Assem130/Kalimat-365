@@ -1,8 +1,12 @@
 // Service Worker for Kalimat (Offline PWA)
-const STATIC_CACHE_NAME = "kalimat-static-v2.6";
+const STATIC_CACHE_NAME = "kalimat-static-v2.7-extension-site";
 const STATIC_ASSETS = [
     "./",
     "./index.html",
+    "./legacy.html",
+    "./support.css",
+    "./support.js",
+    "./assets/extension-popup.png",
     "./word.html",
     "./privacy.html",
     "./style.css",
@@ -21,7 +25,7 @@ const STATIC_ASSETS = [
     "./assets/fonts/Outfit-Regular.woff2"
 ];
 const WORKER_BASE_URL = new URL("./", self.location.href);
-const CANONICAL_PAGES = new Set(["./", "./index.html", "./word.html", "./privacy.html"]
+const CANONICAL_PAGES = new Set(["./", "./index.html", "./legacy.html", "./word.html", "./privacy.html"]
     .map(page => new URL(page, WORKER_BASE_URL).href));
 
 // Cache key without query string, so deep links map onto canonical pages.

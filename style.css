@@ -2105,3 +2105,8 @@ body:has(.history-dialog[open]), body:has(.practice-dialog[open]), body:has(.sho
     .home-menu-dropdown,
     .word-menu-dropdown { inset-inline: 14px; width: auto; min-width: 0; }
 }
+
+/* The archived website keeps its own data and export controls. */
+.legacy-notice { margin: 24px 0; padding: 18px 24px; border: 1px solid var(--line); color: var(--ink); background: var(--paper); font-size: 18px; line-height: 1.8; }
+.legacy-notice p { margin: 0 0 8px; }
+.legacy-notice a { color: inherit; text-underline-offset: 4px; }

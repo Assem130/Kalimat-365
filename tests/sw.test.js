@@ -114,7 +114,7 @@ test("the offline shell pre-caches every same-origin page script", () => {
     const swSource = fs.readFileSync("sw.js", "utf8");
     const assetsBody = swSource.match(/const STATIC_ASSETS\s*=\s*\[([\s\S]*?)\];/)?.[1] || "";
     const staticAssets = [...assetsBody.matchAll(/["']([^"']+)["']/g)].map((match) => match[1]);
-    const scriptSources = ["index.html", "word.html"].flatMap((page) => {
+    const scriptSources = ["index.html", "legacy.html", "word.html", "privacy.html"].flatMap((page) => {
         const html = fs.readFileSync(page, "utf8");
         return [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)]
             .map((match) => match[1])
@@ -188,7 +188,7 @@ test("installed subpath shell serves deep links and every CSS font offline", asy
     let installation;
     worker.handlers.install({ waitUntil(promise) { installation = promise; } });
     await installation;
-    for (const page of ["index.html", "word.html", "privacy.html"]) {
+    for (const page of ["index.html", "legacy.html", "word.html", "privacy.html"]) {
         const response = await requestFromWorker(worker, `${base}${page}?id=23&date=2026-09-30`);
         assert.equal(response.body, `${base}${page}`, "deep links must use the matching page's queryless cached shell");
     }

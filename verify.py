@@ -18,6 +18,9 @@ def verify():
     if not tests:
         raise RuntimeError("No test files found")
     run("node", "--test", *tests)
+    run(sys.executable, "extension/tests/lmf-importer.test.py")
+    run("node", "tests/e2e/coverage.cjs")
+    run("node", "tests/e2e/supply.cjs")
     tracked = subprocess.check_output(["git", "ls-files", "-z", "*.js"], cwd=ROOT).decode().split("\0")
     scripts = [file for file in tracked if file and not file.startswith("extension/dist/")]
     if not scripts:

@@ -150,6 +150,8 @@ function popupApi(responses = {}, options = {}) {
     "card-back-meaning-en", "card-back-example-ar", "card-back-context", "practice-ratings", "rate-again", "rate-hard", "rate-good", "rate-easy",
   ];
   for (const id of ids) elements.set(id, element());
+  if (options.sources) elements.set("source-attribution", element());
+  if (options.dailySources) for (const id of ["daily-source-setup", "daily-source-title", "daily-source-description", "daily-source-enable", "daily-source-offline", "daily-source-status", "empty-retry"]) elements.set(id, element());
   elements.get("assigned").hidden = true;
   elements.get("error").hidden = true;
   elements.get("interest-count").textContent = "0/3";
@@ -364,6 +366,8 @@ function atlasApi(responses = {}, options = {}) {
     "kalimat.theme": options.theme || "paper",
     ...(options.storage || {}),
   };
+  const discoveryTopics = ["science", "culture", "society", "environment", "economics", "language"].map((value) => ({ ...element(), value, checked: true }));
+  if (options.discovery) for (const id of ["discovery-panel", "discovery-title", "discovery-enable", "discovery-disable", "discovery-save-topics", "discovery-status", "today-source-retry", "today-source-setup", "today-source-start", "today-source-offline", "today-source-setup-status", "today-source-summary", "today-source-enable", "today-source-status"]) elements.set(id, element());
   const storageListeners = [];
   const storage = {
     local: {
@@ -438,7 +442,7 @@ function atlasApi(responses = {}, options = {}) {
         a.remove = function () {};
         return a;
       }
-      return element(false);
+      return Object.assign(element(false), { tagName: tag.toUpperCase() });
     },
     querySelector(selector) {
       const level = selector.match(/input\[name="atlas-level"\]\[value="(\d)"\]/);
@@ -447,8 +451,18 @@ function atlasApi(responses = {}, options = {}) {
       return null;
     },
     querySelectorAll(selector) {
+      if (selector.includes('name="discovery-topic"')) return discoveryTopics;
       if (selector.includes('name="atlas-interest"')) return selector.includes(":checked") ? interests.filter((input) => input.checked) : interests;
       if (selector.includes('name="atlas-level"')) return levels;
+      if (selector === ".word-speak") {
+        const matches = new Set();
+        const visit = (node) => {
+          if (node.isConnected && node.className.split(/\s+/).includes("word-speak")) matches.add(node);
+          for (const child of node.children ?? []) visit(child);
+        };
+        for (const node of elements.values()) visit(node);
+        return [...matches];
+      }
       return [];
     },
     addEventListener(type, listener) { documentListeners[type] = listener; },
@@ -498,6 +512,7 @@ function atlasApi(responses = {}, options = {}) {
     Promise,
     console,
     URLSearchParams,
+    TextEncoder,
     URL: Object.assign(class extends URL {}, mockURL),
     Blob: globalThis.Blob,
     location: { search: options.search ?? "" },
@@ -524,12 +539,12 @@ test("popup ships separate native files without unsafe markup or timer work", ()
   const html = source("popup.html");
   const css = source("popup.css");
   const js = source("popup.js");
-  assert.match(html, /<html\s+lang="ar"\s+dir="rtl">/);
+  assert.match(html, /<html\s+lang="ar"\s+dir="rtl"[^>]*>/);
   assert.match(html, /<link[^>]+href="popup\.css"/);
   assert.match(html, /<script\s+src="\.\.\/shared\/date\.js"><\/script>[\s\S]*<script\s+src="popup\.js"><\/script>/);
   assert.match(html, /<script\s+src="\.\.\/shared\/speech\.js"><\/script>/);
   assert.match(html, /<script\s+src="popup\.js"><\/script>/);
-  const withoutApprovedRemote = `${html.replace("https://assem130.github.io/Kalimat-365/privacy.html", "")}\n${css}\n${js}`;
+  const withoutApprovedRemote = `${html.replace("https://assem130.github.io/Kalimat-365/privacy.html", "")}\n${css}\n${js.replaceAll("https://ar.wikipedia.org/*", "").replaceAll("https://ar.wiktionary.org/*", "")}`;
   assert.doesNotMatch(withoutApprovedRemote, /https?:\/\/|\b(?:innerHTML|outerHTML)\b|\b(?:setInterval|setTimeout)\s*\(/);
   assert.doesNotMatch(`${html}\n${js}`, /online[ -]lookup|lookup-result/i, "Popup must keep online lookup in Atlas only");
   assert.doesNotMatch(html, /\son[a-z]+\s*=/i);
@@ -631,12 +646,12 @@ test("popup no-word and load-error states focus a clear state and disable word a
   assert.match(failed.elements.get("status").textContent, /تعذّر تحميل/);
 });
 
-test("Atlas ships a dark, accessible four-view page without unsafe sinks or timer work", () => {
+test("Atlas ships an accessible four-view page without unsafe sinks or timer work", () => {
   for (const name of ["atlas.html", "atlas.css", "atlas.js"]) assert.equal(fs.existsSync(path.join(atlas, name)), true, `${name} is missing`);
   const html = atlasSource("atlas.html");
   const css = atlasSource("atlas.css");
   const js = atlasSource("atlas.js");
-  assert.match(html, /<html\s+lang="ar"\s+dir="rtl">/);
+  assert.match(html, /<html\s+lang="ar"\s+dir="rtl"[^>]*>/);
   assert.match(html, /<link[^>]+href="atlas\.css"/);
   assert.match(html, /<script\s+src="atlas\.js"><\/script>/);
   assert.match(html, /<script\s+src="\.\.\/shared\/speech\.js"><\/script>/);
@@ -653,7 +668,7 @@ test("Atlas ships a dark, accessible four-view page without unsafe sinks or time
   assert.match(html, /<button[^>]+id="settings-reminder"[^>]+role="switch"[^>]+aria-checked="false"/);
   assert.doesNotMatch(html, /<button[^>]+id="settings-reminder"[^>]*aria-pressed=/);
   assert.match(html, /id="search-count"[^>]+aria-live="polite"/);
-  const withoutApprovedRemote = `${html.replace("https://assem130.github.io/Kalimat-365/privacy.html", "")}\n${css}\n${js.replace(/https:\/\/ar\.wiktionary\.org[^\s"'`)]*/g, "")}`;
+  const withoutApprovedRemote = `${html.replace("https://assem130.github.io/Kalimat-365/privacy.html", "")}\n${css}\n${js.replace(/https:\/\/(?:ar\.wiktionary\.org|ar\.wikipedia\.org|www\.wikidata\.org)[^\s"'`)]*/g, "")}`;
   assert.doesNotMatch(withoutApprovedRemote, /https?:\/\/|\b(?:innerHTML|outerHTML)\b|\b(?:setInterval|setTimeout)\s*\(/);
   assert.doesNotMatch(html, /\son[a-z]+\s*=/i);
   assert.match(css, /background:\s*#102b2a/i);
@@ -1030,8 +1045,8 @@ test("Atlas return-to-today shows and focuses the Today view", async () => {
 test("Atlas no-word and load-error states are focused and leave Today actions disabled", async () => {
   const empty = atlasApi({ "assignment.get": { kind: "no-new-word", dateKey: "2026-07-30" }, "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) }, "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } } });
   await empty.api.initialize();
-  assert.equal(empty.elements.get("empty").hidden, false);
-  assert.equal(empty.elements.get("empty-title").focuses, 1);
+  assert.equal(empty.elements.get("today-view").hidden, false);
+  assert.equal(empty.elements.get("today-title").focuses, 1);
   assert.equal(empty.elements.get("today-save").disabled, true);
 
   const failed = atlasApi({ "assignment.get": new Error("load"), "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) }, "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } } });
@@ -1229,7 +1244,7 @@ test("Atlas renders practical context before the literary example and honors Eng
   await visible.api.initialize();
   const cards = visible.elements.get("today-card").children;
   const context = cards.find((node) => node.className === "context");
-  const example = cards.find((node) => node.className === "example");
+  const example = cards.find((node) => node.className === "daily-example");
   const contextEnglish = cards.find((node) => node.children?.some((child) => child.className === "context english"))?.children.find((node) => node.className === "context english");
   assert.ok(context && example && contextEnglish);
   assert.ok(cards.indexOf(context) < cards.indexOf(example));
@@ -1238,7 +1253,7 @@ test("Atlas renders practical context before the literary example and honors Eng
 
   const hidden = atlasApi({ ...responses, "state.export": { kind: "export", text: JSON.stringify(atlasProfile({ showEnglish: false, assignments: { "2026-07-30": { wordId: "w1" } }, assignmentOrdinal: 1 })) } }, { vocabulary: [word] });
   await hidden.api.initialize();
-  assert.equal(hidden.elements.get("today-card").children.some((node) => node.className === "context english"), false);
+  assert.equal(hidden.elements.get("today-card").children.some((node) => node.className === "daily-translation"), false);
 });
 
 test("Atlas renders the current card's exact review intervals", async () => {
@@ -1534,14 +1549,14 @@ test("Atlas clear does not retain a profile-only warning as a reminder warning",
   assert.equal(fixture.elements.get("warning").hidden, true);
 });
 
-test("Atlas exposes theme-select, streak-badge, and export controls in HTML", () => {
+test("Atlas exposes theme and export controls without a streak badge", () => {
   const html = atlasSource("atlas.html");
   assert.match(html, /<select\s+id="theme-select"[^>]*aria-label="اختر السمة"/);
   assert.match(html, /<option\s+value="paper">ورقي<\/option>/);
   assert.match(html, /<option\s+value="emerald">زمردي<\/option>/);
   assert.match(html, /<option\s+value="midnight">ليلي<\/option>/);
   assert.doesNotMatch(html, /id="streak-badge"/);
-  assert.match(html, /<button\s+id="today-export-card"[^>]*>بطاقة للمشاركة<\/button>/);
+  assert.match(html, /<button\s+id="today-export-card"[^>]*aria-label="بطاقة للمشاركة"[^>]*>مشاركة<\/button>/);
   assert.match(html, /<button\s+id="history-export-anki"[^>]*>تصدير إلى Anki \(CSV\)<\/button>/);
   assert.match(html, /<button\s+id="btn-export-anki"[^>]*>تصدير بطاقات Anki \(CSV\)<\/button>/);
   assert.match(html, /<script\s+src="\.\.\/shared\/theme\.js"><\/script>/);
@@ -1625,7 +1640,7 @@ test("All popup and atlas files maintain zero CSP violations and no unsafe sinks
   }
 
   for (const [name, content] of [["popup.js", popupJs], ["atlas.js", atlasJs]]) {
-    const withoutApprovedRemote = content.replace(/https:\/\/ar\.wiktionary\.org[^\s"'`)]*/g, "");
+    const withoutApprovedRemote = content.replace(/https:\/\/(?:ar\.wiktionary\.org|ar\.wikipedia\.org|www\.wikidata\.org)[^\s"'`)]*/g, "");
     assert.doesNotMatch(withoutApprovedRemote, /https?:\/\/|\b(?:innerHTML|outerHTML)\b|\b(?:setInterval|setTimeout)\s*\(/, `${name} contains unsafe sink or timer`);
   }
 });
@@ -1777,7 +1792,7 @@ test("failed profile mutations retain durable controls and retry explicit save i
     save.focus();
     await fixture.api.toggleSave();
     assert.notEqual(save.getAttribute("aria-pressed"), "true");
-    assert.match(fixture.elements.get(surface === "popup" ? "action-status" : "status").textContent, /مؤقت.*لم يُحفظ/);
+    assert.match(fixture.elements.get(surface === "popup" ? "action-status" : "today-action-status").textContent, /مؤقت.*لم يُحفظ/);
     assert.equal(save.disabled, false);
     assert.equal(fixture.context.document.activeElement, save);
     fail = false;
@@ -1787,7 +1802,7 @@ test("failed profile mutations retain durable controls and retry explicit save i
     assert.equal(save.getAttribute("aria-pressed"), "true");
     if (surface !== "popup") {
       await fixture.api.feedback("known");
-      assert.match(fixture.elements.get("status").textContent, /مؤقت.*لم يُحفظ/);
+      assert.match(fixture.elements.get("today-action-status").textContent, /مؤقت.*لم يُحفظ/);
       assert.notEqual(fixture.elements.get("today-known").getAttribute("aria-pressed"), "true");
     }
   }
@@ -1950,17 +1965,17 @@ test("popup source keeps the encounter prominent with Arabic, disclosure, and re
   assert.ok(html.indexOf('id="explore"') < html.indexOf('id="translation"'));
   assert.ok(html.indexOf('id="explore"') < html.indexOf('id="vocalization-details"'));
   assert.match(source("popup.css"), /overflow-y: auto/);
-  assert.match(source("popup.css"), /main \{ width: 380px; max-width: 100%/);
+  assert.match(source("popup.css"), /html, body \{ width: 380px; min-width: 380px; max-width: 380px/);
   assert.match(html, /id="pronunciation"[^>]*lang="en"[^>]*dir="ltr"/);
   assert.doesNotMatch(html, /id="(?:known|difficult|onboarding|reminder|streak-badge|theme-select|practice-dialog|btn-export-anki)"/);
   assert.match(html, /id="recovery-atlas"/);
-  assert.match(source("popup.css"), /min-height: 44px/);
-  assert.match(source("popup.css"), /#word[^}]*line-height: 1.65/);
-  assert.match(source("popup.css"), /:focus-visible/);
-  assert.match(source("popup.css"), /prefers-reduced-motion/);
+  assert.match(fs.readFileSync(path.join(popup, "../shared/theme.css"), "utf8"), /min-height: 44px/);
+  assert.match(source("popup.css"), /#word[^}]*line-height: 1.5/);
+  assert.match(fs.readFileSync(path.join(popup, "../shared/theme.css"), "utf8"), /:focus-visible/);
+  assert.match(fs.readFileSync(path.join(popup, "../shared/theme.css"), "utf8"), /prefers-reduced-motion/);
 });
 
-test("fresh popup gets a word directly and storage refresh preserves keyboard focus", async () => {
+test("popup without first-use setup gets its word and storage refresh preserves keyboard focus", async () => {
   const profile = atlasProfile({ showEnglish: false, wordStates: { w1: { saved: true } } });
   const fixture = popupApi({
     "assignment.get": { kind: "assigned", word: { id: "w1", word: "كَلِمَة", meaningAr: "معنى", register: "classical" }, dateKey: "2026-07-30", showEnglish: false },
@@ -1971,7 +1986,7 @@ test("fresh popup gets a word directly and storage refresh preserves keyboard fo
   assert.equal(fixture.elements.get("word").focuses, 0);
   assert.equal(fixture.elements.get("translation").hidden, true);
   assert.equal(fixture.elements.get("register").textContent, "أدبي");
-  assert.deepEqual(fixture.calls.filter((call) => call.type !== "state.export").map((call) => call.type), ["assignment.get"]);
+  assert.deepEqual(fixture.calls.filter((call) => call.type !== "state.export").map((call) => call.type), ["discovery.get", "assignment.get"]);
   const focused = fixture.elements.get("explore");
   focused.focus();
   for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
@@ -2608,3 +2623,459 @@ test("Atlas pending Save or settings prevents profile replacement and allows ret
     assert.equal(fixture.calls.filter((call) => call.type === "state.clear").length, 1);
   }
 });
+
+
+test("Atlas saving the same daily word preserves open disclosures and the working save control", async () => {
+  const word = { id: "w1", word: "كلمة", meaningAr: "معنى", meaningEn: "word", vocalization: "كَلِمَة", contextAr: "في جملة", exampleAr: "مثال آخر", usageNote: "ملاحظة", root: "ك ل م" };
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile({ assignments: { "2026-07-30": { wordId: "w1" } } })) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "word.save": (message) => ({ kind: "ok", wordId: message.wordId, saved: message.saved }),
+  }, { vocabulary: [word] });
+  await fixture.api.initialize();
+  const card = fixture.elements.get("today-card");
+  const disclosures = () => card.children.filter((node) => node.tagName === "DETAILS");
+  assert.equal(disclosures().length, 3);
+  disclosures().forEach((node) => { node.open = true; });
+  const save = fixture.elements.get("today-save");
+  const listener = save.listeners.click;
+  save.focus();
+  for (const expectedSaved of [true, false]) {
+    await save.listeners.click();
+    assert.equal(card.children.includes(save), true, "rerender retains the original save button inside Today");
+    assert.equal(save.listeners.click, listener, "the retained button keeps its click listener");
+    assert.equal(save.getAttribute("aria-pressed"), String(expectedSaved));
+    assert.equal(save.textContent, expectedSaved ? "محفوظة" : "حفظ");
+    assert.equal(disclosures().length, 3);
+    assert.ok(disclosures().every((node) => node.open), "same-word rerender preserves expanded details");
+    assert.equal(fixture.context.document.activeElement, save);
+  }
+  assert.deepEqual(fixture.calls.filter((call) => call.type === "word.save").map((call) => call.saved), [true, false]);
+});
+
+test("Atlas profile storage changes synchronize saved and compact speech labels", async () => {
+  const profile = atlasProfile({ assignments: { "2026-07-30": { wordId: "w1" } }, preferences: { allowRemoteSpeech: false } });
+  const word = { id: "w1", word: "كلمة", meaningAr: "معنى" };
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+  }, { vocabulary: [word] });
+  await fixture.api.initialize();
+  const save = fixture.elements.get("today-save");
+  const speech = fixture.elements.get("today-card").children.find((node) => node.className === "word-speak");
+  assert.ok(speech);
+  for (const remote of [true, false]) {
+    profile.wordStates.w1 = { saved: remote };
+    profile.preferences.allowRemoteSpeech = remote;
+    for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+    await new Promise(setImmediate);
+    assert.equal(save.getAttribute("aria-pressed"), String(remote));
+    assert.equal(save.textContent, remote ? "محفوظة" : "حفظ");
+    assert.equal(speech.textContent, remote ? "استمع عبر الإنترنت" : "استمع");
+    assert.equal(speech.getAttribute("aria-label"), `${remote ? "استمع (قد يستخدم الإنترنت)" : "استمع للنطق المحلي"}: ${word.word}`);
+    assert.equal(speech.title, speech.getAttribute("aria-label"));
+    assert.equal(fixture.elements.get("today-card").children.includes(speech), true, "storage refresh keeps the existing speech control");
+  }
+});
+
+function discoverySnapshot() {
+  return {
+    id: "wk_123_abcdef012345", contentVersion: 3,
+    word: "استدامة", normalized: "استدامة", meaningAr: "استمرار الشيء وبقاؤه.",
+    exampleAr: "تسهم الاستدامة في حفظ الموارد.", topics: ["environment"],
+    partOfSpeech: "noun", register: "standard", reviewed: false,
+    source: { title: "استدامة", url: "https://ar.wiktionary.org/wiki/استدامة", revisionId: 12, license: "CC-BY-SA-4.0" },
+    exampleKind: "quotation", exampleSource: { title: "استدامة", url: "https://ar.wikipedia.org/wiki/استدامة", reference: "مقدمة المقالة" },
+    discoveryReason: "مصطلح مفيد لفهم نقاشات البيئة.",
+  };
+}
+
+test("popup source card displays quoted evidence and attribution without empty English disclosure", () => {
+  const { api, elements } = popupApi({}, { sources: true });
+  const word = discoverySnapshot();
+  api.renderAssigned({ kind: "assigned", dateKey: "2026-10-16", word, showEnglish: true });
+  assert.equal(elements.get("example").textContent, word.exampleAr);
+  assert.equal(elements.get("translation").hidden, true);
+  const attribution = elements.get("source-attribution");
+  assert.equal(attribution.hidden, false);
+  assert.ok(attribution.children.some((node) => node.textContent.includes("CC-BY-SA-4.0")));
+  assert.ok(attribution.children.some((node) => node.href === new URL(word.exampleSource.url).href));
+});
+
+function dailySourceResponses(overrides = {}) {
+  return {
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-10-16" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "review.queue": { kind: "queue", words: [], dueCount: 0, visibleCount: 0, remainingCount: 0 },
+    ...overrides,
+  };
+}
+
+test("fresh Atlas waits for source choice before assigning its main daily word", async () => {
+  let configured = false;
+  const responses = dailySourceResponses({
+    "discovery.get": () => ({ kind: "discovery", enabled: configured, configured, needsSetup: !configured, topics: [], permissionGranted: configured }),
+    "discovery.configure": (message) => { configured = message.enabled; return { kind: "ok" }; },
+  });
+  const fixture = atlasApi(responses, { discovery: true });
+  await fixture.api.initialize();
+  assert.equal(fixture.calls.some((message) => message.type === "assignment.get"), false);
+  assert.equal(fixture.elements.get("today-source-setup").hidden, false);
+  assert.equal(fixture.elements.get("today-card").hidden, true);
+  await fixture.api.enableDiscovery();
+  assert.equal(fixture.elements.get("today-source-setup").hidden, true);
+  assert.equal(fixture.elements.get("today-card").dataset.wordId, "w1");
+  assert.deepEqual(Array.from(fixture.calls.find((message) => message.type === "discovery.configure").topics).sort(), ["culture", "science", "society"]);
+  assert.equal(fixture.calls.some((message) => message.type === "discovery.find"), false);
+});
+
+test("source permission denial leaves first-use choice recoverable and never assigns a bundled word", async () => {
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": { kind: "discovery", enabled: false, needsSetup: true, topics: [], permissionGranted: false },
+  }), { discovery: true, permissionResult: false });
+  await fixture.api.initialize();
+  await fixture.api.enableDiscovery();
+  assert.equal(fixture.calls.some((message) => ["assignment.get", "discovery.configure"].includes(message.type)), false);
+  assert.match(fixture.elements.get("today-source-setup-status").textContent, /لم تُفعّل/);
+  assert.equal(fixture.elements.get("today-source-start").disabled, false);
+  assert.equal(fixture.elements.get("today-source-setup").hidden, false);
+});
+
+test("disabled first-use choice keeps archive access and offers source activation", async () => {
+  let configured = false;
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": () => ({ kind: "discovery", enabled: false, configured, needsSetup: !configured, topics: [] }),
+    "discovery.configure": () => { configured = true; return { kind: "ok" }; },
+    "assignment.get": { kind: "no-new-word", discoveryStatus: "disabled" },
+  }), { discovery: true });
+  await fixture.api.initialize();
+  await fixture.api.disableDiscovery();
+  const configIndex = fixture.calls.findIndex((message) => message.type === "discovery.configure");
+  assert.equal(fixture.calls[configIndex].enabled, false);
+  assert.ok(fixture.calls.findIndex((message) => message.type === "assignment.get") > configIndex);
+  assert.equal(fixture.elements.get("today-card").hidden, true);
+  assert.equal(fixture.elements.get("today-source-enable").hidden, false);
+  assert.equal(fixture.elements.get("today-source-setup").hidden, true);
+});
+
+test("returning source users render their automatic source word in the main card without manual discovery", async () => {
+  const word = discoverySnapshot();
+  const profile = atlasProfile({ wordSnapshots: { [word.id]: word }, discovery: { enabled: true, topics: ["environment"], knownKeys: [] } });
+  const fixture = atlasApi(dailySourceResponses({
+    "assignment.get": { kind: "assigned", wordId: word.id, dateKey: "2026-10-16" },
+    "state.export": { kind: "export", text: JSON.stringify(profile) },
+    "discovery.get": { kind: "discovery", enabled: true, configured: true, needsSetup: false, topics: ["environment"], permissionGranted: true },
+  }), { discovery: true });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("today-card").dataset.wordId, word.id);
+  assert.equal(fixture.elements.get("today-source-setup").hidden, true);
+  assert.equal(fixture.elements.get("today-source-enable").hidden, true);
+  assert.equal(fixture.calls.some((message) => message.type === "discovery.find"), false);
+  assert.ok(fixture.calls.findIndex((message) => message.type === "discovery.get") < fixture.calls.findIndex((message) => message.type === "assignment.get"));
+});
+
+test("source snapshot deep link reloads and clearing removes stale source consent", async () => {
+  const word = discoverySnapshot();
+  const profile = atlasProfile({ wordSnapshots: { [word.id]: word }, discovery: { enabled: true, topics: ["environment"], knownKeys: [] } });
+  const fixture = atlasApi(dailySourceResponses({
+    "state.export": { kind: "export", text: JSON.stringify(profile) },
+    "discovery.get": { kind: "discovery", enabled: true, configured: true, needsSetup: false, topics: ["environment"], permissionGranted: true },
+    "state.clear": { kind: "ok", profilePersisted: true },
+  }), { discovery: true, search: `?view=explore&id=${word.id}` });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("explore-card").dataset.wordId, word.id);
+  await fixture.api.clearState();
+  assert.equal(fixture.elements.get("discovery-enable").hidden, false);
+});
+
+test("revoked permission offers regrant and legacy discovery link opens settings", async () => {
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": { kind: "discovery", enabled: true, configured: true, needsSetup: false, topics: ["science"], permissionGranted: false },
+    "discovery.configure": { kind: "permission-required" },
+  }), { discovery: true, search: "?view=discovery" });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("settings-view").hidden, false);
+  assert.equal(fixture.elements.get("today-source-enable").hidden, false);
+  assert.match(fixture.elements.get("discovery-enable").textContent, /مجددًا/);
+  await fixture.api.enableDiscovery();
+  assert.match(fixture.elements.get("discovery-status").textContent, /إذن المصادر/);
+});
+
+test("topic preference save configures future daily sources without fetching a second word", async () => {
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": { kind: "discovery", enabled: true, configured: true, needsSetup: false, topics: ["science"], permissionGranted: true },
+    "discovery.configure": { kind: "ok" },
+  }), { discovery: true });
+  await fixture.api.initialize();
+  const before = fixture.calls.filter((message) => message.type === "assignment.get").length;
+  await fixture.api.saveDiscoveryTopics();
+  assert.equal(fixture.calls.find((message) => message.type === "discovery.configure").enabled, true);
+  assert.equal(fixture.calls.filter((message) => message.type === "assignment.get").length, before);
+  assert.equal(fixture.calls.some((message) => message.type === "discovery.find"), false);
+});
+
+for (const enabled of [true, false]) {
+  test(`popup first choice ${enabled ? "enables automatic sources" : "keeps sources disabled"} before assigning`, async () => {
+    let configured = false;
+    const fixture = popupApi({
+      "discovery.get": () => ({ kind: "discovery", configured, needsSetup: !configured, enabled: configured && enabled, permissionGranted: configured && enabled, topics: ["science", "culture", "society"] }),
+      "discovery.configure": () => { configured = true; return { kind: "ok" }; },
+      "assignment.get": enabled ? { kind: "assigned", word: { id: "w1", word: "كلمة", meaningAr: "معنى" }, dateKey: "2026-10-16" } : { kind: "no-new-word", discoveryStatus: "disabled" },
+    }, { dailySources: true });
+    await fixture.api.initialize();
+    assert.equal(fixture.elements.get("daily-source-setup").hidden, false);
+    assert.equal(fixture.elements.get("assigned").hidden, true);
+    assert.equal(fixture.calls.some((call) => call.type === "assignment.get"), false);
+    await fixture.elements.get(enabled ? "daily-source-enable" : "daily-source-offline").listeners.click();
+    assert.equal(fixture.calls.find((call) => call.type === "discovery.configure").enabled, enabled);
+    assert.equal(fixture.elements.get("assigned").hidden, !enabled);
+    assert.equal(fixture.elements.get("daily-source-setup").hidden, enabled);
+    assert.equal(fixture.calls.some((call) => call.type === "discovery.find"), false);
+  });
+}
+
+test("popup denied source permission keeps setup actionable without assigning or saving consent", async () => {
+  const fixture = popupApi({ "discovery.get": { kind: "discovery", needsSetup: true, configured: false, enabled: false } }, { dailySources: true, permissionResult: false });
+  await fixture.api.initialize();
+  await fixture.elements.get("daily-source-enable").listeners.click();
+  assert.equal(fixture.calls.some((call) => ["assignment.get", "discovery.configure"].includes(call.type)), false);
+  assert.equal(fixture.elements.get("daily-source-setup").hidden, false);
+  assert.equal(fixture.elements.get("daily-source-enable").disabled, false);
+});
+
+test("Atlas Today reloads the automatic assignment when the local day changes", async () => {
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": { kind: "discovery", enabled: true, configured: true, needsSetup: false, permissionGranted: true, topics: ["science"] },
+    "assignment.get": (_message, calls) => ({ kind: "assigned", wordId: calls.filter((call) => call.type === "assignment.get").length > 1 ? "w2" : "w1", dateKey: "2026-10-16" }),
+  }), { discovery: true });
+  await fixture.api.initialize();
+  fixture.context.KalimatDate = { ...fixture.context.KalimatDate, todayDateKey: () => "2099-01-02" };
+  await fixture.api.returnToToday();
+  assert.equal(fixture.elements.get("today-card").dataset.wordId, "w2");
+  assert.equal(fixture.calls.filter((call) => call.type === "assignment.get").length, 2);
+});
+
+test("main daily source known action excludes the word without recording a review", async () => {
+  const word = discoverySnapshot();
+  const profile = atlasProfile({ wordSnapshots: { [word.id]: word }, discovery: { enabled: true, topics: ["environment"], knownKeys: [] } });
+  const fixture = atlasApi(dailySourceResponses({
+    "assignment.get": { kind: "assigned", wordId: word.id, dateKey: "2026-10-16" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "discovery.get": { kind: "discovery", enabled: true, configured: true, needsSetup: false, topics: ["environment"], permissionGranted: true },
+    "discovery.known": () => { profile.discovery.knownKeys = ["استدامة"]; return { kind: "ok" }; },
+  }), { discovery: true });
+  await fixture.api.initialize();
+  await fixture.api.feedback("known");
+  assert.ok(fixture.calls.some((call) => call.type === "discovery.known" && call.wordId === word.id));
+  assert.equal(fixture.calls.some((call) => call.type === "word.review"), false);
+  assert.equal(fixture.elements.get("today-known").getAttribute("aria-pressed"), "true");
+  assert.equal(fixture.elements.get("today-card").dataset.wordId, word.id);
+});
+
+test("Atlas keeps visible progress until its first source assignment resolves", async () => {
+  let configured = false;
+  let release;
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": () => ({ kind: "discovery", enabled: configured, configured, needsSetup: !configured, topics: ["science"], permissionGranted: configured }),
+    "discovery.configure": () => { configured = true; return { kind: "ok" }; },
+    "assignment.get": () => new Promise((resolve) => { release = resolve; }),
+  }), { discovery: true });
+  await fixture.api.initialize();
+  const pending = fixture.api.enableDiscovery();
+  await new Promise(setImmediate);
+  assert.equal(typeof release, "function");
+  assert.equal(fixture.elements.get("today-source-setup").hidden, false);
+  assert.equal(fixture.elements.get("today-card").hidden, true);
+  assert.equal(fixture.elements.get("today-source-start").disabled, true);
+  assert.match(fixture.elements.get("today-source-setup-status").textContent, /نجهّز/);
+  release({ kind: "assigned", wordId: "w1", dateKey: "2026-10-16" });
+  await pending;
+  assert.equal(fixture.elements.get("today-source-setup").hidden, true);
+  assert.equal(fixture.elements.get("today-card").hidden, false);
+});
+
+test("an open Atlas completes setup when another extension surface saves the choice", async () => {
+  let configured = false;
+  let release;
+  const profile = atlasProfile();
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": () => ({ kind: "discovery", enabled: configured, configured, needsSetup: !configured, topics: ["science"], permissionGranted: configured }),
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+    "assignment.get": () => new Promise((resolve) => { release = resolve; }),
+  }), { discovery: true });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("today-source-setup").hidden, false);
+  configured = true;
+  profile.discovery = { enabled: true, topics: ["science"], knownKeys: [] };
+  for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+  await new Promise(setImmediate);
+  assert.equal(typeof release, "function");
+  assert.equal(fixture.elements.get("today-source-setup").hidden, false);
+  assert.match(fixture.elements.get("today-source-setup-status").textContent, /نجهّز/);
+  release({ kind: "assigned", wordId: "w1", dateKey: "2026-10-16" });
+  await new Promise(setImmediate);
+  assert.equal(fixture.elements.get("today-card").hidden, false);
+  assert.equal(fixture.elements.get("today-card").dataset.wordId, "w1");
+  assert.equal(fixture.elements.get("today-source-setup").hidden, true);
+  assert.equal(fixture.calls.filter((call) => call.type === "assignment.get").length, 1);
+});
+
+test("Atlas refreshes the new day's automatic word on visibility return and preserves other views", async () => {
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": { kind: "discovery", enabled: true, configured: true, needsSetup: false, permissionGranted: true, topics: ["science"] },
+    "assignment.get": (_message, calls) => ({ kind: "assigned", wordId: calls.filter((call) => call.type === "assignment.get").length > 1 ? "w2" : "w1", dateKey: "2026-10-16" }),
+  }), { discovery: true });
+  await fixture.api.initialize();
+  const originalDay = fixture.context.KalimatDate.todayDateKey();
+  fixture.context.KalimatDate = { ...fixture.context.KalimatDate, todayDateKey: () => "2099-01-02" };
+  fixture.context.document.visibilityState = "visible";
+  fixture.elements.get("settings").listeners.click();
+  fixture.documentListeners.visibilitychange();
+  await new Promise(setImmediate);
+  assert.equal(fixture.calls.filter((call) => call.type === "assignment.get").length, 1);
+  assert.equal(fixture.elements.get("settings-view").hidden, false);
+  fixture.elements.get("settings-view").hidden = true;
+  // Return to the existing Today state without invoking its explicit reload control.
+  fixture.context.KalimatDate = { ...fixture.context.KalimatDate, todayDateKey: () => originalDay };
+  await fixture.api.returnToToday();
+  fixture.context.KalimatDate = { ...fixture.context.KalimatDate, todayDateKey: () => "2099-01-02" };
+  fixture.documentListeners.visibilitychange();
+  await new Promise(setImmediate);
+  assert.equal(fixture.elements.get("today-card").dataset.wordId, "w2");
+  assert.equal(fixture.calls.filter((call) => call.type === "assignment.get").length, 2);
+});
+
+
+test("Atlas reviews use the local rating day after its assignment becomes stale", async () => {
+  const word = { id: "w1", word: "كلمة", meaningAr: "معنى" };
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-10-16" },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "review.queue": { kind: "queue", words: [{ wordId: "w1", word }], dueCount: 1, visibleCount: 1, remainingCount: 0 },
+    "word.review": { kind: "ok" },
+  }, { vocabulary: [word] });
+  await fixture.api.initialize();
+  await fixture.api.openPracticeModal();
+  fixture.context.KalimatDate.todayDateKey = () => "2026-10-17";
+  fixture.elements.get("card-front-flip").listeners.click({});
+  fixture.documentListeners.keydown({ key: "3", target: { tagName: "DIV" }, preventDefault() {} });
+  await new Promise(setImmediate);
+  assert.equal(fixture.calls.find(message => message.type === "word.review")?.dateKey, "2026-10-17");
+});
+
+
+test("Atlas retained archive assignment offers source activation for future days", async () => {
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": { kind: "discovery", enabled: false, configured: false, needsSetup: false, topics: [] },
+  }), { discovery: true });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("today-card").hidden, false);
+  assert.equal(fixture.elements.get("today-source-setup").hidden, true);
+  assert.equal(fixture.elements.get("today-source-summary").hidden, false);
+  assert.equal(fixture.elements.get("discovery-enable").hidden, false);
+  assert.equal(fixture.elements.get("discovery-enable").textContent, "تفعيل المصادر");
+});
+
+test("popup unavailable source keeps retry actionable and requests an explicit retry", async () => {
+  let ready = false;
+  const fixture = popupApi({
+    "discovery.get": { kind: "discovery", configured: true, needsSetup: false, enabled: true, permissionGranted: true },
+    "assignment.get": () => ready
+      ? { kind: "assigned", dateKey: "2026-10-16", word: discoverySnapshot() }
+      : { kind: "no-new-word", discoveryStatus: "unavailable" },
+  }, { dailySources: true, sources: true });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("empty").hidden, false);
+  assert.equal(fixture.elements.get("assigned").hidden, true);
+  assert.match(fixture.elements.get("status").textContent, /أعد المحاولة/);
+  ready = true;
+  await fixture.elements.get("empty-retry").listeners.click();
+  assert.equal(fixture.calls.filter(message => message.type === "assignment.get").at(-1).retry, true);
+  assert.equal(fixture.elements.get("assigned").hidden, false);
+  assert.equal(fixture.elements.get("word").textContent, "استدامة");
+});
+
+test("Atlas unavailable source shows retry on Today and restores the main card after retry", async () => {
+  let ready = false;
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": { kind: "discovery", configured: true, needsSetup: false, enabled: true, permissionGranted: true },
+    "assignment.get": () => ready
+      ? { kind: "assigned", dateKey: "2026-10-16", wordId: "w1" }
+      : { kind: "no-new-word", discoveryStatus: "unavailable" },
+  }), { discovery: true });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("today-view").hidden, false);
+  assert.equal(fixture.elements.get("today-card").hidden, true);
+  assert.equal(fixture.elements.get("today-source-retry").hidden, false);
+  assert.match(fixture.elements.get("today-source-status").textContent, /أعد المحاولة/);
+  ready = true;
+  await fixture.elements.get("today-source-retry").listeners.click();
+  assert.equal(fixture.calls.filter(message => message.type === "assignment.get").at(-1).retry, true);
+  assert.equal(fixture.elements.get("today-card").hidden, false);
+  assert.equal(fixture.elements.get("today-source-retry").hidden, true);
+});
+
+test("popup ignores repeated explicit retries while its source assignment is in flight", async () => {
+  let pending = false;
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const fixture = popupApi({
+    "discovery.get": { kind: "discovery", configured: true, needsSetup: false, enabled: true, permissionGranted: true },
+    "assignment.get": () => pending ? gate : { kind: "no-new-word", discoveryStatus: "unavailable" },
+  }, { dailySources: true });
+  await fixture.api.initialize();
+  pending = true;
+  const button = fixture.elements.get("empty-retry");
+  const first = button.listeners.click();
+  assert.equal(button.disabled, true);
+  assert.equal(fixture.elements.get("error-retry").disabled, true);
+  await button.listeners.click();
+  await new Promise(setImmediate);
+  assert.equal(fixture.calls.filter(message => message.type === "assignment.get").length, 2);
+  release({ kind: "no-new-word", discoveryStatus: "unavailable" });
+  await first;
+  assert.equal(button.disabled, false);
+  assert.equal(fixture.elements.get("error-retry").disabled, false);
+});
+
+test("Atlas unavailable Today still synchronizes saved archive cards without a false storage warning", async () => {
+  const profile = atlasProfile({ favorites: {}, discovery: { enabled: false, topics: [], knownKeys: [] } });
+  const fixture = atlasApi(dailySourceResponses({
+    "discovery.get": { kind: "discovery", configured: true, needsSetup: false, enabled: false, permissionGranted: false },
+    "assignment.get": { kind: "no-new-word", discoveryStatus: "disabled" },
+    "state.export": () => ({ kind: "export", text: JSON.stringify(profile) }),
+  }), { discovery: true });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("today-card").hidden, true);
+  fixture.api.viewWord({ id: "w1", word: "كلمة", meaningAr: "معنى" });
+  const save = fixture.elements.get("explore-card").children.find(node => node.id === "explore-save");
+  assert.equal(save.getAttribute("aria-pressed"), "false");
+  profile.favorites.w1 = true;
+  profile.wordStates.w1 = { saved: true };
+  for (const listener of fixture.storageListeners) listener({ "kalimat.profile": { newValue: profile } }, "local");
+  await new Promise(setImmediate);
+  assert.equal(save.getAttribute("aria-pressed"), "true");
+  assert.equal(fixture.elements.get("warning").hidden, true);
+  assert.equal(fixture.elements.get("today-card").hidden, true);
+});
+
+for (const route of ["", "?view=explore&q=word"]) {
+  test(`Atlas recall remains available without a new daily word on ${route || 'Today'}`, async () => {
+    const word = { id: "w1", word: "كلمة", meaningAr: "معنى" };
+    const fixture = atlasApi(dailySourceResponses({
+      "discovery.get": { kind: "discovery", configured: true, needsSetup: false, enabled: false, permissionGranted: false },
+      "assignment.get": { kind: "no-new-word", discoveryStatus: "disabled" },
+      "review.queue": { kind: "queue", words: [{ wordId: "w1", word }], dueCount: 1, visibleCount: 1, remainingCount: 0 },
+    }), { discovery: true, search: route, vocabulary: [word] });
+    await fixture.api.initialize();
+    assert.equal(fixture.elements.get("due-review-badge").hidden, false);
+    await fixture.api.openPracticeModal();
+    assert.equal(fixture.elements.get("practice-dialog").open, true);
+    assert.equal(fixture.elements.get("card-front-word").textContent, "كلمة");
+    assert.equal(fixture.calls.filter(message => message.type === "assignment.get").length, 1);
+  });
+}

@@ -1,6 +1,12 @@
-# Five-entry editorial corrections
+# Editorial review scope
 
-This review covers IDs 1 through 5 only. IDs, aliases and the other 360 records are preserved. Existing `reviewed: true` flags are retained for compatibility with the loader; they do not prove a completed linguistic review of all 365 entries. No ranking or register changes are implied by this review.
+The 2026-10-16 follow-up screens the complete 365-entry inventory and maintains 30 source-checked records. It adds 25 lexical checks to the five earlier checks below. The other 335 records remain pending in the legacy archive. No archive record is used to generate new daily assignments. See [the collection audit](EDITORIAL-AUDIT-2026-10-16.md) and [the per-entry review ledger](../extension/data/editorial-review.json).
+
+`reviewed: true` remains a loader compatibility field. `editorialChecked` comes from the separate review ledger and describes archive review status only. It is not a daily-selection allowlist. Neither field represents human linguistic certification.
+
+## Earlier five-entry corrections
+
+This earlier review covered IDs 1 through 5 only. IDs, aliases and the other 360 records are preserved. Existing `reviewed: true` flags are retained for compatibility with the loader; they do not prove a completed linguistic review of all 365 entries. No ranking or register changes are implied by this review.
 
 | ID | Correction | Example provenance |
 | --- | --- | --- |
@@ -27,4 +33,4 @@ The earlier audit's indexed Khansa discrepancy and unsuccessful exact searches f
 
 ## Runtime metadata
 
-Only the five entries receive optional `exampleKind` and `usageNote`. Quotation entries carry `exampleSource: {title, url, reference}`. URLs must be HTTPS with no credentials; nested source data is validated and frozen. Older entries remain valid without provenance and receive no invented original or verified labels. Runtime consumers should render text with `textContent` and use validated source URLs for links. Source links do not add network permissions or automatic requests.
+The earlier five entries received optional `exampleKind` and `usageNote`. The follow-up adds these fields for its new original examples. Quotation entries carry `exampleSource: {title, url, reference}`. URLs must be HTTPS with no credentials; nested source data is validated and frozen. Older entries remain valid without provenance and receive no invented original or verified labels. Runtime consumers should render text with `textContent` and use validated source URLs for links. Source links do not add network permissions or automatic requests.

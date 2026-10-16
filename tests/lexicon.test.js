@@ -270,7 +270,7 @@ test("1. Lexicon Corpus Metrics & Aggregations", () => {
 
     // 1.2 Sarf Weights aggregation
     const weights = Core.getLexiconWeights(words);
-    assert.equal(weights.length, 66, "Corpus must contain exactly 66 unique Sarf morphological weights");
+    assert.deepEqual(new Set(weights.map(w => w.weight)), new Set(words.map(w => w.weight)), "Every corpus weight must be represented once");
     assert.ok(weights.every(w => w.weight && w.count >= 1), "Every weight entry must contain weight and count");
 
     // 1.3 Thematic Categories aggregation
@@ -378,7 +378,7 @@ test("4. Interactive Explorer Controller & Reactive DOM Sync (initLexiconExplore
         assert.equal(rootSelect.children.length, 333, "Root dropdown must contain 332 roots + 1 default option");
 
         const weightSelect = sandbox.elements["select-lexicon-weight"];
-        assert.equal(weightSelect.children.length, 67, "Weight dropdown must contain 66 weights + 1 default option");
+        assert.equal(weightSelect.children.length, new Set(words.map(w => w.weight)).size + 1, "Weight dropdown must contain every corpus weight plus the default option");
 
         const catChips = sandbox.elements["lexicon-category-chips"];
         assert.equal(catChips.children.length, 13, "Category chips must contain 12 categories + 1 all chip");
@@ -700,7 +700,7 @@ test("Lexicon speech feedback toast dismisses after a bounded delay", async () =
 
 test("7. Tashkeel Typography & CSS Design Tokens Compliance", () => {
     const styleCss = fs.readFileSync("style.css", "utf8");
-    const indexHtml = fs.readFileSync("index.html", "utf8");
+    const indexHtml = fs.readFileSync("legacy.html", "utf8");
     const wordHtml = fs.readFileSync("word.html", "utf8");
 
     // 6.1 Strict Arabic Typography: Normal Letter Spacing
@@ -709,8 +709,8 @@ test("7. Tashkeel Typography & CSS Design Tokens Compliance", () => {
     assert.ok(styleCss.includes("line-height: 1.35") || styleCss.includes("line-height: 1.4"), "Arabic cards must have adequate line-height for stacked tashkeel");
 
     // 6.2 HTML Markup
-    assert.ok(indexHtml.includes('id="lexicon-grid"'), "index.html must include lexicon-grid");
-    assert.ok(indexHtml.includes('id="lexicon-explorer"'), "index.html must own the lexicon explorer");
+    assert.ok(indexHtml.includes('id="lexicon-grid"'), "legacy.html must include lexicon-grid");
+    assert.ok(indexHtml.includes('id="lexicon-explorer"'), "legacy.html must own the lexicon explorer");
     assert.match(indexHtml, /id="btn-toggle-menu"[^>]*aria-expanded="false"[^>]*aria-controls="app-menu-dropdown"/, "Homepage menu trigger must expose disclosure state and controls");
     assert.match(indexHtml, /class="app-menu-dropdown home-menu-dropdown"[^>]*id="app-menu-dropdown"[^>]*hidden/, "Homepage controls must live in a hidden disclosure panel");
     const navActions = indexHtml.match(/<div class="nav-actions">([\s\S]*?)<\/div>/)?.[1] || "";

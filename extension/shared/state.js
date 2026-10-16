@@ -1,5 +1,6 @@
 (function (root, factory) {
   const DateApi = typeof module === "object" && module.exports ? require("./date.js") : root.KalimatDate;
+  const Vocabulary = typeof module === "object" && module.exports ? require("./vocabulary.js") : root.KalimatVocabulary;
   const ReviewPolicy = typeof module === "object" && module.exports ? require("./review-policy.js") : root.KalimatReviewPolicy;
   const isDateKey = DateApi.isDateKey;
   const getLocalDateKey = DateApi.getLocalDateKey || ((d) => d.toISOString().slice(0, 10));
@@ -13,7 +14,7 @@
     return Math.floor(Date.UTC(y2, m2 - 1, d2) / 86400000) - Math.floor(Date.UTC(y1, m1 - 1, d1) / 86400000);
   });
 
-  const api = factory({ isDateKey, getLocalDateKey, addDaysToDateKey, getDaysDifference, ReviewPolicy });
+  const api = factory({ isDateKey, getLocalDateKey, addDaysToDateKey, getDaysDifference, ReviewPolicy, Vocabulary });
   if (typeof module === "object" && module.exports) module.exports = api;
   root.KalimatState = api;
 })(globalThis, function (DateApi) {
@@ -65,6 +66,8 @@
     "preferences",
     "streak",
     "streakData",
+    "wordSnapshots",
+    "discovery",
   ]);
   const PREFERENCE_KEYS = new Set(["showEnglish", "speechRate", "speechRepeat", "dailyReviewLimit", "allowRemoteSpeech"]);
   const WORD_STATE_KEYS = new Set(["status", "dateKey", "saved"]);
@@ -265,8 +268,53 @@
     return ReviewPolicy.getOptions(item, reviewDateKey, { isDateKey, getLocalDateKey, addDaysToDateKey });
   }
 
+  const DISCOVERY_TOPICS = new Set(["science", "culture", "society", "environment", "economics", "language"]);
+
+  function copySnapshots(raw) {
+    if (!plainObject(raw) || Object.keys(raw).length > 512) fail("word snapshots");
+    const snapshots = nullMap();
+    for (const [key, card] of Object.entries(raw)) {
+      if (DANGEROUS_KEYS.has(key)) fail("word snapshot key");
+      const checked = DateApi.Vocabulary.validateDiscoveryCard(card);
+      if (key !== checked.id) fail("word snapshot ID");
+      snapshots[key] = checked;
+    }
+    return snapshots;
+  }
+
+  function copyDiscovery(raw) {
+    const keys = safeKeys(raw, new Set(["enabled", "topics", "knownKeys"]), "discovery");
+    if (keys.length !== 3 || typeof raw.enabled !== "boolean") fail("discovery");
+    if (!Array.isArray(raw.topics) || raw.topics.length > 6 || new Set(raw.topics).size !== raw.topics.length
+      || raw.topics.some((topic) => !DISCOVERY_TOPICS.has(topic))) fail("discovery topics");
+    if (!Array.isArray(raw.knownKeys) || raw.knownKeys.length > 2048 || new Set(raw.knownKeys).size !== raw.knownKeys.length
+      || raw.knownKeys.some((key) => typeof key !== "string" || !key.trim() || key.length > 80 || /[\u0000-\u001F\u007F]/.test(key))) fail("discovery known keys");
+    return { enabled: raw.enabled, topics: [...raw.topics], knownKeys: [...raw.knownKeys] };
+  }
+
+  function mergeVocabulary(vocabulary, profile) {
+    if (!Array.isArray(vocabulary)) fail("vocabulary");
+    const snapshots = profile && Object.hasOwn(profile, "wordSnapshots") ? copySnapshots(profile.wordSnapshots) : nullMap();
+    const result = [...vocabulary];
+    const byId = new Map(vocabulary.map((word) => [String(word?.id), word]));
+    for (const card of Object.values(snapshots)) {
+      const existing = byId.get(card.id);
+      if (existing) {
+        if (!sameValue(existing, card)) fail("word snapshot collision");
+      } else {
+        result.push(card);
+        byId.set(card.id, card);
+      }
+    }
+    if (result.length > MAX_RECORDS) fail("vocabulary");
+    return result;
+  }
+
   function copyProfile(raw, vocabulary, assignmentMaximum = MAX_ASSIGNMENTS) {
     safeKeys(raw, PROFILE_KEYS, "profile");
+    const wordSnapshots = Object.hasOwn(raw, "wordSnapshots") ? copySnapshots(raw.wordSnapshots) : undefined;
+    const discovery = Object.hasOwn(raw, "discovery") ? copyDiscovery(raw.discovery) : undefined;
+    if (vocabulary) vocabulary = mergeVocabulary(vocabulary, raw);
     for (const key of ["schemaVersion", "algorithmVersion", "seedHex", "level", "interests", "wordStates", "assignments", "recentIds", "evidenceCutoff"]) {
       if (!Object.hasOwn(raw, key)) fail(`profile ${key}`);
     }
@@ -420,6 +468,8 @@
     const streak = raw.streak || raw.streakData || null;
 
     return {
+      ...(wordSnapshots === undefined ? {} : { wordSnapshots }),
+      ...(discovery === undefined ? {} : { discovery }),
       schemaVersion: raw.schemaVersion ?? SCHEMA_VERSION,
       version: raw.version ?? (raw.schemaVersion === 1 ? 1 : 2),
       algorithmVersion: ALGORITHM_VERSION,
@@ -492,6 +542,7 @@
   }
 
   function applyFeedback(profile, input, vocabulary = null) {
+    if (vocabulary) vocabulary = mergeVocabulary(vocabulary, profile);
     const index = vocabulary ? vocabularyIndex(vocabulary) : null;
     const current = copyProfile(profile, vocabulary);
     if (!plainObject(input) || Object.keys(input).some((key) => !new Set(["dateKey", "wordId", "status"]).has(key))) fail("feedback");
@@ -554,6 +605,7 @@
   }
 
   function recordReview(profile, wordId, rating, dateKey, vocabulary = null) {
+    if (vocabulary) vocabulary = mergeVocabulary(vocabulary, profile);
     const index = vocabulary ? vocabularyIndex(vocabulary) : null;
     const targetId = canonicalWordId(wordId, index, "review wordId");
     if (!isDateKey(dateKey)) fail("review date");
@@ -586,6 +638,8 @@
   }
 
   function getDueReviewWords(profile, vocabulary, dateKey, limit = null) {
+    if (!Array.isArray(vocabulary)) return [];
+    vocabulary = mergeVocabulary(vocabulary, profile);
     if (!Array.isArray(vocabulary) || vocabulary.length === 0) return [];
     if (!isDateKey(dateKey)) fail("review queue date");
     if (limit !== null && (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_REVIEW_LIMIT)) fail("review queue limit");
@@ -705,6 +759,7 @@
     canonicalReviewRating,
     normalizeWordId: canonicalWordId,
     vocabularyIndex,
+    mergeVocabulary,
     parseImport,
     serializeExport,
     pruneAssignments,

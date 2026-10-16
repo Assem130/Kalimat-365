@@ -7,14 +7,28 @@ const { validateVocabulary } = require("../shared/vocabulary.js");
 const metadataPath = path.join(__dirname, "..", "data", "vocabulary-metadata.json");
 const METADATA = JSON.parse(fs.readFileSync(metadataPath, "utf8"));
 const metadataBySourceId = new Map(METADATA.map((record) => [record.sourceId, record]));
-
-const EXTENSION_EXAMPLE_OVERRIDES = {
-  24: "فاحَ أَرِيجُ الياسمين في الفناء بعد أن سُقيت الأزهار.",
-  25: "أثارَت الرسالةُ القديمةُ في نفسه شَجَنًا ممزوجًا بالشوق.",
-  32: "سادَ الوِئامُ بين أفراد الفريق بعد حوار صريح.",
-  41: "أضاءَ القمرُ الطريقَ وسطَ الدُّجى.",
-  46: "بدا وجهُ الطفل نَضيرًا بعد نوم هادئ.",
-};
+const editorialReview = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "data", "editorial-review.json"), "utf8"));
+if (editorialReview.version !== 1 || !Array.isArray(editorialReview.entries) || editorialReview.entries.length !== words.length) {
+  throw new TypeError("Editorial review must cover the complete vocabulary.");
+}
+const editorialById = new Map();
+for (const entry of editorialReview.entries) {
+  if (!words.some((word) => word.id === entry.id) || editorialById.has(entry.id)
+      || !["source-checked", "needs-review"].includes(entry.status)
+      || typeof entry.notes !== "string" || !entry.notes.trim()
+      || !Array.isArray(entry.sources)
+      || (entry.status === "source-checked" && entry.sources.length === 0)) {
+    throw new TypeError(`Invalid editorial review: ${entry.id}`);
+  }
+  for (const source of entry.sources) {
+    const url = new URL(source.url);
+    if (typeof source.title !== "string" || !source.title.trim()
+        || url.protocol !== "https:" || url.username || url.password) {
+      throw new TypeError(`Invalid editorial source: ${entry.id}`);
+    }
+  }
+  editorialById.set(entry.id, entry);
+}
 
 const CATEGORY_TOPICS = {
   "شمائل ومروءة": ["virtues", "character", "classical-arabic"],
@@ -44,7 +58,7 @@ const vocabulary = words.map((seed) => {
   const metadata = metadataBySourceId.get(seed.id);
   if (!metadata || metadata.reviewed !== true) throw new TypeError(`Missing reviewed metadata for source ${seed.id}.`);
   const source = seed;
-  const exampleAr = EXTENSION_EXAMPLE_OVERRIDES[seed.id] || source.example;
+  const exampleAr = source.example;
   return {
     id: seed.id,
     contentVersion: 2,
@@ -55,6 +69,7 @@ const vocabulary = words.map((seed) => {
     partOfSpeech: metadata.partOfSpeech || "noun",
     register: metadata.register || "classical",
     reviewed: true,
+    editorialChecked: editorialById.get(seed.id).status === "source-checked",
     word: source.word,
     normalized: normalizeArabic(source.word),
     pronunciation: source.pronunciation,

@@ -99,7 +99,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "standard",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "الصَّبَابَة بفتح الصاد للشوق، أمّا الصُّبَابَة بضمّها فبقية الشراب في الإناء. المثال من إعداد التحرير."
   },
   {
     "sourceId": 7,
@@ -196,7 +198,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "standard",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 14,
@@ -350,7 +354,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "standard",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 25,
@@ -365,7 +371,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "classical",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 26,
@@ -435,7 +443,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "standard",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 31,
@@ -462,7 +472,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "standard",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 33,
@@ -587,7 +599,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "standard",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 42,
@@ -654,7 +668,9 @@
     ],
     "partOfSpeech": "adjective",
     "register": "standard",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 47,
@@ -781,7 +797,7 @@
     "id": 56,
     "contentVersion": 2,
     "difficultyBand": "intermediate",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "family",
       "daily-life",
@@ -789,7 +805,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "standard",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 57,
@@ -858,7 +876,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "classical",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 62,
@@ -880,15 +900,17 @@
     "id": 63,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "nature",
       "astronomy",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 64,
@@ -918,7 +940,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "classical",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 66,
@@ -1165,15 +1189,17 @@
     "id": 82,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "nature",
       "astronomy",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 83,
@@ -1188,7 +1214,9 @@
     ],
     "partOfSpeech": "noun",
     "register": "classical",
-    "reviewed": true
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 84,
@@ -1300,15 +1328,17 @@
     "id": 91,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "wisdom",
       "philosophy",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 92,
@@ -1330,15 +1360,17 @@
     "id": 93,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "wisdom",
       "philosophy",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 94,
@@ -1735,15 +1767,17 @@
     "id": 120,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "virtues",
       "character",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 121,
@@ -1780,15 +1814,17 @@
     "id": 123,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "virtues",
       "character",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 124,
@@ -1885,15 +1921,17 @@
     "id": 130,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "virtues",
       "character",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 131,
@@ -1990,15 +2028,17 @@
     "id": 137,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "virtues",
       "character",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 138,
@@ -2320,30 +2360,34 @@
     "id": 159,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "faith",
       "spirituality",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 160,
     "id": 160,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "faith",
       "spirituality",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مصدر من وَصَلَ، حُذفت منه الواو، فوزنه عِلَة. المثال من إعداد التحرير."
   },
   {
     "sourceId": 161,
@@ -2500,15 +2544,17 @@
     "id": 171,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "knowledge",
       "intellect",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 172,
@@ -2680,15 +2726,17 @@
     "id": 183,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "knowledge",
       "intellect",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 184,
@@ -2710,15 +2758,17 @@
     "id": 185,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "knowledge",
       "intellect",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 186,
@@ -3265,15 +3315,17 @@
     "id": 222,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "community",
       "society",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 223,
@@ -3940,15 +3992,17 @@
     "id": 267,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "emotions",
       "heart",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 268,
@@ -4585,15 +4639,17 @@
     "id": 310,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "travel",
       "resolve",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 311,
@@ -4720,15 +4776,17 @@
     "id": 319,
     "contentVersion": 2,
     "difficultyBand": "advanced",
-    "usefulnessBand": "medium",
+    "usefulnessBand": "high",
     "topics": [
       "travel",
       "resolve",
       "classical-arabic"
     ],
     "partOfSpeech": "noun",
-    "register": "classical",
-    "reviewed": true
+    "register": "standard",
+    "reviewed": true,
+    "exampleKind": "original",
+    "usageNote": "مثال حديث من إعداد التحرير، وليس اقتباسًا تاريخيًّا."
   },
   {
     "sourceId": 320,

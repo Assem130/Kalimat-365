@@ -21,6 +21,12 @@ const runtimeFiles = [
   "atlas/atlas.html",
   "atlas/atlas.js",
   "background.js",
+  "data/discovery-index.json",
+  "data/discovery-index-notice.md",
+  "data/lmf-index.json",
+  "data/lmf-NOTICE.md",
+  "data/lmf-source-holds.json",
+  "data/wordfreq-NOTICE.md",
   "data/vocabulary.json",
   "icons/icon-16.png",
   "icons/icon-32.png",
@@ -30,13 +36,13 @@ const runtimeFiles = [
   "popup/popup.html",
   "popup/popup.js",
   "shared/date.js",
+  "shared/discovery.js",
   "shared/export.js",
   "shared/lookup.js",
   "shared/review-policy.js",
   "shared/review-session.js",
   "shared/speech.js",
-  "shared/selector.js",
-  "shared/state.js",
+    "shared/state.js",
   "shared/streak.js",
   "shared/theme.css",
   "shared/theme-init.js",
@@ -105,11 +111,7 @@ function assertSafeManifest(value, browser = "chrome") {
   assert.deepEqual(value.permissions, ["storage", "contextMenus"]);
   assert.deepEqual(value.optional_permissions, ["alarms", "notifications"]);
   assert.deepEqual(value.omnibox, { keyword: "km" });
-  if (browser === "chrome") {
-    assert.deepEqual(value.optional_host_permissions, ["https://ar.wiktionary.org/*"]);
-  } else {
-    assert.equal(Object.hasOwn(value, "optional_host_permissions"), false);
-  }
+  assert.deepEqual(value.optional_host_permissions, ["https://ar.wikipedia.org/*", "https://ar.wiktionary.org/*"]);
   assert.equal(Object.hasOwn(value, "host_permissions"), false);
   assert.equal(Object.hasOwn(value, "content_scripts"), false);
   assert.equal(value.content_security_policy.extension_pages, "script-src 'self'; object-src 'self'");
@@ -137,7 +139,7 @@ function packageTextFiles(browser) {
 function assertNoUnsafePayload(browser) {
   const files = packageTextFiles(browser);
   const forbiddenPath = /(?:^|\/)(?:tests|tools)(?:\/|$)|\.map$|(?:^|\/)manifest\.(?:chrome|firefox)\.json$|(?:^|\/)PRIVACY\.md$/i;
-  const allowedRemoteUrl = /^https:\/\/ar\.wiktionary\.org\//i;
+  const allowedRemoteUrl = /^https:\/\/(?:ar\.wiktionary\.org|ar\.wikipedia\.org|www\.wikidata\.org)(?:\/|$)/i;
   const allowedPrivacyUrl = /^https:\/\/assem130\.github\.io\/Kalimat-365\/privacy\.html$/i;
   const remoteUrlRegex = /\b(?:https?|wss?):\/\/[^\s"'`<>]+/gi;
   const unsafeSink = /\b(?:innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\s*\(|new\s+Function\s*\(|Function\s*\(|set(?:Timeout|Interval)\s*\(\s*["'])/;
@@ -153,12 +155,21 @@ function assertNoUnsafePayload(browser) {
       urlScanText = JSON.stringify(validateVocabulary(JSON.parse(text)).map((record) =>
         record.exampleSource ? { ...record, exampleSource: { ...record.exampleSource, url: "" } } : record));
     }
+    // Attribution files contain source/license links, not executable requests.
+    if (["data/discovery-index-notice.md", "data/wordfreq-NOTICE.md", "data/lmf-NOTICE.md"].includes(relative)) urlScanText = "";
     const urls = urlScanText.match(remoteUrlRegex) || [];
     for (const url of urls) {
       const isAllowed =
-        (relative === "manifest.json" && browser === "chrome" && allowedRemoteUrl.test(url)) ||
-        (["background.js", "atlas/atlas.js", "shared/lookup.js"].includes(relative) && allowedRemoteUrl.test(url)) ||
-        (["popup/popup.html", "atlas/atlas.html"].includes(relative) && allowedPrivacyUrl.test(url));
+        (["shared/discovery.js", "shared/vocabulary.js"].includes(relative) && url === "https://lindat.mff.cuni.cz/repository/items/d4d8ef1a-0e51-42d1-9a94-113cb81afa76") ||
+        (relative === "manifest.json" && allowedRemoteUrl.test(url)) ||
+        (["background.js", "atlas/atlas.js", "shared/lookup.js", "shared/discovery.js"].includes(relative) && allowedRemoteUrl.test(url)) ||
+        (relative === "popup/popup.js" && ["https://ar.wikipedia.org/*", "https://ar.wiktionary.org/*"].includes(url)) ||
+        (["popup/popup.html", "atlas/atlas.html"].includes(relative) && allowedPrivacyUrl.test(url)) ||
+        (relative === "data/discovery-index-notice.md" && [
+          "https://dumps.wikimedia.org/arwiktionary/20261001/).",
+          "https://ar.wiktionary.org/wiki/ويكاموس:حقوق_التأليف_والنشر).",
+          "https://creativecommons.org/licenses/by-sa/4.0/)",
+        ].includes(url));
       assert.ok(isAllowed, `${browser}/${relative} contains unauthorized remote URL: ${url}`);
     }
     assert.equal(unsafeSink.test(text), false, `${browser}/${relative} contains an unsafe sink`);
@@ -171,18 +182,18 @@ function assertNoUnsafePayload(browser) {
   }
 }
 
-test("Chrome manifest uses a MV3 service worker with fixed optional ar.wiktionary.org host permission", () => {
+test("Chrome manifest uses a MV3 service worker with fixed optional Wikimedia origins", () => {
   const chrome = manifest("chrome");
   assertSafeManifest(chrome, "chrome");
-  assert.equal(chrome.version, "0.4.0");
+  assert.equal(chrome.version, "0.4.1");
   assert.deepEqual(Object.keys(chrome.background), ["service_worker"]);
   assert.equal(chrome.background.service_worker, "background.js");
 });
 
-test("Firefox manifest uses ordered event-page scripts with no host permissions", () => {
+test("Firefox manifest uses ordered event-page scripts with optional Wikimedia origins", () => {
   const firefox = manifest("firefox");
   assertSafeManifest(firefox, "firefox");
-  assert.equal(firefox.version, "0.4.0");
+  assert.equal(firefox.version, "0.4.1");
   assert.deepEqual(firefox.browser_specific_settings, {
     gecko: {
       id: "kalimat@assem130.github.io",
@@ -190,7 +201,7 @@ test("Firefox manifest uses ordered event-page scripts with no host permissions"
     },
   });
   assert.deepEqual(Object.keys(firefox.background), ["scripts"]);
-  assert.deepEqual(firefox.background.scripts, ["shared/date.js", "shared/vocabulary.js", "shared/review-policy.js", "shared/state.js", "shared/selector.js", "shared/lookup.js", "background.js"]);
+  assert.deepEqual(firefox.background.scripts, ["shared/date.js", "shared/vocabulary.js", "shared/review-policy.js", "shared/state.js", "shared/lookup.js", "shared/discovery.js", "background.js"]);
 });
 
 test("packaged CSS enforces design tokens, system Arabic typography, and accessible focus styles", () => {
@@ -217,7 +228,12 @@ test("privacy document states local learning storage, online-query scope, analyt
   assert.match(privacy, /only the normalized query/i);
   assert.match(privacy, /Wikimedia servers|ar\.wiktionary\.org/i);
   assert.match(privacy, /unreviewed/i);
-  assert.match(privacy, /cannot be saved/i);
+  assert.match(privacy, /Manually queried online lookup results.*cannot be saved/i);
+  assert.match(privacy, /Daily discovery stays off until you enable it/i);
+  assert.match(privacy, /definitions and quotations are automatically sourced and unreviewed/i);
+  assert.match(privacy, /including in the background when preparing a daily card/i);
+  assert.match(privacy, /grant optional access to `ar\.wikipedia\.org` and `ar\.wiktionary\.org`/i);
+  assert.match(privacy, /known.word exclusions.*included in extension JSON export\/import/i);
   assert.match(privacy, /Firefox dictionary lookup is local/i);
   assert.match(privacy, /opt.in remote browser speech/i);
   assert.doesNotMatch(privacy, /No backend or server receives your data/i);
@@ -246,7 +262,7 @@ test("both packages contain exactly the runtime allowlist and selected manifest"
     assert.deepEqual(new Set(listFiles(path.join(distRoot, browser))), expectedPackageFiles, `${browser} package drifted from the allowlist`);
     assert.doesNotThrow(() => assertSafeManifest(packageManifest(browser), browser));
     assert.deepEqual(packageManifest(browser), manifest(browser));
-    assert.equal(manifest(browser).version, "0.4.0");
+    assert.equal(manifest(browser).version, "0.4.1");
     assert.equal(packageManifest(browser).background.service_worker ?? undefined, browser === "chrome" ? "background.js" : undefined);
     if (browser === "firefox") assert.deepEqual(packageManifest(browser).background.scripts, manifest("firefox").background.scripts);
   }
@@ -439,4 +455,53 @@ test("vocabulary source URL exception preserves the outbound URL guard", () => {
     fs.writeFileSync(file, JSON.stringify(records));
     assert.throws(() => assertNoUnsafePayload("chrome"), /exampleSource.url/);
   } finally { fs.writeFileSync(file, original); }
+});
+
+test("discovery index builder preserves Arabic spelling variants and all matching titles without network", () => {
+  const scratch = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "kalimat-title-index-"));
+  try {
+    const input = path.join(scratch, "titles.gz");
+    const output = path.join(scratch, "index.json");
+    fs.writeFileSync(input, zlib.gzipSync("page_title\nكِتاب\nكتاب\nأمل\nامل\nعلى\nعلي\nLatin\nعلم_البيئة\nأ\nعربي1\n"));
+    childProcess.execFileSync(python, [path.join(extensionRoot, "tools/build-discovery-index.py"), "--input", input, "--output", output]);
+    const data = JSON.parse(fs.readFileSync(output, "utf8"));
+    const index = new Map(data);
+    assert.deepEqual(index.get("كتاب"), ["كتاب", "كِتاب"]);
+    assert.ok(index.has("أمل") && index.has("امل"));
+    assert.ok(index.has("على") && index.has("علي"));
+    assert.deepEqual(index.get("علم البيئة"), ["علم البيئة"]);
+    assert.equal(index.has("Latin"), false);
+    assert.equal(index.has("أ"), false);
+    assert.equal(index.has("عربي1"), false);
+    const before = fs.readFileSync(output);
+    childProcess.execFileSync(python, [path.join(extensionRoot, "tools/build-discovery-index.py"), "--input", input, "--output", output]);
+    assert.deepEqual(fs.readFileSync(output), before);
+    const builder = fs.readFileSync(path.join(extensionRoot, "tools/build-discovery-index.py"), "utf8");
+    assert.doesNotMatch(builder, /\b(?:requests|urllib|http\.client|socket)\b/);
+  } finally { fs.rmSync(scratch, { recursive: true, force: true }); }
+});
+
+test("shipped discovery catalog contains revision-attributed definitions and examples", () => {
+  const bytes = fs.readFileSync(path.join(extensionRoot, "data/discovery-index.json"));
+  assert.ok(bytes.length <= 12 * 1024 * 1024);
+  const index = JSON.parse(bytes.toString("utf8"));
+  assert.ok(index.length >= 2000);
+  let exampleCount = 0;
+  for (const [key, titles, entries] of index) {
+    assert.ok(entries.length > 0);
+    for (const entry of entries) {
+      assert.ok(titles.includes(entry.title));
+      assert.equal(require('../shared/discovery').normalizeKey(entry.title), key);
+      assert.ok(entry.pageid > 0 && entry.revisionId > 0 && entry.definitions.length > 0);
+      for (const sense of entry.senses) {
+        assert.ok(entry.definitions.includes(sense.definition));
+        exampleCount += sense.examples.length;
+      }
+    }
+  }
+  assert.ok(exampleCount >= 400, 'Catalog must contain usable source examples, not only titles');
+  const notice = fs.readFileSync(path.join(extensionRoot, "data/discovery-index-notice.md"), "utf8");
+  assert.match(notice, /6310c9c836312b7fd5f4f6bb1e2e0acb8584994e02bb3453b9c713a0589244d8/);
+  assert.match(notice, /creativecommons\.org\/licenses\/by-sa\/4\.0/);
+  assert.match(notice, /Arabic Wiktionary contributors/);
 });

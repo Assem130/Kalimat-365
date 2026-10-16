@@ -18,8 +18,15 @@ SOURCE_ALLOWLIST = (
     'atlas/atlas.html',
     'atlas/atlas.js',
     'background.js',
+    'data/discovery-index.json',
+    'data/discovery-index-notice.md',
+    'data/lmf-index.json',
+    'data/lmf-NOTICE.md',
+    'data/lmf-source-holds.json',
+    'data/wordfreq-NOTICE.md',
     'data/vocabulary.json',
     'data/vocabulary-metadata.json',
+    'data/editorial-review.json',
     'icons/icon-16.png',
     'icons/icon-32.png',
     'icons/icon-48.png',
@@ -31,6 +38,7 @@ SOURCE_ALLOWLIST = (
     'popup/popup.js',
     'PRIVACY.md',
     'shared/date.js',
+    'shared/discovery.js',
     'shared/export.js',
     'shared/lookup.js',
     'shared/review-policy.js',
@@ -44,6 +52,9 @@ SOURCE_ALLOWLIST = (
     'shared/theme.js',
     'shared/vocabulary.js',
     'tests/background.test.js',
+    'tests/discovery.test.js',
+    'tests/discovery-quality.test.js',
+    'tests/lmf-importer.test.py',
     'tests/export.test.js',
     'tests/package.test.js',
     'tests/review_sync.test.js',
@@ -54,6 +65,9 @@ SOURCE_ALLOWLIST = (
     'tests/theme.test.js',
     'tests/ui.test.js',
     'tests/vocabulary.test.js',
+    'tools/build-discovery-index.py',
+    'tools/build-lmf-index.py',
+    'tools/wordfreq_data.py',
     'tools/convert-vocabulary.js',
     'tools/package.py',
 )
@@ -66,6 +80,12 @@ RUNTIME_FILES = (
     'atlas/atlas.html',
     'atlas/atlas.js',
     'background.js',
+    'data/discovery-index.json',
+    'data/discovery-index-notice.md',
+    'data/lmf-index.json',
+    'data/lmf-NOTICE.md',
+    'data/lmf-source-holds.json',
+    'data/wordfreq-NOTICE.md',
     'data/vocabulary.json',
     'icons/icon-16.png',
     'icons/icon-32.png',
@@ -75,12 +95,12 @@ RUNTIME_FILES = (
     'popup/popup.html',
     'popup/popup.js',
     'shared/date.js',
+    'shared/discovery.js',
     'shared/export.js',
     'shared/lookup.js',
     'shared/review-policy.js',
     'shared/review-session.js',
     'shared/speech.js',
-    'shared/selector.js',
     'shared/state.js',
     'shared/streak.js',
     'shared/theme.css',
@@ -172,9 +192,10 @@ def package():
     validate_output(dist, release_version)
     payloads = {relative: (EXTENSION_ROOT / relative).read_bytes() for relative in RUNTIME_FILES}
     vocabulary_bytes = len(payloads["data/vocabulary.json"])
+    index_bytes = len(payloads["data/discovery-index.json"]) + len(payloads["data/lmf-index.json"])
     popup_bytes = sum(len(content) for name, content in payloads.items() if name.startswith("popup/"))
-    if vocabulary_bytes >= 2097152 or popup_bytes >= 102400:
-        raise ValueError(f"Release budget exceeded: vocabulary {vocabulary_bytes} bytes; popup {popup_bytes} bytes")
+    if vocabulary_bytes >= 2097152 or popup_bytes >= 102400 or index_bytes > 12582912:
+        raise ValueError(f"Release budget exceeded: vocabulary {vocabulary_bytes} bytes; popup {popup_bytes} bytes; discovery index {index_bytes} bytes")
     dist.mkdir(exist_ok=True)
     for browser in ("chrome", "firefox"):
         target = dist / browser
@@ -196,7 +217,7 @@ def package():
                 entry.external_attr = (stat.S_IFREG | 0o644) << 16
                 entry.compress_type = zipfile.ZIP_DEFLATED
                 output.writestr(entry, content, compresslevel=9)
-        print(f"Packaged {browser}: {len(contents)} files, {sum(map(len, contents.values()))} bytes (archive {archive.stat().st_size} bytes; vocabulary {vocabulary_bytes} bytes; popup {popup_bytes} bytes).")
+        print(f"Packaged {browser}: {len(contents)} files, {sum(map(len, contents.values()))} bytes (archive {archive.stat().st_size} bytes; vocabulary {vocabulary_bytes} bytes; popup {popup_bytes} bytes; discovery index {index_bytes} bytes).")
 
 
 if __name__ == "__main__":

@@ -75,16 +75,16 @@
         {
             id: 6,
             word: "الصَّبَابَة",
-            pronunciation: "/as-sababah/",
-            vocalization: "بفتح الصاد والباء الأولى المشددة",
+            pronunciation: "/as-sabābah/",
+            vocalization: "بفتح الصاد والباء الأولى، وألف مدّ بعدها، وفتح الباء الثانية",
             weight: "فَعَالَة",
             root: "ص ب ب",
             category: "مشاعر وفؤاد",
-            meaning: "الشوق الرقيق والحرقة ولوع الغرام، أو بقية الماء اليسيرة المتبقية في أسفل الإناء.",
-            englishMeaning: "Tender longing and the ache of love; also the small amount of water left in a vessel.",
-            example: "ولقد وقفتُ على ديارهمُ... والدمعُ يسبقني بصَبابةِ الوَجْدِ — الشريف الرضي",
-            context: "شعرتُ بصَبابةٍ إلى مدينتي بعد سفر طويل.",
-            contextEnglish: "I felt tender longing for my city after a long trip."
+            meaning: "رقة الشوق وحرارته.",
+            englishMeaning: "Tender, ardent longing.",
+            example: "أيقظت الرسالة في قلبه صَبَابَةً إلى أيام الطفولة.",
+            context: "أيقظت الرسالة في قلبه صَبَابَةً إلى أيام الطفولة.",
+            contextEnglish: "The letter stirred tender longing for childhood days in his heart."
         },
         {
             id: 7,
@@ -178,11 +178,11 @@
             weight: "فَعَل",
             root: "ع ب ق",
             category: "لغة وفصاحة",
-            meaning: "رائحة الطيب الذكية إذا علقت بالثوب أو المكان وثبتت فيه واستمرت طويلاً.",
-            englishMeaning: "A fragrant scent that clings to clothes or a place and lingers for a long time.",
-            example: "أَمِنْ أُمِّ الصَّبِيِّ صَرَمْتَ الحَبْلا... وَقَدْ أَوْرَثَتْ فِي القَلْبِ عَبَقا؟ — جرير",
-            context: "بقي عَبَق القهوة في الغرفة بعد الزيارة.",
-            contextEnglish: "The fragrance of coffee lingered in the room after the visit."
+            meaning: "رائحة طيبة تعلق بالشيء وتبقى فيه.",
+            englishMeaning: "A pleasant scent that clings and lingers.",
+            example: "بقي عَبَقُ القهوة في الغرفة بعد الزيارة.",
+            context: "بقي عَبَقُ القهوة في الغرفة بعد الزيارة.",
+            contextEnglish: "The scent of coffee lingered in the room after the visit."
         },
         {
             id: 14,
@@ -334,7 +334,7 @@
             category: "لغة وفصاحة",
             meaning: "انتشار الرائحة الطيبة العطرة وتوهج أريج الأزهار والطيب في الأرجاء.",
             englishMeaning: "The spreading of a sweet fragrance, especially the scent of flowers and perfume.",
-            example: "فَاحَ الأَرِيجُ بِنَدِّ عِطْرٍ فَاخِرٍ... كَمِسْكِ رَوْضٍ بَعْدَ سَيْلٍ مَاطِرِ — شاعر قديم",
+            example: "فاحَ أَرِيجُ الياسمين في الفناء بعد أن سُقيت الأزهار.",
             context: "ملأ أَرِيج الياسمين فناء البيت مساءً.",
             contextEnglish: "The fragrance of jasmine filled the house courtyard in the evening."
         },
@@ -348,7 +348,7 @@
             category: "مشاعر وفؤاد",
             meaning: "الحزن والهم المتشابك الملازم للقلب من لوعة الشوق أو كربة الحياة، والحاجة الشاغلة للنفس.",
             englishMeaning: "Entangled, lingering grief and worry from longing, hardship, or a pressing need.",
-            example: "هَيَّجْتَ لِي شَجَنًا قَدْ كُنْتُ نَاسِيَهُ... وَأَيْقَظَتْ عَيْنِيَ العَبْرَى سَنَا الفَجْرِ — شاعر قديم",
+            example: "أثارَت الرسالةُ القديمةُ في نفسه شَجَنًا ممزوجًا بالشوق.",
             context: "في قصيدة قديمة، يعبِّر الشَّجَن عن حزن ممتزج بالشوق.",
             contextEnglish: "In an old poem, shajan expresses sorrow mixed with longing."
         },
@@ -416,11 +416,11 @@
             weight: "فَعْل",
             root: "ج و د",
             category: "طبيعة وفلك",
-            meaning: "المطر الغزير الكثيف الذي يروي عطش الأرض الجافة ويعيد إليها الحياة والخصوبة.",
-            englishMeaning: "Heavy, abundant rain that revives dry land and restores fertility.",
-            example: "دِيَارٌ لَهَا بِالرَّقْمَتَيْنِ كَأَنَّهَا... مَرَاجِعُ وَشْمٍ فِي نَوَاشِرِ مِعْصَمِ... سَقَاهَا رَوَايَا الجَوْدِ — امرؤ القيس",
-            context: "أنعش الجَوْدُ المزارعَ بعد موسم جاف.",
-            contextEnglish: "Heavy, generous rain revived the farms after a dry season."
+            meaning: "المطر الواسع الغزير.",
+            englishMeaning: "Heavy, abundant rain.",
+            example: "ارتوت الحقول بالجَوْدِ بعد جفاف.",
+            context: "ارتوت الحقول بالجَوْدِ بعد جفاف.",
+            contextEnglish: "The fields were watered by heavy rain after a drought."
         },
         {
             id: 31,
@@ -444,11 +444,11 @@
             weight: "فِعَال",
             root: "و ء م",
             category: "مجتمع وألفة",
-            meaning: "الاتفاق الصادق، والتفاهم والوفاق والمحبة التي تجمع القلوب وتمنع الخصومات.",
-            englishMeaning: "Sincere agreement, mutual understanding, harmony, and affection that prevent conflict.",
-            example: "وَمَا العَيْشُ إِلَّا أَنْ نَعِيشَ بِأُلْفَةٍ... وَأَنْ يَجْمَعَ الشَّمْلَ التَّآخِي وَالوِئَامُ — شاعر قديم",
-            context: "يساعد الوِئام بين الجيران على حل الخلافات.",
-            contextEnglish: "Harmony between neighbors helps resolve disagreements."
+            meaning: "الوفاق والموافقة بين الناس.",
+            englishMeaning: "Harmony and agreement between people.",
+            example: "عاد الوِئَامُ إلى الفريق بعد حوار صريح.",
+            context: "عاد الوِئَامُ إلى الفريق بعد حوار صريح.",
+            contextEnglish: "Harmony returned to the team after an open discussion."
         },
         {
             id: 33,
@@ -572,7 +572,7 @@
             category: "زمن وفصول",
             meaning: "الظلمات الشديدة الحالكة السواد (مفردها دُجية)، وتستخدم للدلالة على أوقات الليل الصعبة.",
             englishMeaning: "Intense, pitch-black darkness, especially the difficult hours of night.",
-            example: "إِذَا مَا اللَّيْلُ أَسْدَلَ مِعْطَفَيْهِ... وَمَدَّ الدُّجَى عَلَى الكَوْنِ السِّتَارَا — شاعر حديث",
+            example: "أضاءَ القمرُ الطريقَ وسطَ الدُّجى.",
             context: "عاد المسافر قبل الدُّجى كي يصل بأمان.",
             contextEnglish: "The traveler returned before the deep night so he could arrive safely."
         },
@@ -642,7 +642,7 @@
             category: "خلق وحياة",
             meaning: "الذهب الخالص اللامع، أو الشيء والوجه المشرق الممتلئ حسناً ونضارة ونعمة وبهاءً.",
             englishMeaning: "Pure shining gold, or a radiant, fresh, beautiful face or thing.",
-            example: "وَجْهٌ نَضِيرٌ وَخَدٌّ زَانَهُ شَنَفٌ... يَسْبِي القُلُوبَ إِذَا مَا رَنَّ نَاظِرُهُ — شاعر قديم",
+            example: "بدا وجهُ الطفل نَضيرًا بعد نوم هادئ.",
             context: "بدا وجه الطفل نَضيرًا بعد أن نام جيدًا.",
             contextEnglish: "The child’s face looked fresh and radiant after a good sleep."
         },
@@ -780,11 +780,11 @@
             weight: "فَعَل",
             root: "س م ر",
             category: "مجتمع وألفة",
-            meaning: "الحديث اللطيف، وتبادل أطراف الكلام ليلاً مع الأصدقاء تحت ضوء القمر والنجوم الساطعة.",
-            englishMeaning: "Pleasant nighttime conversation with friends beneath the moon and bright stars.",
-            example: "طَابَ السَّمَرُ فِي لَيْلَةٍ قَمْرَاءِ... بِقُرْبِ أَحِبَّةٍ لَهُمْ عِنْدِي مَكَانَةُ العَلْيَاءِ — ابن خفاجة",
-            context: "طال السَّمَر بين الأصدقاء بعد العشاء.",
-            contextEnglish: "The friends’ pleasant nighttime conversation lasted after dinner."
+            meaning: "الحديث في الليل.",
+            englishMeaning: "Conversation at night.",
+            example: "طال السَّمَرُ بين الأصدقاء بعد العشاء.",
+            context: "طال السَّمَرُ بين الأصدقاء بعد العشاء.",
+            contextEnglish: "The friends talked late into the night after dinner."
         },
         {
             id: 57,
@@ -850,11 +850,11 @@
             weight: "فَاعِل",
             root: "و ب ل",
             category: "طبيعة وفلك",
-            meaning: "المطر الشديد الغزير ضخم القطر، الذي يروي الأرض ويفيض منه الشجر والنبات.",
-            englishMeaning: "Heavy, torrential rain with large drops that thoroughly soaks the earth.",
-            example: "قوله تعالى: ﴿فَأَصَابَهَا وَابِلٌ فَآتَتْ أُكُلَهَا ضِعْفَيْنِ﴾.",
-            context: "سقط الوَابِل على المزارع فارتوت الأرض بعد طول جفاف.",
-            contextEnglish: "The heavy rain poured over the farms, reviving the soil after a long drought."
+            meaning: "المطر الشديد الضخم القطر.",
+            englishMeaning: "Heavy rain with large drops.",
+            example: "أجبرنا الوَابِلُ على الاحتماء في المقهى.",
+            context: "أجبرنا الوَابِلُ على الاحتماء في المقهى.",
+            contextEnglish: "The heavy rain forced us to take shelter in the café."
         },
         {
             id: 62,
@@ -878,11 +878,11 @@
             weight: "فَعَال",
             root: "ر ذ ذ",
             category: "طبيعة وفلك",
-            meaning: "المطر الخفيف اللطيف جداً الشبيه بالغبار المتطاير في الهواء.",
-            englishMeaning: "Fine, delicate drizzle or mist floating gently in the air.",
-            example: "وراء الرَّذَاذِ خَبَايَا المَطَرِ... وَفِي كُلِّ غَيْمٍ رَبِيعٌ نَضِيرُ — ذو الرمة",
-            context: "تطاير رَذَاذ الشلال البارد على وجوه الزائرين.",
-            contextEnglish: "The cold spray of the waterfall drifted onto the visitors' faces."
+            meaning: "مطر خفيف صغار القطر كأنه غبار.",
+            englishMeaning: "Fine drizzle with very small drops.",
+            example: "بدأ الرَّذَاذُ ونحن ننتظر الحافلة.",
+            context: "بدأ الرَّذَاذُ ونحن ننتظر الحافلة.",
+            contextEnglish: "A fine drizzle began while we were waiting for the bus."
         },
         {
             id: 64,
@@ -906,11 +906,11 @@
             weight: "فَعْل",
             root: "ط ل ل",
             category: "طبيعة وفلك",
-            meaning: "المطر الخفيف الندي، أو الندى اللطيف الذي يسقط على أوراق الشجر فجراً.",
-            englishMeaning: "Light dew or gentle shower falling softly on foliage at dawn.",
-            example: "قوله تعالى: ﴿فَإِن لَّمْ يُصِبْهَا وَابِلٌ فَطَلٌّ﴾.",
-            context: "تألقت قطرات الطَّلّ فوق أزهار الحديقة عند الشروق.",
-            contextEnglish: "Drops of dew glistened on the garden flowers at sunrise."
+            meaning: "المطر الخفيف الصغير القطر، ويُطلق أيضًا على الندى.",
+            englishMeaning: "Very light rain; also dew.",
+            example: "لم ينزل إلا طَلٌّ خفيف في الصباح.",
+            context: "لم ينزل إلا طَلٌّ خفيف في الصباح.",
+            contextEnglish: "Only very light rain fell in the morning."
         },
         {
             id: 66,
@@ -1144,11 +1144,11 @@
             weight: "فُعُل",
             root: "أ ف ق",
             category: "طبيعة وفلك",
-            meaning: "خط التقاء قبة السماء بسطح الأرض أو البحر الممتد في المدى البعيد.",
-            englishMeaning: "The distant horizon where the sky appears to meet the earth or ocean.",
-            example: "قوله تعالى: ﴿وَهُوَ بِالأُفُقِ الأَعْلَىٰ﴾.",
-            context: "امتد الشفق الأحمر عبر الأُفُق البعيد عند مغيب الشمس.",
-            contextEnglish: "The red twilight stretched across the distant horizon at sunset."
+            meaning: "ما يظهر من أطراف السماء عند التقاء النظر بالأرض أو البحر.",
+            englishMeaning: "The visible horizon where the sky appears to meet land or sea.",
+            example: "ظهرت سفينة صغيرة في الأُفُقِ.",
+            context: "ظهرت سفينة صغيرة في الأُفُقِ.",
+            contextEnglish: "A small ship appeared on the horizon."
         },
         {
             id: 83,
@@ -1158,11 +1158,11 @@
             weight: "فَعَل",
             root: "ش ف ق",
             category: "طبيعة وفلك",
-            meaning: "الحمرة والضياء المتبقي في الأفق الغربي بعد غروب قرص الشمس.",
-            englishMeaning: "The vibrant crimson afterglow lingering on the western horizon after sunset.",
-            example: "قوله تعالى: ﴿فَلَا أُقْسِمُ بِالشَّفَقِ﴾.",
-            context: "تأملنا ألوان الشَّفَق المتدرجة بين البرتقالي والوردي في المساء.",
-            contextEnglish: "We admired the gradual hues of the twilight glow shifting from orange to pink in the evening."
+            meaning: "بقية ضوء الشمس وحمرتها في أول الليل بعد الغروب.",
+            englishMeaning: "The remaining glow and redness after sunset.",
+            example: "تأملنا الشَّفَقَ من شرفة البيت.",
+            context: "تأملنا الشَّفَقَ من شرفة البيت.",
+            contextEnglish: "We watched the afterglow from the balcony."
         },
         {
             id: 84,
@@ -1270,11 +1270,11 @@
             weight: "فَعَال",
             root: "س د د",
             category: "حكمة وفلسفة",
-            meaning: "التوفيق للصواب في القول والعمل والاستقامة على الحق والعدل.",
-            englishMeaning: "Rightness, unerring guidance toward truth in word, deed, and judgment.",
-            example: "«اللَّهُمَّ إِنِّي أَسْأَلُكَ الهُدَى وَالسَّدَادَ».",
-            context: "تمنى الحاضرون للرئيس السَّدَاد في قراراته المصيرية.",
-            contextEnglish: "The attendees wished the president sound judgment in his momentous decisions."
+            meaning: "الاستقامة والصواب في القول والعمل.",
+            englishMeaning: "Soundness and right judgment in words and actions.",
+            example: "عُرفَتْ بسَدَادِ الرأي وحسن التدبير.",
+            context: "عُرفَتْ بسَدَادِ الرأي وحسن التدبير.",
+            contextEnglish: "She was known for sound judgment and good planning."
         },
         {
             id: 92,
@@ -1298,11 +1298,11 @@
             weight: "فِعْل",
             root: "ح ل م",
             category: "حكمة وفلسفة",
-            meaning: "ضبط النفس عند الغضب، والتأني والصفح مع القدرة على العقاب والانتصار.",
-            englishMeaning: "Serene forbearance, self-mastery during anger, and magnanimous clemency.",
-            example: "إِذَا سَفِهَ الصَّدِيقُ عَلَيْكَ فَاصْبِرْ... فَإِنَّ الحِلْمَ زَيْنٌ لِلرِّجَالِ — أكثم بن صيفي",
-            context: "قابل المعلم إساءة التلميذ بالحِلْم والتوجيه الحكيم.",
-            contextEnglish: "The teacher met the student's misbehavior with forbearance and wise guidance."
+            meaning: "الأناة وضبط النفس، ولا سيما عند الغضب.",
+            englishMeaning: "Forbearance and self-control, especially when angry.",
+            example: "قابلت المعلمة إساءة التلميذ بالحِلْمِ.",
+            context: "قابلت المعلمة إساءة التلميذ بالحِلْمِ.",
+            contextEnglish: "The teacher responded to the pupil’s misbehavior with forbearance."
         },
         {
             id: 94,
@@ -1676,11 +1676,11 @@
             weight: "فَعْل",
             root: "ص ب ر",
             category: "شمائل ومروءة",
-            meaning: "حبس النفس عن الجزع واللسان عن الشكوى، والثبات الراسخ عند نزول البلاء والمكاره.",
-            englishMeaning: "Steadfast fortitude, patient endurance, and resolute composure under adversity.",
-            example: "وَالصَّبْرُ يُحْمَدُ فِي المَوَاطِنِ كُلِّهَا... إِلَّا عَلَيْكَ فَإِنَّهُ مَذْمُومُ — علي بن أبي طالب",
-            context: "تحمل المريض آلامه بالصَّبْر والاحتساب وشكر الله.",
-            contextEnglish: "The patient bore his pains with steadfast patience, faith, and gratitude to God."
+            meaning: "حبس النفس عن الجزع والثبات عند المشقة.",
+            englishMeaning: "Patience and composure in difficulty.",
+            example: "يحتاج تعلّم مهارة جديدة إلى الصَّبْرِ.",
+            context: "يحتاج تعلّم مهارة جديدة إلى الصَّبْرِ.",
+            contextEnglish: "Learning a new skill takes patience."
         },
         {
             id: 121,
@@ -1718,11 +1718,11 @@
             weight: "فِعْل",
             root: "ص د ق",
             category: "شمائل ومروءة",
-            meaning: "مطابقة القول للواقع، واستقامة السر والعلن، ونقاء الضمير في كل معاملة.",
-            englishMeaning: "Absolute truthfulness, honesty, sincerity of intention, and moral rectitude.",
-            example: "قوله تعالى: ﴿يَا أَيُّهَا الَّذِينَ آمَنُوا اتَّقُوا اللَّهَ وَكُونُوا مَعَ الصَّادِقِينَ﴾.",
-            context: "اشتهر الشاهد بالصِّدْق والأمانة فلم يشك أحد في شهادته.",
-            contextEnglish: "The witness was renowned for truthfulness and integrity, so no one doubted his testimony."
+            meaning: "قول الحق ومطابقة الكلام للواقع، وهو نقيض الكذب.",
+            englishMeaning: "Truthfulness: saying what agrees with reality, the opposite of lying.",
+            example: "اختار الصِّدْقَ واعترف بخطئه.",
+            context: "اختار الصِّدْقَ واعترف بخطئه.",
+            contextEnglish: "He chose honesty and admitted his mistake."
         },
         {
             id: 124,
@@ -1816,11 +1816,11 @@
             weight: "فِعْل",
             root: "ر ف ق",
             category: "شمائل ومروءة",
-            meaning: "لين الجانب واللطف في المعاملة والتأني في الأمور مع الأهل والناس.",
-            englishMeaning: "Gentleness, tender kindness, and soft compassion in all interpersonal relations.",
-            example: "«إِنَّ الرِّفْقَ لَا يَكُونُ فِي شَيْءٍ إِلَّا زَانَهُ وَلَا يُنْزَعُ مِنْ شَيْءٍ إِلَّا شَانَهُ».",
-            context: "تعامل الوالد مع أطفاله بالرِّفْق والحنان لتوجيههم نحو الصواب.",
-            contextEnglish: "The father treated his children with gentleness and affection to guide them toward righteousness."
+            meaning: "لين الجانب ولطف الفعل، وهو ضد العنف.",
+            englishMeaning: "Gentleness and kindness in action, the opposite of harshness.",
+            example: "شرح الأب الخطأ لطفله برِفْقٍ.",
+            context: "شرح الأب الخطأ لطفله برِفْقٍ.",
+            contextEnglish: "The father gently explained the mistake to his child."
         },
         {
             id: 131,
@@ -1914,11 +1914,11 @@
             weight: "فَعْل",
             root: "ع ز م",
             category: "شمائل ومروءة",
-            meaning: "عقد القلب وتصميمه الجازم على إمضاء الفعل والوفاء بالواجب والمبدأ.",
-            englishMeaning: "Resolute moral determination, unbending willpower, and steadfast purpose.",
-            example: "عَلَى قَدْرِ أَهْلِ العَزْمِ تَأْتِي العَزَائِمُ... وَتَأْتِي عَلَى قَدْرِ الكِرَامِ المَكَارِمُ — المتنبي",
-            context: "مضى الباحث بعَزْم لا يلين نحو إنجاز أطروحته العلمية.",
-            contextEnglish: "The researcher proceeded with unyielding determination to complete his scientific dissertation."
+            meaning: "الجد والإرادة المعقودة على فعل أمر.",
+            englishMeaning: "Determination and a firm intention to act.",
+            example: "بدأت المشروع بعَزْمٍ على إتمامه.",
+            context: "بدأت المشروع بعَزْمٍ على إتمامه.",
+            contextEnglish: "She began the project determined to finish it."
         },
         {
             id: 138,
@@ -2222,25 +2222,25 @@
             weight: "فَعَل",
             root: "ف ر ج",
             category: "إيمان وروحانية",
-            meaning: "انكشاف الغم وزوال الكرب والشدة وحلول التيسير والسرور بعد العسر.",
-            englishMeaning: "Divine relief, deliverance from distress, and ease following hardship.",
-            example: "وَلَرُبَّ نَازِلَةٍ يَضِيقُ لَهَا الفَتَى... ذَرْعًا وَعِنْدَ اللَّهِ مِنْهَا المَخْرَجُ — الشافعي",
-            context: "صبرت الأسرة على البلاء حتى أتاها الفَرَج من حيث لا تحتسب.",
-            contextEnglish: "The family endured hardship patiently until divine relief arrived unexpectedly."
+            meaning: "انكشاف الكرب وذهاب الغم.",
+            englishMeaning: "Relief from distress and sorrow.",
+            example: "كان اتصال صديقتها بداية الفَرَجِ بعد أيام صعبة.",
+            context: "كان اتصال صديقتها بداية الفَرَجِ بعد أيام صعبة.",
+            contextEnglish: "Her friend’s call brought the first relief after difficult days."
         },
         {
             id: 160,
             word: "الصِّلَة",
             pronunciation: "/as-silah/",
-            vocalization: "بكسر الصاد وفتح اللام",
-            weight: "فِعْلَة",
+            vocalization: "بكسر الصاد وفتح اللام، والتاء للتأنيث",
+            weight: "عِلَة",
             root: "و ص ل",
             category: "إيمان وروحانية",
-            meaning: "الرابطة الوثيقة، والاتصال الدائم بالخالق بالصلاة والدعاء، وبالمخلوقين بالإحسان والبر.",
-            englishMeaning: "The living bond and spiritual communion connecting the servant to the Creator and kin.",
-            example: "الصَّلَاةُ صِلَةٌ بَيْنَ العَبْدِ وَرَبِّهِ... يَسْتَمِدُّ مِنْهَا القُوَّةَ وَالثَّبَاتَ — ابن عطاء الله السكندري",
-            context: "حافظ المؤمن على صِلَة قلبه بربه في الرخاء والشدة.",
-            contextEnglish: "The believer maintained his heart's connection to his Lord in prosperity and hardship."
+            meaning: "الاتصال والرابطة بين الأشياء أو الناس، وتأتي صلة الرحم بمعنى الإحسان إلى الأقارب.",
+            englishMeaning: "A connection or bond; maintaining family ties means caring for relatives.",
+            example: "حافظت على صِلَةٍ طيبة بجيرانها بعد انتقالها.",
+            context: "حافظت على صِلَةٍ طيبة بجيرانها بعد انتقالها.",
+            contextEnglish: "She kept a good relationship with her neighbors after moving."
         },
         {
             id: 161,
@@ -2390,11 +2390,11 @@
             weight: "فَعْل",
             root: "ف ه م",
             category: "علم ومعرفة",
-            meaning: "حسن إدراك المعاني وسرعة تصور الحقائق واستيعاب دقائق المسائل.",
-            englishMeaning: "Sharp comprehension, mental acuity, and swift grasp of subtle concepts.",
-            example: "الفَهْمُ مِفْتَاحُ العِلْمِ وَعِمَادُ الرَّأْيِ السَّدِيدِ — علي بن أبي طالب",
-            context: "أظهر التلميذ فَهْمًا دقيقاً للمسائل الفلسفية المعقدة.",
-            contextEnglish: "The student demonstrated sharp understanding of complex philosophical problems."
+            meaning: "إدراك الشيء ومعرفة معناه.",
+            englishMeaning: "Understanding something and grasping its meaning.",
+            example: "ساعدني المثال على فَهْمِ الفكرة.",
+            context: "ساعدني المثال على فَهْمِ الفكرة.",
+            contextEnglish: "The example helped me understand the idea."
         },
         {
             id: 172,
@@ -2558,11 +2558,11 @@
             weight: "إِفْعَال",
             root: "ت ق ن",
             category: "علم ومعرفة",
-            meaning: "إحكام الشيء وأداؤه على أكمل وجه بلا خلل ولا نقص ولا تقصير.",
-            englishMeaning: "Flawless mastery, precision, and perfection of workmanship.",
-            example: "«إِنَّ اللَّهَ يُحِبُّ إِذَا عَمِلَ أَحَدُكُمْ عَمَلًا أَنْ يُتْقِنَهُ».",
-            context: "أنجز الحرفي عمله بإِتْقَان فائق نال به إعجاب الجميع.",
-            contextEnglish: "The artisan completed his work with supreme mastery that won universal admiration."
+            meaning: "إحكام العمل وأداؤه بمهارة وعناية.",
+            englishMeaning: "Doing work with skill, care, and precision.",
+            example: "أصلح الحرفي الباب بإِتْقَانٍ.",
+            context: "أصلح الحرفي الباب بإِتْقَانٍ.",
+            contextEnglish: "The craftsperson repaired the door skillfully."
         },
         {
             id: 184,
@@ -2586,11 +2586,11 @@
             weight: "تَفَعُّل",
             root: "ع ل م",
             category: "علم ومعرفة",
-            meaning: "اكتساب المعرفة والمهارات بالدراسة المستمرة والمثابرة على طلب العلم.",
-            englishMeaning: "Lifelong pursuit of knowledge, systematic study, and intellectual acquisition.",
-            example: "تَعَلَّمْ فَلَيْسَ المَرْءُ يُولَدُ عَالِمًا... وَلَيْسَ أَخُو عِلْمٍ كَمَنْ هُوَ جَاهِلُ — الشافعي",
-            context: "ثابر الطالب على التَّعَلُّم رغم قلة الموارد المتاحة.",
-            contextEnglish: "The student persevered in learning despite the scarcity of available resources."
+            meaning: "اكتساب العلم والمعرفة.",
+            englishMeaning: "Learning and acquiring knowledge.",
+            example: "خصصت وقتًا كل يوم للتَّعَلُّمِ.",
+            context: "خصصت وقتًا كل يوم للتَّعَلُّمِ.",
+            contextEnglish: "She set aside time every day for learning."
         },
         {
             id: 186,
@@ -3104,11 +3104,11 @@
             weight: "فُعْلَة",
             root: "أ ل ف",
             category: "مجتمع وألفة",
-            meaning: "اجتماع القلوب وتوافق النفوس على المودة والمحبة والتراحم الأسري والاجتماعي.",
-            englishMeaning: "Mutual harmony, heartfelt social bonding, and affectionate concord.",
-            example: "قوله تعالى: ﴿وَأَلَّفَ بَيْنَ قُلُوبِهِمْ لَوْ أَنفَقْتَ مَا فِي الْأَرْضِ جَمِيعًا مَّا أَلَّفْتَ بَيْنَ قُلُوبِهِمْ﴾.",
-            context: "سادت الأُلْفَة والمحبة بين الجيران في الحي العريق.",
-            contextEnglish: "Mutual harmony and love prevailed among the neighbors in the ancient district."
+            meaning: "الأنس والتوافق واجتماع القلوب.",
+            englishMeaning: "Familiarity, affection, and harmony.",
+            example: "نشأت الأُلْفَةُ بين الزملاء مع مرور الوقت.",
+            context: "نشأت الأُلْفَةُ بين الزملاء مع مرور الوقت.",
+            contextEnglish: "A sense of familiarity grew among the colleagues over time."
         },
         {
             id: 223,
@@ -3734,11 +3734,11 @@
             weight: "فَعَلَة",
             root: "ش ف ق",
             category: "مشاعر وفؤاد",
-            meaning: "الرقة القلبية والحنان الفياض والخوف على الضعيف والمحتاج والمحبة الحانية له.",
-            englishMeaning: "Tender solicitude, protective compassion, and heartfelt pity for the vulnerable.",
-            example: "الشَّفَقَةُ عَلَى خَلْقِ اللَّهِ مِنْ أَعْظَمِ دَلَائِلِ نَقَاءِ السَّرِيرَةِ — الجاحظ",
-            context: "عامل الطبيب الأطفال المرضى بمُنْتَهَى الشَّفَقَة والرحمة.",
-            contextEnglish: "The doctor treated the sick children with utmost compassion and mercy."
+            meaning: "رقة من حب أو نصح يصحبها خوف من أن يصيب الآخر مكروه.",
+            englishMeaning: "Caring concern for someone, with fear that harm may befall them.",
+            example: "رافق أخته إلى الطبيب شَفَقَةً عليها.",
+            context: "رافق أخته إلى الطبيب شَفَقَةً عليها.",
+            contextEnglish: "He accompanied his sister to the doctor out of caring concern for her."
         },
         {
             id: 268,
@@ -4336,11 +4336,11 @@
             weight: "فَعْل",
             root: "ح ز م",
             category: "رحلة وعزم",
-            meaning: "ضبط الأمور بإحكام، والأخذ بأوثق الآراء، والبت في القرارات بلا تردد أو تسويف.",
-            englishMeaning: "Decisive firmness, resolute readiness, and strict determination in leadership.",
-            example: "الحَزْمُ أَنْ تَنْظُرَ فِي الأَمْرِ قَبْلَ وُقُوعِهِ وَتَسْتَعِدَّ لَهُ — علي بن أبي طالب",
-            context: "أدار القائد الدفة بحَزْم وحكمة مكنته من ضبط النظام الداخلي.",
-            contextEnglish: "The commander steered the ship with firmness and wisdom, maintaining internal discipline."
+            meaning: "ضبط الأمور والتثبت فيها والأخذ بما يوثق به.",
+            englishMeaning: "Prudent management, care, and sound judgment.",
+            example: "من الحَزْمِ أن نراجع الخطة قبل تنفيذها.",
+            context: "من الحَزْمِ أن نراجع الخطة قبل تنفيذها.",
+            contextEnglish: "It is prudent to review the plan before carrying it out."
         },
         {
             id: 311,
@@ -4462,11 +4462,11 @@
             weight: "فَعِيلَة",
             root: "ع ز م",
             category: "رحلة وعزم",
-            meaning: "الإرادة الفولاذية الصلبة والنية الجازمة التي لا تتردد ولا تتراجع أمام الصعاب.",
-            englishMeaning: "Iron willpower, unwavering resolve, and firm determination to achieve great deeds.",
-            example: "قوله تعالى: ﴿فَإِذَا عَزَمْتَ فَتَوَكَّلْ عَلَى اللَّهِ إِنَّ اللَّهَ يُحِبُّ الْمُتَوَكِّلِينَ﴾.",
-            context: "واجه المخترع الفشل بعَزِيمَة متجددة حتى حقق اكتشافه العلمي.",
-            contextEnglish: "The inventor confronted failure with renewed resolve until achieving his scientific discovery."
+            meaning: "الإرادة المؤكدة والجد في فعل أمر.",
+            englishMeaning: "Firm resolve and determination to act.",
+            example: "عاد إلى الدراسة بعَزِيمَةٍ بعد تعثره.",
+            context: "عاد إلى الدراسة بعَزِيمَةٍ بعد تعثره.",
+            contextEnglish: "He returned to his studies with determination after a setback."
         },
         {
             id: 320,
