@@ -12,10 +12,10 @@ Five real public Wikipedia API requests returned five distinct eligible cards, i
 
 The final packaged Chromium candidate passes 13 cached/offline workflow checks. The file input imports a source-backed replay fixture. Popup, Atlas and review preserve the source construction. The check asserts that the Atlas construction appears above its dependent definition. Save/reopen, export/clear/import, browser restart and stale Atlas review across midnight pass. There are no page errors or external requests, and the disposable profile was removed. Root inspected popup and Atlas screenshots. Evidence is `/tmp/kalimat-lmf-final-daily/report.json`.
 
-Chrome archive SHA256 is `1dc769d77e410acf9e375293fb1e42295aa2b2a5b50ab09922ee1531b23ba02b`.
-Firefox archive SHA256 is `069dc603101698c6faa57619c48240602fb9c13aaea17b4b4ec43d68bba0d33f`.
+Chrome archive SHA256 is `10208d0267aaae0744ba7e364f333787f3a4c09245be33052437dd479cfef411`.
+Firefox archive SHA256 is `2637686a680241c0d6a550201da2fd6dedb047c9b29fe88b3ac81b7dc24e37c4`.
 
-Both packages contain 36 files. The LMF catalog, attribution notice and QA ledger are included. The combined reference indexes occupy 2,026,168 bytes. Two full LMF builds produce identical data. Package tests check deterministic archives and exact source bytes.
+Before shipment, a Markdown line break was removed from the wordfreq notice. It changes only that notice in the archives. All executable runtime files match the final Chromium-tested candidate. Both packages contain 36 files. The LMF catalog, attribution notice and QA ledger are included. The combined reference indexes occupy 2,026,168 bytes. Two full LMF builds produce identical data. Package tests check deterministic archives and exact source bytes.
 
 Remaining limits are qualified Arabic review, supply beyond the measured month, native Firefox, the physical toolbar popup, audible Arabic speech, a screen reader and actual MV3 suspension. The GitHub beta does not establish store approval or a stable-release claim. Earlier site workflow verification is recorded below and in [the website transition record](WEBSITE-TRANSITION.md).
 
