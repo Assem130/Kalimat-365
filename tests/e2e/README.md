@@ -48,3 +48,20 @@ For a fair comparison with an older engine and catalog, set `KALIMAT_SUPPLY_DISC
 Run `tests/e2e/daily.cjs` with `KALIMAT_PLAYWRIGHT_PATH` pointing to an existing Playwright installation. `KALIMAT_EXTENSION_PATH` can point to a verified unpacked Chrome candidate, and `KALIMAT_E2E_OUTPUT` selects the evidence directory. The test uses a disposable offline profile with the basic password store, so it does not access your desktop keyring.
 
 It verifies fresh offline unavailability, then imports a documented disposable prior live-source backup through the UI. It checks cached source assignment, saved-word reopening, Atlas parity, a review across simulated local midnight, source settings, JSON export/clear/import, restart persistence and archived-word warnings. Subsequent learner actions use visible controls. This imported-fixture run does not prove fresh live fetching. Only the page and worker clocks are simulated. The popup is an extension page, and file import uses a file input; physical toolbar and native picker acceptance remain separate.
+
+## Legacy profile storage recovery
+
+Run the migration regression separately from `verify.py` against a packaged Chrome extension:
+
+```sh
+python3 extension/tools/package.py
+KALIMAT_PLAYWRIGHT_PATH=/path/to/existing/node_modules/playwright \
+KALIMAT_CHROMIUM=/path/to/chromium \
+node tests/e2e/storage-recovery.cjs
+```
+
+It tests save and clear with English explanations enabled and disabled. Each case seeds a synthetic legacy profile into real extension storage in a disposable offline browser profile, then rejects only background profile writes. Save and clear use visible controls, including the clear confirmation dialog. The test checks the temporary warning, unchanged durable storage, repeated failed retries, recovery when writes succeed, and exact profile preservation after a full Chromium restart. Existing saved data, assignment and review history, and preferences are included in the fixture.
+
+`KALIMAT_EXTENSION_PATH` can select an unpacked Chrome package and `KALIMAT_E2E_OUTPUT` selects the evidence directory. To check an older background implementation, set `KALIMAT_BACKGROUND_OVERRIDE` to its absolute file path; the script replaces only its own temporary extension copy. A failing baseline remains a nonzero exit and a failed JSON report.
+
+The test uses headless Chromium with the popup rendered as an extension page. Initial storage, the clock, and write failures are controlled; disk or quota exhaustion is not reproduced. Browser restart happens only after successful persistence, so it does not establish durability of still-unwritten in-memory changes. All disposable browser profiles are removed. Screenshots and the JSON report remain in the output directory.

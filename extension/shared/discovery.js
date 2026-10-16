@@ -155,12 +155,6 @@
     return (Array.isArray(pages) ? pages : []).filter(p => p?.pageid > 0 && !p.missing && !p.pageprops?.disambiguation && !(p.pageprops && Object.hasOwn(p.pageprops, "disambiguation")) && typeof p.extract === "string")
       .slice(0, LIMITS.passages).flatMap(p => p.extract.split(/\n+/).filter(s => s.length >= 100 && s.length <= 5000 && !/[<>\[\]{}=]|قد تشير إلى|توضيح/.test(s)).slice(0, 4).map(text => ({ title: p.title, pageid: p.pageid, revisionId: p.lastrevid, text })));
   }
-  function subphrase(definition, word) {
-    if (!definition.includes(":")) return false;
-    const prefix = tokens(definition.split(":")[0]).map(lexicalKey).join(" ");
-    const key = tokens(word).map(lexicalKey).join(" ");
-    return prefix.includes(key) && prefix !== key;
-  }
   function rankDictionaryExample(entry, candidate) {
     if (!entry || normalizeKey(entry.title) !== candidate.key) return null;
 
@@ -170,7 +164,7 @@
     if (entry.partOfSpeech === "verb" && candidate.passages.length && candidate.passages.every(p => tokens(p.text).some(t => ["ال","وال","فال","بال","كال","لل"].some(prefix => t === prefix + candidate.key)))) return null;
     for (const sense of entry.senses || []) {
       if (normalizeKey(sense.definition).startsWith(candidate.key + " ")) continue;
-      if (!isReliableSense(sense) || subphrase(sense.definition, candidate.key)) continue;
+      if (!isReliableSense(sense)) continue;
       // These are examples attached to this exact sense by the source editor.
       // Never borrow a neighboring sense's example or invent a sentence.
       if (/مرادفات|أضداد|==|قال |قول |الخ\.|\.\.\./.test(sense.examples?.join(" ") || "")) continue;
@@ -231,12 +225,6 @@
         const context = terms(sentence, candidate.key);
         const senses = entry.definitions.map(definition => {
           if (!isReliableSense({definition})) return {definition,score:-1};
-          // A subphrase definition (رجل دولة) is not a definition of دولة alone.
-          const prefix = definition.split(/[:：]/)[0];
-          const phrase = tokens(prefix).map(lexicalKey).join(" ");
-          const keyPhrase = tokens(candidate.key).map(lexicalKey).join(" ");
-          if (definition.includes(":") && phrase.includes(keyPhrase) && phrase !== keyPhrase &&
-              !tokens(sentence).map(lexicalKey).join(" ").includes(phrase)) return {definition,score:-1};
           const sense = entry.senses?.find(s => s.definition === definition);
           if (!sense?.examples?.some(completeExample)) return {definition,score:-1};
           const exampleScore = Math.max(0, ...(sense?.examples || []).map(example => {

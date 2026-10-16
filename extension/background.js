@@ -96,10 +96,7 @@ async function loadProfile(vocabulary) {
     }
     const checked = dependencies.state.validateStoredProfile(raw, vocabulary);
     if (!checked.canPersist) return { recoveryRaw: checked.recoveryRaw };
-    if (checked.migrated) {
-      const storageWarning = await saveProfile(checked.profile, checked.profile);
-      return { profile: checked.profile, warning: storageWarning, base: checked.profile };
-    }
+    // Recover pending actions against the normalized baseline before migration.
     if (sessionFallback) {
       if (sameProfile(checked.profile, sessionFallback.base)) {
         const fallback = sessionFallback;
@@ -107,6 +104,10 @@ async function loadProfile(vocabulary) {
         return { profile: fallback.profile, warning: storageWarning, base: fallback.base };
       }
       sessionFallback = null;
+    }
+    if (checked.migrated) {
+      const storageWarning = await saveProfile(checked.profile, checked.profile);
+      return { profile: checked.profile, warning: storageWarning, base: checked.profile };
     }
     return { profile: checked.profile, warning: false, base: checked.profile };
   } catch (_) {
@@ -631,7 +632,7 @@ function handleMessage(message) {
       const alreadyApplied = sameProfile(updatedProfile, loaded.profile);
       const warningResult = alreadyApplied
         ? loaded.warning === true
-        : (loaded.recoveryRaw !== undefined ? await saveProfile(updatedProfile) : await persistProfile(updatedProfile, loaded));
+        : await persistProfile(updatedProfile, loaded);
       if (warningResult) throw new Error("Review was not persisted.");
       await updateBadge(updatedProfile, vocabulary);
       const dueWords = dependencies.state.getDueReviewWords(updatedProfile, vocabulary, dateKey);

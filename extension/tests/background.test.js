@@ -33,14 +33,15 @@ function fakeEvent() {
   return { listeners: [], addListener(listener) { this.listeners.push(listener); } };
 }
 
-function fakeExtension({ profile, reminder, vocabulary = [word("w1"), word("w2")], storageFailure = false, storageSetFailures = 0, reminderWarningSetFailures = 0, permissions = true, hostPermissions = true, reminderApis = true, alarm, alarmGetFailures = 0, alarmCreateFailures = 0, alarmClearFailures = 0, notificationFailure = false, tabFailure = false, api = "chrome" } = {}) {
+function fakeExtension({ profile, reminder, vocabulary = [word("w1"), word("w2")], storageFailure = false, storageSetFailures = 0, profileSetFailures = 0, reminderWarningSetFailures = 0, permissions = true, hostPermissions = true, reminderApis = true, alarm, alarmGetFailures = 0, alarmCreateFailures = 0, alarmClearFailures = 0, notificationFailure = false, tabFailure = false, api = "chrome" } = {}) {
   const values = Object.create(null);
-  if (profile !== undefined) values["kalimat.profile"] = profile;
-  if (reminder !== undefined) values["kalimat.reminder"] = reminder;
+  if (profile !== undefined) values["kalimat.profile"] = structuredClone(profile);
+  if (reminder !== undefined) values["kalimat.reminder"] = structuredClone(reminder);
   const alarms = new Map();
   if (alarm) alarms.set(alarm.name, alarm);
   const calls = { set: 0, clear: 0, create: [], contextMenus: [], notifications: [], tabs: [], permissionRequests: 0 };
   let remainingSetFailures = storageSetFailures;
+  let remainingProfileSetFailures = profileSetFailures;
   let remainingReminderWarningSetFailures = reminderWarningSetFailures;
   let remainingAlarmGetFailures = alarmGetFailures;
   let remainingAlarmCreateFailures = alarmCreateFailures;
@@ -65,11 +66,11 @@ function fakeExtension({ profile, reminder, vocabulary = [word("w1"), word("w2")
   };
   const extension = {
     storage: { local: {
-      async get(key) { if (!storageAvailable) throw new Error("storage unavailable"); return { [key]: values[key] }; },
+      async get(key) { if (!storageAvailable) throw new Error("storage unavailable"); return { [key]: structuredClone(values[key]) }; },
       async set(next) {
-        if (!storageAvailable || remainingSetFailures-- > 0 || (Object.hasOwn(next, "kalimat.reminder.warning") && remainingReminderWarningSetFailures-- > 0)) throw new Error("storage unavailable");
+        if (!storageAvailable || remainingSetFailures-- > 0 || (Object.hasOwn(next, "kalimat.profile") && remainingProfileSetFailures-- > 0) || (Object.hasOwn(next, "kalimat.reminder.warning") && remainingReminderWarningSetFailures-- > 0)) throw new Error("storage unavailable");
         calls.set += 1;
-        Object.assign(values, next);
+        Object.assign(values, structuredClone(next));
       },
     } },
     permissions: {
@@ -435,6 +436,100 @@ test("legacy stored profile missing top-level English flag retains explicit pref
     });
   }
 });
+
+for (const legacy of [true, false]) {
+  for (const operation of ["save", "clear"]) {
+    for (const failedWrites of [1, 3]) {
+      test(`${legacy ? "legacy" : "current"} profile preserves pending ${operation} after ${failedWrites} write failure${failedWrites === 1 ? "" : "s"} and background reconstruction`, async () => {
+        for (const showEnglish of [false, true]) {
+          const initial = retainedProfile("2026-07-30", 1, {
+            wordStates: { 2: { saved: true } }, favorites: { 2: true }, showEnglish,
+          });
+          initial.preferences.showEnglish = showEnglish;
+          if (legacy) delete initial.showEnglish;
+          const expectAction = (value) => {
+            if (operation === "save") {
+              assert.equal(value.wordStates[1]?.saved, true);
+              assert.equal(value.favorites[1], true);
+              assert.equal(value.wordStates[2]?.saved, true);
+              assert.equal(value.favorites[2], true);
+              assert.equal(value.assignments["2026-07-30"].wordId, 1);
+              assert.equal(value.showEnglish, showEnglish);
+              assert.equal(value.preferences.showEnglish, showEnglish);
+            } else {
+              for (const key of ["wordStates", "favorites", "assignments", "history", "srs"]) {
+                assert.deepEqual(Object.keys(value[key]), []);
+              }
+            }
+          };
+          let persisted;
+          await withBackground({ profile: initial, vocabulary: realVocabulary, profileSetFailures: failedWrites }, async ({ background, values }) => {
+            const original = structuredClone(values["kalimat.profile"]);
+            const result = await background.handleMessage(operation === "save"
+              ? { type: "word.save", wordId: 1, saved: true }
+              : { type: "state.clear" });
+            assert.equal(result.kind, "ok");
+            assert.equal(result.storageWarning, true);
+            if (operation === "clear") {
+              assert.equal(result.profilePersisted, false);
+              assert.equal(result.reminderWarning, false);
+            }
+            assert.deepEqual(values["kalimat.profile"], original);
+            for (let attempt = 1; attempt < failedWrites; attempt++) {
+              const pending = await background.handleMessage({ type: "state.export" });
+              assert.equal(pending.kind, "export");
+              assert.equal(pending.storageWarning, true);
+              expectAction(JSON.parse(pending.text));
+              assert.deepEqual(values["kalimat.profile"], original);
+            }
+            const recovered = await background.handleMessage({ type: "state.export" });
+            assert.equal(recovered.kind, "export");
+            assert.equal(recovered.storageWarning, undefined);
+            expectAction(JSON.parse(recovered.text));
+            persisted = structuredClone(values["kalimat.profile"]);
+            assert.deepEqual(JSON.parse(recovered.text), persisted);
+          });
+          // Recreate module state only after the pending profile is durably saved.
+          await withBackground({ profile: persisted, vocabulary: realVocabulary }, async ({ background }) => {
+            const restored = await background.handleMessage({ type: "state.export" });
+            assert.equal(restored.kind, "export");
+            assert.equal(restored.storageWarning, undefined);
+            assert.deepEqual(JSON.parse(restored.text), persisted);
+            expectAction(JSON.parse(restored.text));
+          });
+        }
+      });
+    }
+  }
+}
+
+for (const newerLegacy of [true, false]) {
+  test(`a newer ${newerLegacy ? "legacy" : "current"} durable profile supersedes a pending legacy save`, async () => {
+    const original = profile();
+    delete original.showEnglish;
+    const newer = profile({ level: 3, showEnglish: true, wordStates: { 2: { saved: true } }, favorites: { 2: true } });
+    newer.preferences.showEnglish = true;
+    if (newerLegacy) delete newer.showEnglish;
+    await withBackground({ profile: original, vocabulary: realVocabulary, profileSetFailures: 1 }, async ({ background, values }) => {
+      const result = await background.handleMessage({ type: "word.save", wordId: 1, saved: true });
+      assert.equal(result.storageWarning, true);
+      values["kalimat.profile"] = structuredClone(newer);
+      const exported = await background.handleMessage({ type: "state.export" });
+      assert.equal(exported.kind, "export");
+      assert.equal(exported.storageWarning, undefined);
+      const restored = JSON.parse(exported.text);
+      assert.equal(restored.level, 3);
+      assert.equal(restored.wordStates[1], undefined);
+      assert.equal(restored.favorites[1], undefined);
+      assert.equal(restored.wordStates[2].saved, true);
+      assert.equal(restored.favorites[2], true);
+      assert.equal(restored.showEnglish, true);
+      assert.equal(restored.preferences.showEnglish, true);
+      assert.deepEqual(restored, values["kalimat.profile"]);
+    });
+  });
+}
+
 test("assignment response restores validated feedback, save, and English visibility", async () => {
   const existing = profile({
     showEnglish: false,
