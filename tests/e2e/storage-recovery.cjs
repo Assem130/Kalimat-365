@@ -16,6 +16,7 @@ const extension = path.join(temporary, 'extension');
 const stateApi = require(path.join(root, 'extension/shared/state.js'));
 const vocabulary = JSON.parse(fs.readFileSync(path.join(source, 'data/vocabulary.json'), 'utf8'));
 const day = '2026-10-17';
+const card = require(path.join(root, 'extension/shared/pilot.js')).forDate(day);
 const timestamp = new Date(`${day}T12:00:00Z`).getTime();
 const jsonClone = value => JSON.parse(JSON.stringify(value));
 const report = {
@@ -61,16 +62,29 @@ function fixture(showEnglish) {
   return { legacy: jsonClone(value), normalized: jsonClone(checked.profile) };
 }
 
-function assertAction(operation, actual, expected) {
+function withEncounter(profile) {
+  return {
+    ...jsonClone(profile),
+    pilot: { encounters: { [day]: card.id } },
+    wordSnapshots: { ...jsonClone(profile.wordSnapshots || {}), [card.id]: jsonClone(card) },
+    history: { ...jsonClone(profile.history), [card.id]: { firstSeen: day } },
+  };
+}
+
+function assertAction(operation, actual, expected, reopened = false) {
   if (operation === 'save') {
-    const saved = jsonClone(expected);
-    saved.wordStates[1] = { saved: true };
-    saved.favorites[1] = true;
+    const saved = withEncounter(expected);
+    saved.wordStates[card.id] = { saved: true };
+    saved.favorites[card.id] = true;
     assert.deepEqual(actual, saved, 'Saved word and the complete existing profile must survive');
   } else {
-    for (const key of ['wordStates', 'favorites', 'assignments', 'history', 'srs']) {
+    for (const key of ['wordStates', 'favorites', 'assignments', 'srs']) {
       assert.deepEqual(actual[key], {}, `${key} must remain cleared`);
     }
+    // Opening the popup after clear records only the new pilot encounter.
+    assert.deepEqual(actual.history, reopened ? { [card.id]: { firstSeen: day } } : {});
+    assert.deepEqual(actual.wordSnapshots || {}, reopened ? { [card.id]: jsonClone(card) } : {});
+    assert.deepEqual(actual.pilot, reopened ? { encounters: { [day]: card.id } } : undefined);
     assert.deepEqual(actual.recentIds, []);
     assert.equal(actual.assignmentOrdinal, 0);
     assert.equal(actual.level, 1);
@@ -124,7 +138,7 @@ async function runCase(operation, showEnglish) {
     await start();
     // Drain initial extension startup through its public API before seeding.
     const bootstrap = await open('popup');
-    await bootstrap.locator('#daily-source-setup').waitFor({ state: 'visible' });
+    await bootstrap.locator('#assigned').waitFor({ state: 'visible' });
     assert.equal((await exportProfile(bootstrap)).kind, 'export');
     await bootstrap.close();
     const { legacy, normalized } = fixture(showEnglish);
@@ -178,12 +192,12 @@ async function runCase(operation, showEnglish) {
     await worker.evaluate(() => { globalThis.__kalimatE2EFault.blocked = false; });
     await page.close();
     page = await open('popup');
-    await page.locator(operation === 'save' ? '#assigned' : '#daily-source-setup').waitFor({ state: 'visible' });
+    await page.locator('#assigned').waitFor({ state: 'visible' });
     const recovered = await exportProfile(page);
     assert.equal(recovered.kind, 'export');
     assert.equal(recovered.storageWarning, undefined);
     const persisted = JSON.parse(recovered.text);
-    assertAction(operation, persisted, normalized);
+    assertAction(operation, persisted, normalized, true);
     assert.deepEqual(await durableProfile(), persisted);
     await page.locator('#warning').waitFor({ state: 'hidden' });
     if (operation === 'save') assert.equal(await page.locator('#save').getAttribute('aria-pressed'), 'true');
@@ -196,7 +210,7 @@ async function runCase(operation, showEnglish) {
     await start();
     assert.equal(await worker.evaluate(() => typeof globalThis.__kalimatE2EFault), 'undefined');
     page = await open('popup');
-    await page.locator(operation === 'save' ? '#assigned' : '#daily-source-setup').waitFor({ state: 'visible' });
+    await page.locator('#assigned').waitFor({ state: 'visible' });
     const restarted = await exportProfile(page);
     assert.equal(restarted.kind, 'export');
     assert.equal(restarted.storageWarning, undefined);

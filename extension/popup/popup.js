@@ -35,7 +35,7 @@
     const fresh = discovery?.needsSetup === true || (discoveryBusy && state.view === "setup");
     const revoked = discovery?.enabled && discovery.permissionGranted === false;
     panel.hidden = ["error", "recovery"].includes(state.view) || !discovery
-      || !(fresh || revoked || !discovery.enabled);
+      || discovery.pilot === true || !(fresh || revoked || !discovery.enabled);
     if (panel.hidden) return;
     byId("daily-source-title").textContent = fresh ? "كلمة جديدة من المصادر" : "تفعيل المصادر";
     byId("daily-source-description").textContent = fresh
@@ -109,7 +109,7 @@
     const target = byId("source-attribution");
     if (!target) return;
     target.replaceChildren();
-    target.hidden = word.contentVersion !== 3 && word.editorialChecked !== false;
+    target.hidden = ![3, 4].includes(word.contentVersion) && word.editorialChecked !== false;
     if (word.editorialChecked === false) {
       const note = document.createElement("p");
       note.textContent = "من المجموعة السابقة؛ لم تكتمل مراجعة المعنى والشاهد.";
@@ -117,13 +117,15 @@
       return;
     }
     if (target.hidden) return;
-    const note = document.createElement("p");
-    note.textContent = "مقتطفات من مصادر متاحة، لم يراجعها فريق كلمات.";
-    target.append(note);
+    if (word.contentVersion === 3) {
+      const note = document.createElement("p");
+      note.textContent = "مقتطفات من مصادر متاحة، لم يراجعها فريق كلمات.";
+      target.append(note);
+    }
     for (const [source, label] of [[word.source, "التعريف"], [word.exampleSource, "الشاهد"]]) {
       try {
         const url = new URL(source?.url);
-        if (url.protocol !== "https:" || url.username || url.password || !["ar.wiktionary.org", "www.wikidata.org", "ar.wikipedia.org", "lindat.mff.cuni.cz"].includes(url.hostname)) continue;
+        if (url.protocol !== "https:" || url.username || url.password || !["ar.wiktionary.org", "www.wikidata.org", "ar.wikipedia.org", "lindat.mff.cuni.cz", "www.arabicacademy.gov.eg", "www.islamweb.net", "sina.birzeit.edu"].includes(url.hostname)) continue;
         const link = document.createElement("a");
         link.href = url.href;
         link.target = "_blank";

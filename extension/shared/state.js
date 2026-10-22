@@ -68,6 +68,7 @@
     "streakData",
     "wordSnapshots",
     "discovery",
+    "pilot",
   ]);
   const PREFERENCE_KEYS = new Set(["showEnglish", "speechRate", "speechRepeat", "dailyReviewLimit", "allowRemoteSpeech"]);
   const WORD_STATE_KEYS = new Set(["status", "dateKey", "saved"]);
@@ -271,15 +272,28 @@
   const DISCOVERY_TOPICS = new Set(["science", "culture", "society", "environment", "economics", "language"]);
 
   function copySnapshots(raw) {
-    if (!plainObject(raw) || Object.keys(raw).length > 512) fail("word snapshots");
+    if (!plainObject(raw) || Object.keys(raw).length > 526) fail("word snapshots");
     const snapshots = nullMap();
     for (const [key, card] of Object.entries(raw)) {
       if (DANGEROUS_KEYS.has(key)) fail("word snapshot key");
-      const checked = DateApi.Vocabulary.validateDiscoveryCard(card);
+      const checked = card?.contentVersion === 4 ? DateApi.Vocabulary.validateEditorialCard(card) : DateApi.Vocabulary.validateDiscoveryCard(card);
       if (key !== checked.id) fail("word snapshot ID");
       snapshots[key] = checked;
     }
+    if (Object.values(snapshots).filter(card => card.contentVersion !== 4).length > 512 || Object.values(snapshots).filter(card => card.contentVersion === 4).length > 14) fail("word snapshots capacity");
     return snapshots;
+  }
+
+  function copyPilot(raw) {
+    safeKeys(raw, new Set(["encounters", "dismissedDate", "recallDate"]), "pilot");
+    if (!plainObject(raw.encounters) || Object.keys(raw.encounters).length > 5000) fail("pilot encounters");
+    const encounters = nullMap();
+    for (const [day, id] of Object.entries(raw.encounters)) {
+      if (!isDateKey(day) || typeof id !== "string" || !/^pilot_[a-z0-9_]{1,50}$/.test(id)) fail("pilot encounter");
+      encounters[day] = id;
+    }
+    for (const key of ["dismissedDate", "recallDate"]) if (raw[key] !== undefined && !isDateKey(raw[key])) fail("pilot date");
+    return { encounters, ...(raw.dismissedDate ? { dismissedDate: raw.dismissedDate } : {}), ...(raw.recallDate ? { recallDate: raw.recallDate } : {}) };
   }
 
   function copyDiscovery(raw) {
@@ -313,6 +327,7 @@
   function copyProfile(raw, vocabulary, assignmentMaximum = MAX_ASSIGNMENTS) {
     safeKeys(raw, PROFILE_KEYS, "profile");
     const wordSnapshots = Object.hasOwn(raw, "wordSnapshots") ? copySnapshots(raw.wordSnapshots) : undefined;
+    const pilot = Object.hasOwn(raw, "pilot") ? copyPilot(raw.pilot) : undefined;
     const discovery = Object.hasOwn(raw, "discovery") ? copyDiscovery(raw.discovery) : undefined;
     if (vocabulary) vocabulary = mergeVocabulary(vocabulary, raw);
     for (const key of ["schemaVersion", "algorithmVersion", "seedHex", "level", "interests", "wordStates", "assignments", "recentIds", "evidenceCutoff"]) {
@@ -432,7 +447,7 @@
       if (ws.dateKey && !history[targetId] && !history[wId]) {
         history[targetId] = { firstSeen: ws.dateKey };
       }
-      if ((ws.status || ws.dateKey || history[targetId] || history[wId]) && !srs[targetId] && !srs[wId]) {
+      if (!String(targetId).startsWith("pilot_") && (ws.status || ws.dateKey || history[targetId] || history[wId]) && !srs[targetId] && !srs[wId]) {
         const item = createDefaultSrsItem(targetId, ws.dateKey || getLocalDateKey(new Date()));
         if (ws.status === "known") {
           item.repetition = 1;
@@ -468,6 +483,7 @@
     const streak = raw.streak || raw.streakData || null;
 
     return {
+      ...(pilot === undefined ? {} : { pilot }),
       ...(wordSnapshots === undefined ? {} : { wordSnapshots }),
       ...(discovery === undefined ? {} : { discovery }),
       schemaVersion: raw.schemaVersion ?? SCHEMA_VERSION,

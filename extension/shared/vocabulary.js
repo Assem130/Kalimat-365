@@ -93,6 +93,17 @@
     return Object.freeze({ ...record, topics: Object.freeze([...record.topics]), source: Object.freeze({ ...record.source }), exampleSource: Object.freeze({ ...record.exampleSource }) });
   }
 
+  function validateEditorialCard(record) {
+    exactObject(record, new Set(["id", "contentVersion", "word", "normalized", "meaningAr", "exampleAr", "exampleKind", "reviewed", "editorialChecked", "source"]), "editorial card keys");
+    if (record.contentVersion !== 4 || !/^pilot_[a-z0-9_]{1,50}$/.test(record.id) || record.reviewed !== true || record.editorialChecked !== true || record.exampleKind !== "original") fail("editorial metadata");
+    for (const field of ["word", "normalized", "meaningAr", "exampleAr"]) text(record[field], field, 1200);
+    exactObject(record.source, new Set(["title", "url"]), "editorial source");
+    text(record.source.title, "source title", 512);
+    const url = new URL(text(record.source.url, "source URL", 2048));
+    if (url.protocol !== "https:" || !["www.arabicacademy.gov.eg", "www.islamweb.net", "sina.birzeit.edu"].includes(url.hostname) || url.username || url.password) fail("editorial source URL");
+    return Object.freeze({ ...record, source: Object.freeze({ ...record.source }) });
+  }
+
   function searchable(record) {
     if (record?.reviewed === true) return true;
     if (record?.contentVersion !== 3) return false;
@@ -104,8 +115,8 @@
     const ids = new Set();
     const records = raw.map((record) => {
       if (!record || typeof record !== "object" || Array.isArray(record) || Object.getPrototypeOf(record) !== Object.prototype) fail("record");
-      if (record.contentVersion === 3) {
-        const checked = validateDiscoveryCard(record);
+      if (record.contentVersion === 3 || record.contentVersion === 4) {
+        const checked = record.contentVersion === 4 ? validateEditorialCard(record) : validateDiscoveryCard(record);
         if (ids.has(checked.id)) fail("unique IDs");
         ids.add(checked.id);
         return checked;
@@ -290,5 +301,5 @@
     return scored.map((entry) => entry.item);
   }
 
-  return { validateVocabulary, validateDiscoveryCard, findWord, canonicalSearchKey, rankVocabulary };
+  return { validateEditorialCard, validateVocabulary, validateDiscoveryCard, findWord, canonicalSearchKey, rankVocabulary };
 });

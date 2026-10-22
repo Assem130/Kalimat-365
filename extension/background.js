@@ -1,9 +1,10 @@
 if (!globalThis.KalimatVocabulary && typeof importScripts === "function") {
-  importScripts("shared/date.js", "shared/vocabulary.js", "shared/review-policy.js", "shared/state.js", "shared/lookup.js", "shared/discovery.js");
+  importScripts("shared/date.js", "shared/pilot.js", "shared/vocabulary.js", "shared/review-policy.js", "shared/state.js", "shared/lookup.js", "shared/discovery.js");
 }
 
 const dependencies = typeof module === "object" && module.exports
   ? {
+    pilot: require("./shared/pilot.js"),
     date: require("./shared/date.js"),
     vocabulary: require("./shared/vocabulary.js"),
     state: require("./shared/state.js"),
@@ -11,6 +12,7 @@ const dependencies = typeof module === "object" && module.exports
     discovery: require("./shared/discovery.js"),
   }
   : {
+    pilot: globalThis.KalimatPilot,
     date: globalThis.KalimatDate,
     vocabulary: globalThis.KalimatVocabulary,
     state: globalThis.KalimatState,
@@ -183,13 +185,13 @@ function withSnapshot(profile, word) {
   word = dependencies.vocabulary.validateDiscoveryCard(word);
   const snapshots = { ...(profile.wordSnapshots || {}) };
   if (Object.hasOwn(snapshots, word.id)) return profile;
-  if (Object.keys(snapshots).length >= 512) {
+  if (Object.values(snapshots).filter(card => card.contentVersion !== 4).length >= 512) {
     const referenced = new Set([
       ...Object.values(profile.assignments).map(value => String(value.wordId)),
       ...profile.recentIds.map(String),
       ...Object.keys(profile.wordStates), ...Object.keys(profile.favorites), ...Object.keys(profile.srs),
     ]);
-    const unused = Object.keys(snapshots).find(id => !referenced.has(id));
+    const unused = Object.keys(snapshots).find(id => snapshots[id].contentVersion !== 4 && !referenced.has(id));
     if (!unused) return null;
     delete snapshots[unused];
   }
@@ -229,6 +231,26 @@ async function discoverWord(profile, vocabulary, dateKey, retry = false) {
     discoveryAttempt = { key: attemptKey, time: Date.now(), result };
     return result;
   }
+}
+
+async function pilotAssignment(requestedDateKey) {
+  let vocabulary = await getVocabulary();
+  const loaded = await loadProfile(vocabulary);
+  if (loaded.recoveryRaw !== undefined) return recovery(loaded);
+  const dateKey = requestedDateKey ?? dependencies.date.getLocalDateKey(new Date());
+  if (requestedDateKey && (loaded.profile.assignments[dateKey] || !loaded.profile.pilot?.encounters[dateKey])) return assignment(requestedDateKey);
+  const card = dependencies.pilot.forDate(dateKey);
+  const pilot = { ...(loaded.profile.pilot || {}), encounters: { ...(loaded.profile.pilot?.encounters || {}), [dateKey]: card.id } };
+  const encounters = Object.keys(pilot.encounters).sort();
+  for (const day of encounters.slice(0, Math.max(0, encounters.length - 5000))) delete pilot.encounters[day];
+  const profile = { ...loaded.profile, pilot,
+    wordSnapshots: { ...loaded.profile.wordSnapshots, [card.id]: card },
+    history: { ...loaded.profile.history, [card.id]: loaded.profile.history[card.id] || { firstSeen: dateKey } } };
+  vocabulary = dependencies.state.mergeVocabulary(vocabulary, profile);
+  const changed = !sameProfile(profile, loaded.profile);
+  const storageWarning = changed ? await persistProfile(profile, loaded) : loaded.warning;
+  return warning({ ...assignedResult(profile, dateKey, card.id, vocabulary), pilot: true,
+    dismissed: pilot.dismissedDate === dateKey, recall: dependencies.pilot.recall(profile, dateKey) }, storageWarning);
 }
 
 async function assignment(requestedDateKey, retry = false) {
@@ -297,7 +319,7 @@ async function handleDiscovery(message) {
       .find(card => !settings.knownKeys.includes(dependencies.discovery.lexicalKey(card.word)));
     return warning({ kind: "discovery", enabled: settings.enabled, topics: settings.topics, word,
       configured: !!loaded.profile.discovery,
-      needsSetup: !loaded.profile.discovery && !loaded.profile.assignments[dependencies.date.getLocalDateKey(new Date())],
+      pilot: true, needsSetup: false,
       permissionGranted: await discoveryPermission() }, loaded.warning);
   }
   if (message.type === "discovery.configure") {
@@ -593,9 +615,18 @@ function handleMessage(message) {
   return serialized(async () => {
     if (!message || typeof message.type !== "string") throw new TypeError("Invalid message.");
     if (message.type.startsWith("discovery.")) return handleDiscovery(message);
-    if (message.type === "assignment.get") {
+    if (message.type === "pilot.dismiss" || message.type === "pilot.recall.skip") {
+      if (!exactMessage(message, new Set(["type", "dateKey"])) || !dependencies.date.isDateKey(message.dateKey)) throw new TypeError("Invalid pilot action.");
+      const today = dependencies.date.getLocalDateKey(new Date());
+      if (message.dateKey !== today) return { kind: "stale" };
+      return updateProfile(profile => {
+        if (!profile.pilot?.encounters[today]) throw new TypeError("No pilot encounter.");
+        return { ...profile, pilot: { ...profile.pilot, [message.type === "pilot.dismiss" ? "dismissedDate" : "recallDate"]: today } };
+      });
+    }
+    if (message.type === "assignment.get" || message.type === "assignment.legacy") {
       if (!exactMessage(message, new Set(["type", "dateKey", "retry"])) || (message.retry !== undefined && typeof message.retry !== "boolean") || (message.dateKey !== undefined && !dependencies.date.isDateKey(message.dateKey))) throw new TypeError("Invalid assignment.");
-      return assignment(message.dateKey, message.retry === true);
+      return message.type === "assignment.legacy" ? assignment(message.dateKey, message.retry === true) : pilotAssignment(message.dateKey);
     }
     if (message.type === "review.queue") {
       if (!exactMessage(message, new Set(["type", "dateKey", "limit"]))) throw new TypeError("Invalid review queue.");

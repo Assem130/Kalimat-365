@@ -38,6 +38,10 @@ SOURCE_ALLOWLIST = (
     'popup/popup.js',
     'PRIVACY.md',
     'shared/date.js',
+    'shared/pilot.js',
+    'newtab/newtab.html',
+    'newtab/newtab.css',
+    'newtab/newtab.js',
     'shared/discovery.js',
     'shared/export.js',
     'shared/lookup.js',
@@ -95,6 +99,10 @@ RUNTIME_FILES = (
     'popup/popup.html',
     'popup/popup.js',
     'shared/date.js',
+    'shared/pilot.js',
+    'newtab/newtab.html',
+    'newtab/newtab.css',
+    'newtab/newtab.js',
     'shared/discovery.js',
     'shared/export.js',
     'shared/lookup.js',
@@ -162,7 +170,7 @@ def validate_output(dist, version):
             raise ValueError(f"Refusing unvalidated package archive: {archive}")
 
 
-def package():
+def package(new_tab=False):
     dist = EXTENSION_ROOT / "dist"
     if os.path.lexists(dist) and not stat.S_ISDIR(reject_link(dist).st_mode):
         raise ValueError(f"Refusing unsafe dist target: {dist}")
@@ -188,6 +196,9 @@ def package():
             gecko = manifest.get("browser_specific_settings", {}).get("gecko", {})
             if gecko.get("id") != "kalimat@assem130.github.io" or gecko.get("data_collection_permissions", {}).get("required") != ["none"]:
                 raise ValueError("Invalid Firefox store disclosure.")
+        if new_tab:
+            manifest["chrome_url_overrides"] = {"newtab": "newtab/newtab.html"}
+            content = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode()
         manifests[browser] = content
     validate_output(dist, release_version)
     payloads = {relative: (EXTENSION_ROOT / relative).read_bytes() for relative in RUNTIME_FILES}
@@ -222,7 +233,10 @@ def package():
 
 if __name__ == "__main__":
     try:
-        package()
+        import argparse
+        parser = argparse.ArgumentParser(description=__doc__)
+        parser.add_argument("--new-tab", action="store_true", help="Opt in to replacing the browser new-tab page.")
+        package(parser.parse_args().new_tab)
     except (OSError, ValueError) as error:
         print(f"Packaging failed: {error}", file=sys.stderr)
         sys.exit(1)

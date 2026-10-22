@@ -1,5 +1,40 @@
 # Extension verification
 
+## Integrated pilot candidate 0.5.1, 22 October 2026
+
+Integrated the pilot on top of GitHub commits `8e884cb` (legacy storage recovery and cleanup) and `e743da2` (privacy publication). The upstream fix remains intact. Verification also found and fixed Firefox's missing pilot startup script and an Atlas error that hid settings when a new pilot snapshot could not yet be saved.
+
+`python3 verify.py` passes 484 JavaScript tests, 11 Python tests, source replay, the existing supply gate, syntax checks for 48 tracked JavaScript files, vocabulary parity and deterministic Chrome/Firefox packaging. The Firefox manifest-driven API test reproduces the missing-catalog failure before the fix and serves a pilot assignment after it. Native Firefox remains untested.
+
+The final packaged Chromium extension passes all 11 pilot workflow checks in each mode: normal popup-to-reader and optional native new-tab replacement. Both preserve saved words, overlapping legacy/pilot history, dismissal and recall state through browser restart and backup export/clear/import. The final normal package has no new-tab override. Both tested extension folders match their respective packager outputs byte for byte. Representative desktop, narrow and recovery screenshots were inspected.
+
+The storage-recovery browser test passes all four save/clear cases with English explanations on and off. It rejects profile writes in disposable profiles, checks three repeated failed retries, restores writes, then checks exact durable state after a full Chromium restart. Atlas settings remain accessible during the failure. The same test with the submitted 0.5.0 background fails all four cases, including lost pending clear state. That negative baseline verifies the regression is detectable. It does not modify the submitted ZIP.
+
+Positive browser runs report no page errors or external requests and remove their disposable profiles. Dates and storage failures are controlled. Physical toolbar placement, actual disk/quota exhaustion, actual MV3 suspension, audible speech, assistive technology and independent linguistic certification remain outside this evidence.
+
+Local archives, logs, screenshots and reports are in the ignored folder `agent-docs/codex-2026-10-22/github-sync-0.5.1/`. Normal archive SHA256 values:
+
+- Chrome: `7b5f770d27d4fb4214f388b39033654bc84296fd8c5a4d7159d49a9129382485`
+- Firefox: `79ceffe39df8e5a16069e40795403729d871ba98493eed454cf9ca06fa8c8d96`
+
+Version 0.5.1 is a separate source candidate. The submitted 0.5.0 package and its pending review remain unchanged. See [distribution status](store/release-notes-v0.5.1.md).
+
+## Submitted store package 0.5.0, 22 October 2026
+
+Prepared without new-tab or search-provider overrides, as requested. Required permissions remain `storage` and `contextMenus`. The Chrome ZIP was checked against the runtime source bytes. `python3 verify.py` passes 473 JavaScript tests and 11 Python tests plus the existing replay, supply and packaging checks. The pilot browser script also passes all 11 workflow checks with `KALIMAT_E2E_STORE=1`, opening the reader from the popup instead of replacing new tabs. Imported saved words and overlapping legacy/pilot history survive restart and backup round-trip. No page errors or external requests occurred; disposable profiles were removed.
+
+Upload artifacts, screenshots and evidence are in the ignored local folder `agent-docs/codex-2026-10-22/store-upload-0.5.0/`. The updated privacy page was deployed and verified at its existing URL. Native dashboard screenshots then confirmed the published 0.3.0 package, uploaded 0.5.0 draft, saved listing and privacy fields, updated screenshots and successful submission. The final dashboard state was Pending review on 22 October 2026, with automatic publication after approval enabled. This is not evidence of approval. The submitted ZIP remains unchanged and predates the later storage fix in 0.5.1. The previous runtime limitations below still apply.
+
+## Approved 14-day pilot, 22 October 2026
+
+The current local candidate replaces daily source selection with the approved shared calendar catalog. Older discovery results below are historical. The legacy website is unchanged. No personal browser installation or publication was performed.
+
+`python3 verify.py` passes 473 JavaScript tests, 11 Python tests, source replay, the existing supply gate, syntax/parity checks and Chrome/Firefox packaging. The optional new-tab manifest is tested for both browsers. Background regressions cover preserving all 512 discovery snapshots, retaining legacy data, storage failure, recall and avoiding automatic pilot SRS enrollment.
+
+`tests/e2e/pilot.cjs` passes 11 checks against the actual packaged native Chromium new-tab override, fully offline in disposable profiles. It verifies full and compact states, keyboard dismissal and focus, saving, browser restart, popup/Atlas parity and dictionary links, light/dark appearance, 320px and 390px layouts, recall reveal/skip, the 14-day repeat, same-date legacy/pilot history, export/clear/import and the same calendar entry in a second fresh profile. There were no page errors or external requests. Temporary browser profiles were removed. Rendered desktop, narrow, dark, compact and recall screenshots were inspected.
+
+Evidence is in `agent-docs/codex-2026-10-22/evidence/` (local, ignored by Git). Dates are simulated; this does not establish a real overnight run. Firefox runtime, physical toolbar popup, screen-reader use and independent linguistic certification remain unverified. The previous `tests/e2e/daily.cjs` targets pre-pilot source-discovery packages; use the pilot script for this candidate.
+
 ## Discovery supply beta, 17 October 2026
 
 This 0.4.1 candidate supersedes the discovery-core snapshot below. It adds 44 source senses from the LMF Contemporary Arabic dictionary under CC BY-NC 4.0. Kalimat remains non-commercial. New daily assignments use source discovery without a fixed-list fallback. Existing learner data, archive IDs and the midnight fix remain intact.

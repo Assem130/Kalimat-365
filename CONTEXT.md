@@ -1,12 +1,12 @@
 # Kalimat product context
 
-This is the authoritative direction for the daily-discovery milestone. Kalimat (كَلِمات) is Arabic-first enrichment for people who already speak Arabic: one excellent daily encounter with a word, its meaning and a useful context. English is optional, secondary support. Literary and uncommon words belong when their meaning, context and editorial merit justify the encounter.
+The approved 14-day pilot supersedes the earlier source-driven daily selection. See PRODUCT.md and docs/PILOT.md for the current product and operation. Kalimat (كَلِمات) is Arabic-first enrichment for people who already speak Arabic: one excellent daily encounter with a word, its meaning and a useful context. English is optional, secondary support. Literary and uncommon words belong when their meaning, context and editorial merit justify the encounter.
 
 ## Product boundary
 
-- The Chrome/Firefox MV3 extension is the primary product. Its popup presents the daily encounter, optional pronunciation, saving and a route to Atlas. It does not require an initial setup detour.
+- The Chrome/Firefox MV3 extension is the primary product. Its popup presents the daily pilot encounter, optional pronunciation, saving and a route to Atlas. The popup links to the focused reading page. Normal packages leave browser new tabs unchanged. A separate build can opt in to new-tab replacement. It does not require an initial setup detour.
 - Atlas provides deeper exploration, voluntary recall practice and administration: preferences, reminders, export, import and deletion.
-- The legacy level field remains only for stored-schema compatibility and no longer gates or ranks daily selection. Optional Atlas interests still influence selection. Neither is a proficiency measurement. Reading history, saving, feedback and recall are observations, not proof of learning or mastery.
+- The legacy level field remains only for stored-schema compatibility and no longer gates or ranks daily selection. Optional Atlas interests remain for legacy source discovery; they do not influence the shared pilot schedule. Neither is a proficiency measurement. Reading history, saving, feedback and recall are observations, not proof of learning or mastery.
 - The website is the extension support site: product introduction, installation, privacy and help. The previous website remains at `legacy.html`, with `word.html` permalinks and same-origin data/export access preserved. There is no automatic migration to extension storage. See [website transition](docs/WEBSITE-TRANSITION.md).
 - No accounts, sync, backend, telemetry, analytics, corpus expansion, points, competitive rewards or new learning machinery. Reading streaks remain only in the frozen legacy website and stored compatibility data; the extension does not display them. No proficiency gates or inferred-learning claims.
 
@@ -22,7 +22,9 @@ Extension speech selects a browser-reported local Arabic voice by default. Infor
 
 The app uses vanilla HTML/CSS/JavaScript. `app-core.js`, `app.js`, `revamp.js`, `web-ui.js` and `sw.js` retain the website runtime. Shared review and speech adapters remain compatible with website callers. `words.js` is the canonical 365-entry set; stable IDs and separate stores are preserved. See [editorial scope and provenance](docs/EDITORIAL.md).
 
-`Kalimat-365` is the repository slug, not a promise of a 365-day course. The GitHub beta uses manifest version `0.4.1`, with source-driven daily discovery and no fixed-list fallback. Source access requires explicit permission. The 365-word archive remains for saved-data compatibility; GitHub packages and Chrome Web Store publication are separate distribution steps. The Chrome Web Store link is an existing channel; historical publication records do not establish its current contents. A read-only store lookup was inaccessible, so deployed version and listing remain unverified. The earlier [beta protocol](docs/beta/2026-08-10-kalimat-21-day-beta.md) is historical and does not govern current direction.
+`Kalimat-365` is the repository slug, not a promise of a 365-day course. Current source builds version `0.5.1`, with an offline approved pilot catalog and the upstream legacy-profile recovery fix. Source access remains optional and requires explicit permission. The 365-word archive remains for saved-data compatibility. The earlier GitHub beta `0.4.1` used source-driven daily discovery.
+
+GitHub commits, package downloads and Chrome Web Store publication are separate steps. The store dashboard showed published `0.3.0` and submitted `0.5.0` pending review on 22 October 2026. Automatic publication after approval was enabled. That submitted ZIP remains unchanged and lacks the subsequent storage fix. Version `0.5.1` needs a separate store update. See [distribution status](docs/store/release-notes-v0.5.1.md). The earlier [beta protocol](docs/beta/2026-08-10-kalimat-21-day-beta.md) is historical.
 
 ## Verification boundary
 

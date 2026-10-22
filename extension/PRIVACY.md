@@ -14,9 +14,11 @@ Online Arabic dictionary lookup is optional on Chrome, after explicit search sub
 
 Manually queried online lookup results are visibly unreviewed and cannot be saved or used for feedback, history, daily selection or export. Firefox dictionary lookup is local; opt-in remote browser speech remains available separately.
 
-## Daily discovery and permission
+## Daily pilot and optional discovery
 
-Daily discovery stays off until you enable it and grant optional access to `ar.wikipedia.org` and `ar.wiktionary.org`. It requests public Arabic articles and dictionary entries directly from Wikimedia, including in the background when preparing a daily card. No account, paid API key, proxy or Kalimat backend is used. Its definitions and quotations are automatically sourced and unreviewed. After activation, discovery supplies new daily words automatically in the popup and Atlas. You can disable it in Atlas settings; existing daily assignments and saved words stay intact. There is no fixed-list fallback for a new daily word. Previously stored source cards can remain available offline; if no suitable unseen cached card exists, the extension reports that a new word is unavailable. The old bundled vocabulary remains accessible only as an archive for existing data and exploration.
+The 0.5.0 pilot selects from 14 bundled, approved entries using the local calendar date. Reading a daily entry makes no network request. The extension stores encountered dates, dismissal and recall-completion dates locally. These records are included in JSON backups. Saving a pilot entry does not automatically enroll it in scheduled review. The store package does not replace your browser's new-tab page.
+
+Optional source discovery remains separate from the daily pilot. It stays off until you enable it and grant access to `ar.wikipedia.org` and `ar.wiktionary.org`. When invoked, it requests public Arabic articles and dictionary entries directly from Wikimedia. No account, paid API key, proxy or Kalimat backend is used. Automatically sourced definitions and quotations are unreviewed. You can disable sources in Atlas settings; existing assignments and saved words stay intact. Archived source cards remain available offline. Optional sources do not choose the pilot's daily entry.
 
 These requests disclose your IP address and ordinary connection metadata, together with public article or dictionary titles and topic search terms. Wikimedia handles these requests under its own policies. Kalimat does not transmit your entered text, reading history, saved words, known-word exclusions, profile or API keys. Requests omit browser credentials and cookies. The extension does not read your browsing tabs or visited pages.
 

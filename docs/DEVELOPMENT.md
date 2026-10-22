@@ -34,12 +34,12 @@ For the current source, run verification first. To package separately:
 python3 extension/tools/package.py
 ```
 
-Outputs are `extension/dist/kalimat-chrome-0.4.1.zip`, `extension/dist/kalimat-firefox-0.4.1.zip`, and unpacked `extension/dist/chrome` and `extension/dist/firefox` folders. The packager takes the version from both manifests and rejects mismatches before replacing output. Keep generated packages out of Git. GitHub release notes identify the source revision; store submission is a separate step.
+Outputs are `extension/dist/kalimat-chrome-0.5.1.zip`, `extension/dist/kalimat-firefox-0.5.1.zip`, and unpacked `extension/dist/chrome` and `extension/dist/firefox` folders. The packager takes the version from both manifests and rejects mismatches before replacing output. Keep generated packages out of Git. GitHub release notes identify the source revision; store submission is a separate step.
 
 - **Chrome:** open `chrome://extensions`, enable Developer mode, select **Load unpacked**, and choose `extension/dist/chrome`.
 - **Firefox:** open `about:debugging#/runtime/this-firefox`, select **Load Temporary Add-on**, and choose `extension/dist/firefox/manifest.json`.
 
-To inspect a historical snapshot, download `kalimat-chrome-0.3.0.zip` or `kalimat-firefox-0.3.0.zip` from [beta.2](https://github.com/Assem130/Kalimat-365/releases/tag/v0.3.0-beta.2), extract it, and load the folder containing `manifest.json` with the browser steps above. Those archives are historical and do not include subsequent `main` changes. The [Chrome Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe) is the public Chrome installation channel. Historical repository records postponed Firefox store submission; current store contents and deployed versions are unverified.
+To inspect a historical snapshot, download `kalimat-chrome-0.3.0.zip` or `kalimat-firefox-0.3.0.zip` from [beta.2](https://github.com/Assem130/Kalimat-365/releases/tag/v0.3.0-beta.2), extract it, and load the folder containing `manifest.json` with the browser steps above. Those archives are historical and do not include subsequent `main` changes. The [Chrome Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe) is the public Chrome installation channel. The dashboard showed Chrome version 0.5.0 pending review on 22 October 2026. Version 0.5.1 is a separate source candidate. See [distribution status](store/release-notes-v0.5.1.md). Firefox store publication remains unverified.
 
 ## Corpus maintenance
 
@@ -76,3 +76,7 @@ Website clear-data removes learning state, onboarding, and reminder settings whi
 | [`extension/`](../extension/) | Chrome/Firefox MV3 daily encounter and Atlas |
 | [`server.py`](../server.py) | Local UTF-8 development server |
 | [`verify.py`](../verify.py) | Shared repository verification runner |
+
+## Optional new-tab pilot
+
+Run `python3 extension/tools/package.py --new-tab` to include the browser new-tab override in both packages. The ordinary command leaves the browser new-tab page unchanged. Both builds include `newtab/newtab.html`, which you can open from the popup. See [pilot operation](PILOT.md) for the calendar, recall, preservation and reload procedure.

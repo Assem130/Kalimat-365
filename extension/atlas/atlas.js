@@ -35,7 +35,7 @@
     const cards = [];
     for (const [id, raw] of Object.entries(state.profile?.wordSnapshots || {})) {
       try {
-        const card = globalThis.KalimatVocabulary.validateDiscoveryCard(raw);
+        const card = (raw.contentVersion === 4 ? globalThis.KalimatVocabulary.validateEditorialCard(raw) : globalThis.KalimatVocabulary.validateDiscoveryCard(raw));
         if (card.id === id) cards.push(card);
       } catch (_) { /* Only validated snapshots enter search and history. */ }
     }
@@ -62,7 +62,7 @@
     if (!source) return;
     try {
       const url = new URL(source.url);
-      if (url.protocol !== "https:" || url.username || url.password || !["ar.wiktionary.org", "ar.wikipedia.org", "www.wikidata.org", "lindat.mff.cuni.cz"].includes(url.hostname)) return;
+      if (url.protocol !== "https:" || url.username || url.password || !["ar.wiktionary.org", "ar.wikipedia.org", "www.wikidata.org", "lindat.mff.cuni.cz", "www.arabicacademy.gov.eg", "www.islamweb.net", "sina.birzeit.edu"].includes(url.hostname)) return;
       const link = document.createElement("a");
       link.href = url.href;
       link.target = "_blank";
@@ -106,10 +106,14 @@
         : state.today?.discoveryStatus && !["disabled", "permission-required"].includes(state.today.discoveryStatus)
           ? "لم نجد كلمة مناسبة الآن. تحقّق من الاتصال ثم أعد المحاولة."
           : needsPermission ? "إذن المصادر غير متاح. كلمة اليوم الحالية محفوظة."
-            : enabled ? "كلمة اليوم محفوظة. ستأتي كلمات الأيام التالية من المصادر تلقائيًا."
+            : enabled ? "كلمة اليوم محفوظة. يمكنك استكشاف كلمات إضافية من المصادر."
               : "المصادر معطّلة. فعّلها لجلب كلمات جديدة. كلماتك السابقة محفوظة.";
     }
-    if (setup) {
+    if (state.discovery.pilot) {
+      if (elements["today-source-setup"]) elements["today-source-setup"].hidden = true;
+      if (elements["today-source-summary"]) elements["today-source-summary"].hidden = true;
+    }
+    if (setup && !state.discovery.pilot) {
       elements["today-card"].hidden = true;
       elements["today-empty"].hidden = true;
       if (elements["today-export-card"]) elements["today-export-card"].hidden = true;
@@ -245,6 +249,7 @@
   }
 
   function setTodayActions(enabled) {
+    for (const id of ["today-known", "today-difficult"]) if (elements[id]) elements[id].hidden = state.today?.pilot === true;
     for (const id of ["today-save", "today-known", "today-difficult"]) {
       if (elements[id]) elements[id].disabled = !enabled || state.profileReplacing;
     }
@@ -325,6 +330,7 @@
     if (daily) container.append(elements["today-save"]);
     const morphology = daily ? disclosure(word.contentVersion === 3 && !word.root && !word.pattern && !word.vocalization ? "معلومات الكلمة" : "أصل الكلمة وضبطها", "daily-morphology") : container;
     const example = daily ? disclosure(word.exampleKind === "quotation" && word.exampleSource ? "شاهد ومصدره" : "مثال وتفاصيل الاستعمال", "daily-example") : container;
+    if (word.contentVersion === 4) addSourceLink(example, word.source, "المصدر المعجمي");
     if (word.contentVersion === 3) {
       addText(example, "p", "تعريف من مصدر معجمي · لم يراجعه فريق كلمات", "source-note", "rtl");
       addSourceLink(example, word.source, "مصدر التعريف");
@@ -442,6 +448,7 @@
 
   function mergeAssignment(result) {
     if (result.storageWarning === true || state.storageWarning) return;
+    if (result.pilot) return;
     state.profile.assignments ??= {};
     state.profile.assignments[result.dateKey] = { ...state.profile.assignments[result.dateKey], wordId: result.wordId, ...(result.status ? { status: result.status } : {}) };
     if (result.status || result.saved !== undefined) {
@@ -617,7 +624,7 @@
       .find((row) => row === document.activeElement)?.dataset.historyKey;
     const filter = elements["history-filter"].value;
     const wordStates = state.profile?.wordStates ?? {};
-    const entries = Object.entries(state.profile?.assignments ?? {})
+    const entries = [...Object.entries(state.profile?.assignments ?? {}), ...Object.entries(state.profile?.pilot?.encounters ?? {}).map(([day, wordId]) => [day, { wordId, pilot: true }])]
       .sort(([left], [right]) => right.localeCompare(left))
       .filter(([, assignment]) => filter !== "difficult" || (assignment.status ?? wordStates[assignment.wordId]?.status) === "difficult")
       .filter(([, assignment]) => filter !== "saved" || wordStates[assignment.wordId]?.saved === true);
@@ -630,9 +637,9 @@
       const label = responseStatus === "known" ? "معروف" : responseStatus === "difficult" ? "صعب" : "غير مقيّمة";
       const button = document.createElement("button");
       button.type = "button";
-      button.dataset.historyKey = `day:${dateKey}`;
+      button.dataset.historyKey = `day:${dateKey}:${assignment.wordId}`;
       button.textContent = `${dateKey} — ${word.word} — ${label}`;
-      button.addEventListener("click", () => loadAssignment(dateKey));
+      button.addEventListener("click", () => { location.href = `?view=explore&id=${encodeURIComponent(word.id)}&q=${encodeURIComponent(word.word)}`; });
       elements["history-list"].append(button);
     }
     if (filter !== "difficult") {
@@ -935,7 +942,7 @@
   }
 
   async function feedback(statusName) {
-    if (!state.today?.word || state.profileReplacing) return;
+    if (!state.today?.word || state.profileReplacing || state.today.pilot) return;
     const btn = elements[statusName === "known" ? "today-known" : "today-difficult"];
     const feedbackButtons = [elements["today-known"], elements["today-difficult"]];
     if (feedbackButtons.some((feedbackButton) => feedbackButton.disabled)) return;
@@ -1186,7 +1193,9 @@
     state.recoveryRaw = null;
     warning(state.storageWarning || state.reminderWarning);
     hydrateSettings();
-    const assignedWord = assignment?.kind === "assigned" ? wordById(assignment.wordId) : null;
+    // A new pilot card can be readable before its snapshot is durably saved.
+    // Keep preferences above tied to confirmed storage and retain the warning.
+    const assignedWord = assignment?.kind === "assigned" ? (assignment.word || wordById(assignment.wordId)) : null;
     if (assignment?.kind === "assigned" && !assignedWord) return renderError("الكلمة غير متاحة.");
     // Keep the current encounter available before secondary routes return.
     // A dated lookup is historical and must never become the Today anchor.

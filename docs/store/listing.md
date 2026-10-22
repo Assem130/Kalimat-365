@@ -1,5 +1,7 @@
 # Kalimat store listing kit
 
+For the current 0.5.0 pilot upload, use [the updated listing copy](listing-v0.5.0.md). The 0.4.1 material below is historical and describes different daily behavior.
+
 Prepared store copy for the **v0.4.1-beta.1 GitHub beta**, using extension manifest version **0.4.1**. Product: **Kalimat / كَلِمات**. Audience: people who already speak Arabic and want enrichment. The [GitHub prerelease](https://github.com/Assem130/Kalimat-365/releases/tag/v0.4.1-beta.1) and its [release notes](release-notes-v0.4.1-beta.1.md) are separate from store submission. This file does not claim store approval or a live store update.
 
 ## Purpose and descriptions

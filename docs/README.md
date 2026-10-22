@@ -5,6 +5,7 @@
 ## Current direction and development
 
 - [Product context](../CONTEXT.md): authoritative Arabic-first extension direction, boundaries and verification limits.
+- [Pilot operation](PILOT.md): approved calendar, reading page, optional new-tab build and data preservation.
 - [Editorial corrections](EDITORIAL.md): five-entry scope, provenance and limits.
 - [Development](DEVELOPMENT.md): verification, local installation, packaging and corpus maintenance.
 - [Contributing](../CONTRIBUTING.md): focused bug reports and pull requests.
@@ -14,8 +15,8 @@
 
 - [Policy source](../privacy.html), [published policy](https://assem130.github.io/Kalimat-365/privacy.html) and [extension privacy](../extension/PRIVACY.md). Verify that the public policy matches the source before store submission.
 - [Store listing kit](store/listing.md): Arabic/English copy, permissions and submission steps.
-- [0.4.0 release notes](store/release-notes-v0.4.0-beta.1.md) and [verification evidence](VERIFICATION.md).
-- [Existing Chrome Web Store channel](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe): current contents unverified.
+- [0.5.1 source candidate](store/release-notes-v0.5.1.md) and [verification evidence](VERIFICATION.md).
+- [Existing Chrome Web Store channel](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe): dashboard showed 0.5.0 pending review on 22 October 2026.
 
 ## Historical records
 

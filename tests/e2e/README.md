@@ -1,4 +1,24 @@
-# Discovery extension E2E
+# Extension browser checks
+
+## Current pilot
+
+Build the normal package, then test the reading page through the popup:
+
+```sh
+python3 extension/tools/package.py
+KALIMAT_PLAYWRIGHT_PATH=/path/to/existing/node_modules/playwright \
+KALIMAT_E2E_STORE=1 node tests/e2e/pilot.cjs
+```
+
+This uses disposable offline Chromium profiles. It checks the shared daily entry, save and dismissal persistence, optional recall, backup restore, overlapping legacy history, and light/dark and narrow layouts. Only clocks are simulated. The imported legacy backup is synthetic test data. The normal package must have no new-tab override.
+
+For the optional new-tab build, package with `--new-tab` and run without `KALIMAT_E2E_STORE`. The script then opens the native browser new-tab route. Rebuild normally before preparing a store upload. Existing Playwright and Chromium are required. `KALIMAT_CHROMIUM`, `KALIMAT_EXTENSION_PATH` and `KALIMAT_E2E_OUTPUT` can select the executable, unpacked package and evidence folder.
+
+See the storage-recovery check below for temporary write-failure coverage. Neither script uses your personal browser profile.
+
+## Historical discovery extension E2E
+
+The following `discovery.cjs` and `daily.cjs` flows target earlier source-discovery packages. They do not describe the current pilot daily flow.
 
 This test loads the packaged extension in a fresh temporary Chromium profile. It never uses your normal browser profile. It requests only Arabic Wikipedia and Arabic Wiktionary host access. It makes real API requests and does not mock permissions, learner storage, or network responses.
 
@@ -60,7 +80,7 @@ KALIMAT_CHROMIUM=/path/to/chromium \
 node tests/e2e/storage-recovery.cjs
 ```
 
-It tests save and clear with English explanations enabled and disabled. Each case seeds a synthetic legacy profile into real extension storage in a disposable offline browser profile, then rejects only background profile writes. Save and clear use visible controls, including the clear confirmation dialog. The test checks the temporary warning, unchanged durable storage, repeated failed retries, recovery when writes succeed, and exact profile preservation after a full Chromium restart. Existing saved data, assignment and review history, and preferences are included in the fixture.
+It tests save and clear with English explanations enabled and disabled. Each case seeds a synthetic legacy profile into real extension storage in a disposable offline browser profile, then rejects only background profile writes. Saving the current pilot word and clearing the profile use visible controls, including the clear confirmation dialog. The test checks the temporary warning, unchanged durable storage, repeated failed retries, recovery when writes succeed, and exact profile preservation after a full Chromium restart. Existing saved data, assignment and review history, and preferences are included in the fixture. Reopening after clear records only a fresh pilot encounter. It must not restore any cleared legacy data.
 
 `KALIMAT_EXTENSION_PATH` can select an unpacked Chrome package and `KALIMAT_E2E_OUTPUT` selects the evidence directory. To check an older background implementation, set `KALIMAT_BACKGROUND_OVERRIDE` to its absolute file path; the script replaces only its own temporary extension copy. A failing baseline remains a nonzero exit and a failed JSON report.
 

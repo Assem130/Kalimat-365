@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark"><title>كلمات</title>
+  <link rel="stylesheet" href="../shared/theme.css"><link rel="stylesheet" href="newtab.css">
+  <script src="../shared/theme-init.js"></script>
+</head>
+<body>
+  <header><a href="../atlas/atlas.html?view=today" class="brand">كلمات<span class="brand-dot"></span></a><nav aria-label="روابط"><a href="../atlas/atlas.html?view=history">كلماتي</a><a href="../atlas/atlas.html?view=settings">الإعدادات</a></nav></header>
+  <main aria-busy="true">
+    <p id="status" role="status" aria-live="polite">نحضّر كلمتك…</p>
+    <article id="encounter" hidden>
+      <div class="date-row"><time id="date"></time><button id="dismiss" type="button">اكتفيت لليوم</button></div>
+      <h1 id="word"></h1>
+      <div id="full">
+        <p id="meaning" class="meaning"></p>
+        <blockquote id="example"></blockquote>
+        <div class="entry-actions"><button id="save" type="button" aria-pressed="false">حفظ الكلمة</button><a id="source" target="_blank" rel="noopener noreferrer">المصدر المعجمي</a></div>
+      </div>
+      <button id="reopen" type="button" hidden>اقرأها مجددًا</button>
+    </article>
+    <section id="recall" aria-labelledby="recall-title" hidden>
+      <div class="recall-heading"><h2 id="recall-title">هل تذكر هذه الكلمة؟</h2><button id="skip" type="button">تخطَّ</button></div>
+      <p id="recall-word" class="recall-word"></p>
+      <button id="reveal" type="button" aria-expanded="false" aria-controls="recall-answer">اكشف المعنى</button>
+      <div id="recall-answer" hidden><p id="recall-meaning"></p><p id="recall-example"></p><button id="recall-done" type="button">تمّ</button></div>
+    </section>
+    <button id="retry" type="button" hidden>إعادة المحاولة</button>
+  </main>
+  <footer><a href="../atlas/atlas.html?view=explore">افتح الأطلس</a></footer>
+  <script src="../shared/theme.js"></script><script src="../shared/date.js"></script><script src="newtab.js"></script>
+</body></html>

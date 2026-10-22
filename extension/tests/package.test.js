@@ -36,13 +36,17 @@ const runtimeFiles = [
   "popup/popup.html",
   "popup/popup.js",
   "shared/date.js",
+  "shared/pilot.js",
+  "newtab/newtab.html",
+  "newtab/newtab.css",
+  "newtab/newtab.js",
   "shared/discovery.js",
   "shared/export.js",
   "shared/lookup.js",
   "shared/review-policy.js",
   "shared/review-session.js",
   "shared/speech.js",
-    "shared/state.js",
+  "shared/state.js",
   "shared/streak.js",
   "shared/theme.css",
   "shared/theme-init.js",
@@ -155,6 +159,15 @@ function assertNoUnsafePayload(browser) {
       urlScanText = JSON.stringify(validateVocabulary(JSON.parse(text)).map((record) =>
         record.exampleSource ? { ...record, exampleSource: { ...record.exampleSource, url: "" } } : record));
     }
+    if (relative === "shared/pilot.js") {
+      const catalog = /const cards = (\[[\s\S]*?\])\.map\(card =>/.exec(text);
+      assert.ok(catalog, "Pilot catalog must remain a static JSON array");
+      const records = require("../shared/vocabulary.js").validateVocabulary(JSON.parse(catalog[1]));
+      assert.equal(records.length, 14);
+      assert.ok(records.every(record => record.contentVersion === 4));
+      const sanitized = JSON.stringify(records.map(record => ({ ...record, source: { ...record.source, url: "" } })));
+      urlScanText = text.replace(catalog[1], sanitized);
+    }
     // Attribution files contain source/license links, not executable requests.
     if (["data/discovery-index-notice.md", "data/wordfreq-NOTICE.md", "data/lmf-NOTICE.md"].includes(relative)) urlScanText = "";
     const urls = urlScanText.match(remoteUrlRegex) || [];
@@ -185,7 +198,7 @@ function assertNoUnsafePayload(browser) {
 test("Chrome manifest uses a MV3 service worker with fixed optional Wikimedia origins", () => {
   const chrome = manifest("chrome");
   assertSafeManifest(chrome, "chrome");
-  assert.equal(chrome.version, "0.4.1");
+  assert.match(chrome.version, /^\d+\.\d+\.\d+$/);
   assert.deepEqual(Object.keys(chrome.background), ["service_worker"]);
   assert.equal(chrome.background.service_worker, "background.js");
 });
@@ -193,7 +206,7 @@ test("Chrome manifest uses a MV3 service worker with fixed optional Wikimedia or
 test("Firefox manifest uses ordered event-page scripts with optional Wikimedia origins", () => {
   const firefox = manifest("firefox");
   assertSafeManifest(firefox, "firefox");
-  assert.equal(firefox.version, "0.4.1");
+  assert.equal(firefox.version, releaseVersion);
   assert.deepEqual(firefox.browser_specific_settings, {
     gecko: {
       id: "kalimat@assem130.github.io",
@@ -201,7 +214,7 @@ test("Firefox manifest uses ordered event-page scripts with optional Wikimedia o
     },
   });
   assert.deepEqual(Object.keys(firefox.background), ["scripts"]);
-  assert.deepEqual(firefox.background.scripts, ["shared/date.js", "shared/vocabulary.js", "shared/review-policy.js", "shared/state.js", "shared/lookup.js", "shared/discovery.js", "background.js"]);
+  assert.deepEqual(firefox.background.scripts, ["shared/date.js", "shared/pilot.js", "shared/vocabulary.js", "shared/review-policy.js", "shared/state.js", "shared/lookup.js", "shared/discovery.js", "background.js"]);
 });
 
 test("packaged CSS enforces design tokens, system Arabic typography, and accessible focus styles", () => {
@@ -229,10 +242,10 @@ test("privacy document states local learning storage, online-query scope, analyt
   assert.match(privacy, /Wikimedia servers|ar\.wiktionary\.org/i);
   assert.match(privacy, /unreviewed/i);
   assert.match(privacy, /Manually queried online lookup results.*cannot be saved/i);
-  assert.match(privacy, /Daily discovery stays off until you enable it/i);
-  assert.match(privacy, /definitions and quotations are automatically sourced and unreviewed/i);
-  assert.match(privacy, /including in the background when preparing a daily card/i);
-  assert.match(privacy, /grant optional access to `ar\.wikipedia\.org` and `ar\.wiktionary\.org`/i);
+  assert.match(privacy, /stays off until you enable it and grant access/i);
+  assert.match(privacy, /Automatically sourced definitions and quotations are unreviewed/i);
+  assert.match(privacy, /Reading a daily entry makes no network request/i);
+  assert.match(privacy, /grant access to `ar\.wikipedia\.org` and `ar\.wiktionary\.org`/i);
   assert.match(privacy, /known.word exclusions.*included in extension JSON export\/import/i);
   assert.match(privacy, /Firefox dictionary lookup is local/i);
   assert.match(privacy, /opt.in remote browser speech/i);
@@ -262,7 +275,7 @@ test("both packages contain exactly the runtime allowlist and selected manifest"
     assert.deepEqual(new Set(listFiles(path.join(distRoot, browser))), expectedPackageFiles, `${browser} package drifted from the allowlist`);
     assert.doesNotThrow(() => assertSafeManifest(packageManifest(browser), browser));
     assert.deepEqual(packageManifest(browser), manifest(browser));
-    assert.equal(manifest(browser).version, "0.4.1");
+    assert.equal(manifest(browser).version, releaseVersion);
     assert.equal(packageManifest(browser).background.service_worker ?? undefined, browser === "chrome" ? "background.js" : undefined);
     if (browser === "firefox") assert.deepEqual(packageManifest(browser).background.scripts, manifest("firefox").background.scripts);
   }
@@ -504,4 +517,34 @@ test("shipped discovery catalog contains revision-attributed definitions and exa
   assert.match(notice, /6310c9c836312b7fd5f4f6bb1e2e0acb8584994e02bb3453b9c713a0589244d8/);
   assert.match(notice, /creativecommons\.org\/licenses\/by-sa\/4\.0/);
   assert.match(notice, /Arabic Wiktionary contributors/);
+});
+
+test('new-tab takeover is opt-in and both package modes retain the page and same output paths', () => {
+  childProcess.execFileSync(python, [path.join(extensionRoot, 'tools/package.py'), '--new-tab']);
+  for (const browser of browsers) {
+    const target = path.join(distRoot, browser);
+    const manifest = JSON.parse(fs.readFileSync(path.join(target, 'manifest.json'), 'utf8'));
+    assert.deepEqual(manifest.chrome_url_overrides, { newtab: 'newtab/newtab.html' });
+    assert.ok(fs.existsSync(path.join(target, 'newtab/newtab.html')));
+  }
+  childProcess.execFileSync(python, [path.join(extensionRoot, 'tools/package.py')]);
+  for (const browser of browsers) {
+    const target = path.join(distRoot, browser);
+    const manifest = JSON.parse(fs.readFileSync(path.join(target, 'manifest.json'), 'utf8'));
+    assert.equal(manifest.chrome_url_overrides, undefined);
+    assert.ok(fs.existsSync(path.join(target, 'newtab/newtab.html')));
+  }
+});
+
+
+test("pilot source exception leaves URLs outside validated catalog fields guarded", () => {
+  ensurePackages();
+  const file = path.join(distRoot, "chrome/shared/pilot.js");
+  const original = fs.readFileSync(file, "utf8");
+  try {
+    fs.writeFileSync(file, original + '\nconst unexpected = "https://www.arabicacademy.gov.eg/ar/search_engine/roots/نول";\n');
+    assert.throws(() => assertNoUnsafePayload("chrome"), /unauthorized remote URL/);
+    fs.writeFileSync(file, original.replace('https://www.arabicacademy.gov.eg/ar/search_engine/roots/نول', 'https://example.org/untrusted'));
+    assert.throws(() => assertNoUnsafePayload("chrome"), /editorial source URL/);
+  } finally { fs.writeFileSync(file, original); }
 });

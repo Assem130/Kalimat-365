@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kalimat",
-  "version": "0.4.1",
+  "version": "0.5.1",
   "description": "Explore one Arabic word each day with meanings, examples, and review.",
   "permissions": ["storage", "contextMenus"],
   "optional_permissions": ["alarms", "notifications"],
