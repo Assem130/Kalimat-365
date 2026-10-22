@@ -37,7 +37,7 @@
     </header>
     <article id="policy-content" tabindex="-1">
       <h1>سياسة الخصوصية</h1>
-      <p class="updated">آخر تحديث: ١٦ أكتوبر ٢٠٢٦.</p>
+      <p class="updated">آخر تحديث: ٢٢ أكتوبر ٢٠٢٦.</p>
 
       <h2>بالعربية</h2>
       <p>صُممت كَلِمات لتعمل محلياً. لا نطلب حساباً، ولا نشغّل تحليلات أو إعلانات، ولا نملك خادماً أو مزامنة تجمع بياناتك.</p>
@@ -56,7 +56,9 @@
         <li>في Chrome فقط، وعند ضغطك صراحةً على «بحث خارجي في القاموس»، وبعد منح إذن القاموس الاختياري، يُرسل مصطلح البحث المنقح إلى <a href="https://ar.wiktionary.org/">Wiktionary العربية</a>. قد يعالج مزوّد القاموس معلومات اتصال الشبكة المعتادة. في البحث اليدوي لا تُرسل التعيينات أو السجل أو الصفحات التي تزورها، ولا يُحفظ سجل البحث في ملفك. بحث القاموس في Firefox محلي. يستخدم نطق الامتداد افتراضياً صوتاً عربياً يصفه المتصفح بأنه محلي. يمكن السماح بالنطق عن بُعد من إعدادات الأطلس بعد الاطلاع على التنبيه؛ عندها قد يُرسل النص المنطوق إلى مزوّد النطق في Chrome أو Firefox. نطق الموقع يتبع المتصفح ونظام التشغيل، وقد يستخدم مزوّداً عبر الشبكة.</li>
       </ul>
 
-      <h3>المصادر اليومية في الإصدار التجريبي 0.4.1</h3>
+      <h3>التجربة اليومية في الإصدار 0.5.0</h3>
+      <p>تختار التجربة اليومية من 14 كلمة معتمدة ومضمّنة بحسب التاريخ المحلي، دون طلبات شبكة لقراءة الكلمة. تُحفظ تواريخ اللقاءات والاكتفاء لليوم وإكمال التذكّر محليًا وتدخل في النسخة الاحتياطية. لا يؤدي حفظ كلمة من التجربة إلى إضافتها تلقائيًا إلى جدول مراجعة. لا تستبدل حزمة المتجر صفحة علامة التبويب الجديدة. المصادر الاختيارية منفصلة ولا تختار كلمة التجربة اليومية.</p>
+      <h3>المصادر اليومية في الإصدار السابق 0.4.1</h3>
       <p>هذه الميزة ضمن إصدار GitHub التجريبي 0.4.1. تختلف الميزات في إصدارات المتاجر الأقدم بحسب النسخة المثبتة.</p>
       <p>لا تعمل المصادر اليومية قبل تفعيلها ومنح إذن الوصول الاختياري إلى ويكيبيديا العربية وويكاموس العربية. تطلب النسخة نصوصًا عربية عامة مباشرة من Wikimedia، وقد ترسل الطلبات في الخلفية عند إعداد كلمة اليوم. تكشف الطلبات عنوان IP ومعلومات الاتصال المعتادة وعناوين عامة أو كلمات بحث مرتبطة بالموضوع. لا تُرسل كلماتك المحفوظة أو سجل قراءتك أو صفحات تصفحك أو ملفك المحلي، ولا تُرسل ملفات تعريف الارتباط مع هذه الطلبات.</p>
       <p>تساعد مادة معجمية مضمّنة من ويكاموس ومن معجم اللغة العربية المعاصرة بصيغة LMF في الاختيار محليًا. مصدر مادة LMF هو <a href="https://lindat.mff.cuni.cz/repository/items/d4d8ef1a-0e51-42d1-9a94-113cb81afa76">سجل LINDAT المنشور باسم Driss Namly عام 2015</a>، بترخيص <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> ضمن الاستخدام غير التجاري لكَلِمات. لا ترسل قراءة هذه المادة طلبات إلى LINDAT أو ناشر المعجم. طلبات الاكتشاف عبر الإنترنت إلى Wikimedia منفصلة عن هذه البيانات المضمّنة.</p>
@@ -80,9 +82,10 @@
           <li>The website reminder is an opt-in browser <code>Notification</code> that fires only while a legacy website tab is open. The extension reminder remains a separate MV3 <code>alarms</code>/<code>notifications</code> setting.</li>
           <li>On Chrome only, an explicit external-dictionary search with optional host permission sends only the normalized search term to <a href="https://ar.wiktionary.org/">Arabic Wiktionary</a>. Wikimedia may process standard network connection metadata. Manual dictionary lookup sends no profile, history, visited-page data, cookies, or background requests, and does not retain lookup history. Firefox dictionary lookup is local. Extension speech uses an Arabic voice reported as local by the browser by default. After the Atlas disclosure, you can opt in to remote speech, which may send spoken text to the browser speech provider on Chrome or Firefox. Website speech remains browser/OS dependent and may use a network provider.</li>
         </ul>
-        <h3>Daily sources in beta 0.4.1</h3>
-        <p>This feature is included in GitHub beta 0.4.1. Older store releases can differ. Available features depend on your installed version.</p>
-        <p>Daily sources remain off until you enable them and grant optional access to Arabic Wikipedia and Wiktionary. The beta requests public Arabic material directly from Wikimedia, including background requests when preparing a daily word. Requests disclose your IP address, ordinary connection metadata, and public titles or topic search terms. They do not transmit your saved words, reading history, visited pages, local profile, or browser cookies. Wikimedia handles requests under its own policies.</p>
+        <h3>Daily pilot in version 0.5.0</h3>
+        <p>In the 0.5.0 pilot, the daily entry comes from 14 bundled approved words using the local calendar date, without a network request. Encounter dates, dismissal and recall completion stay local and are included in backups. Saving a pilot word does not automatically schedule reviews. The store package leaves your new-tab page unchanged. Optional sources are separate and do not select the pilot entry.</p>
+        <h3>Daily sources in the earlier 0.4.1 beta</h3>
+        <p>The following daily-source behavior describes the earlier 0.4.1 beta. Daily sources remain off until you enable them and grant optional access to Arabic Wikipedia and Wiktionary. The beta requests public Arabic material directly from Wikimedia, including background requests when preparing a daily word. Requests disclose your IP address, ordinary connection metadata, and public titles or topic search terms. They do not transmit your saved words, reading history, visited pages, local profile, or browser cookies. Wikimedia handles requests under its own policies.</p>
         <p>Bundled reference data from Arabic Wiktionary and the LMF Contemporary Arabic dictionary support local selection. The LMF data come from the <a href="https://lindat.mff.cuni.cz/repository/items/d4d8ef1a-0e51-42d1-9a94-113cb81afa76">LINDAT record by Driss Namly, 2015</a>, under <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a> for Kalimat's non-commercial use. Reading the bundled LMF data sends no request to LINDAT or the dictionary publisher. Online Wikimedia discovery requests are separate from these bundled data.</p>
         <p>Source interests, known-word exclusions, accepted cards, and their source details remain in local extension storage. They are included in extension backups and removed by clear-data. You can disable daily sources in Atlas settings without removing existing words. Automated excerpts are not human-reviewed. Previously stored words remain available offline. The beta does not substitute a fixed-list word when discovery is unavailable.</p>
 
