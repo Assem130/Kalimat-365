@@ -20,7 +20,7 @@ The [v0.4.1-beta.1 download](https://github.com/Assem130/Kalimat-365/releases/ta
 
 ## Privacy and help
 
-Profile data stays in browser `storage.local`; no accounts, telemetry, analytics, sync or backend are provided. Pronunciation uses a browser-reported local Arabic voice by default; optional remote speech may send text to the browser's speech provider. Source mode requests optional access to Arabic Wikipedia and Wiktionary. An explicit dictionary lookup can separately request Wiktionary access. Firefox dictionary lookup stays local. Clear-data attempts profile deletion and reminder disabling independently and reports partial or unknown outcomes.
+Profile data stays in browser `storage.local`; no accounts, telemetry, analytics, sync or backend are provided. Pronunciation uses a browser-reported local Arabic voice by default; optional remote speech may send text to the browser's speech provider. Optional additional discovery needs a connection and consent for access to Arabic Wikipedia and Wiktionary. The daily pilot needs neither. An explicit dictionary lookup can separately request Wiktionary access. Firefox dictionary lookup stays local. Clear-data attempts profile deletion and reminder disabling independently and reports partial or unknown outcomes.
 
 - [Extension privacy](extension/PRIVACY.md), [policy source](privacy.html) and [published policy](https://assem130.github.io/Kalimat-365/privacy.html). The policy explains local speech, optional remote speech and dictionary requests separately.
 - [Report a bug](https://github.com/Assem130/Kalimat-365/issues/new?template=bug-report.yml) or [get help](https://github.com/Assem130/Kalimat-365/issues).
@@ -28,7 +28,7 @@ Profile data stays in browser `storage.local`; no accounts, telemetry, analytics
 
 ## Supporting website
 
-The support website introduces the browser extension and provides installation, privacy and help links. Its product preview represents the earlier discovery beta. The [public website](https://assem130.github.io/Kalimat-365/) and Chrome Web Store are separate publication surfaces. Older downloads and store versions can show an earlier experience.
+The support website introduces the browser extension and provides installation, privacy and help links. Its source describes the current pilot and distinguishes it from older downloads and the dated store record. The [public website](https://assem130.github.io/Kalimat-365/) and Chrome Web Store are separate publication surfaces. Source changes do not confirm publication on either surface. Older downloads and store versions can show an earlier experience.
 
 Run `python3 server.py` and open <http://localhost:8000/> (`python` on Windows). The previous website is retained at `legacy.html`; `word.html` links and existing browser data still work. Use `word.html?action=history` for the history and JSON export controls. Website and extension JSON formats remain distinct, with no automatic migration. See [transition details](docs/WEBSITE-TRANSITION.md).
 

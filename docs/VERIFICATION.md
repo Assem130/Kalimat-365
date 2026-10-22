@@ -1,5 +1,34 @@
 # Extension verification
 
+## Experience refinement of 0.5.1, 22 October 2026
+
+This local candidate builds on `84866e2`. It fixes reader history routing, Explore detail navigation, and keyboard focus after saving. It aligns Arabic typography and themes across surfaces, exposes the daily example and reference in Atlas, and prioritizes reading and personal-data settings. The support website now describes the pilot and uses a current screenshot. No publication occurred.
+
+The baseline reproduced three defects: the reader's My words link opened Today, the selected Explore heading appeared 19,360 pixels below the top, and a delayed Save lost keyboard focus. Three new Atlas integration regressions failed against the baseline and pass against the candidate. Packaged browser tests cover the reader focus defect. Approved pilot text, scheduling, archive data, storage/export formats, background logic, permissions and extension identity have no changes.
+
+| Verification | Result and scope |
+| --- | --- |
+| `python3 verify.py` | 487 JavaScript tests and 11 Python tests pass, plus syntax, vocabulary parity, source replay, supply gates and deterministic packaging. |
+| Packaged Chromium 155.0.8059.84 | All 11 pilot checks pass in each mode: normal popup-to-reader and separate optional new-tab build. Includes legacy state, recall, export/clear/import and browser restart. |
+| `experience.cjs` | All 10 journey groups pass. Covers delayed Save focus, navigation, settings, invalid import retention, themes, reduced motion, 320/390px layouts, actual 200% browser zoom, simulated DST, forced MV3 worker stop/resume and full browser restart. |
+| `storage-recovery.cjs` | All four save/clear cases pass with English on and off. Controlled failed writes preserve pending actions, recover, and survive restart after persistence. |
+| Packaged Firefox 158.0.1 | All 20 checks pass using real Firefox and a temporary addon. Includes saving, dismissal, navigation, themes, runtime backup/clear/import and addon reload. |
+| Native KDE desktop | Installed Linux integration operated the disposable Chromium window. Pinning, actual toolbar popup, Save, popup-to-reader and My words navigation were observed. Final popup width and initial actions fit correctly. |
+| Supporting website | Rendered at 1280, 390 and 320px, with no horizontal overflow or page errors. Navigation, theme toggle, current screenshot and legacy links were checked locally. |
+
+Positive Chromium journey reports record zero page errors and external requests. Every test uses disposable profiles. Firefox uses headless Marionette and document controls, not desktop pointer input. Its backup check uses the runtime API. Native toolbar observation is separate from popup-document automation. Screenshots were inspected across popup, reader, Atlas, themes, narrow layouts, zoom and storage failure states.
+
+Remaining checks: audible Arabic speech, real screen-reader output, native Firefox toolbar and permission/file-picker interactions, reminder delivery, store-installed upgrades, and actual disk/quota exhaustion. AT-SPI returned no Chromium accessibility nodes on this host. Dates are controlled rather than observed overnight. Worker termination is real and forced through CDP, not timed idle suspension. These results do not certify all legacy editorial content.
+
+Evidence and the before/after gallery are in the ignored local folder `agent-docs/codex-maturity-2026-10-22/`. Accepted reports are `pilot-accepted/`, `optional/pilot-accepted/`, `experience-release/`, `firefox/release/`, `recovery-final/`, and `website/`. Earlier diagnostic failures remain separate. Reproduction instructions are in [the E2E guide](../tests/e2e/README.md).
+
+The final normal manifests have no new-tab override. Normal archive SHA256 values:
+
+- Chrome: `26108df6063cdcc95c292601cb6d101c2bed0c0556cd45642d9a1ba7d6125903`
+- Firefox: `cd3bca1bd56ecfff2116ce723ea7f62a035ba58639e32c0e85765f27c0ec543e`
+
+The source version remains 0.5.1. This refinement does not change the separately submitted 0.5.0 package or establish store approval.
+
 ## Integrated pilot candidate 0.5.1, 22 October 2026
 
 Integrated the pilot on top of GitHub commits `8e884cb` (legacy storage recovery and cleanup) and `e743da2` (privacy publication). The upstream fix remains intact. Verification also found and fixed Firefox's missing pilot startup script and an Atlas error that hid settings when a new pilot snapshot could not yet be saved.

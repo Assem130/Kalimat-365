@@ -6,7 +6,9 @@ The integration retains the upstream storage-recovery fix from PR #21. A save or
 
 Atlas keeps settings accessible when a new daily card cannot yet be saved. It displays the returned card with the storage warning while keeping preferences tied to confirmed storage.
 
-Firefox now loads the pilot catalog before its background controller. The manifest bootstrap regression exercises a daily assignment through the Firefox browser API model. This is not a native Firefox runtime test.
+Firefox now loads the pilot catalog before its background controller. The manifest bootstrap regression exercises a daily assignment through the Firefox browser API model. Separate packaged runtime checks now pass in headless Firefox, including saving, backup restore and addon reload.
+
+The experience refinement fixes the reader's My words link and restores keyboard focus after saving. Atlas opens a selected word immediately and returns to the same search result. Its daily example and dictionary link are visible without opening a disclosure. The popup, reader and Atlas share their colors and system dark appearance. Settings prioritize reading, reminders and personal data, with additional source discovery kept optional. Approved content, daily scheduling, storage formats, extension identity and permissions are unchanged.
 
 ## Distribution status on 22 October 2026
 
