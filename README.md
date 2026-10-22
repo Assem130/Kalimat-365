@@ -12,11 +12,11 @@ A daily word stays the same after reload, restart or a settings change. The pilo
 
 Current source builds **0.5.1**, combining the pilot with the upstream fix for legacy profiles after temporary storage failures. Run `python3 verify.py`, then follow the [local Chrome/Firefox installation guide](docs/DEVELOPMENT.md#extension-installation-and-packaging). See [0.5.1 changes and distribution status](docs/store/release-notes-v0.5.1.md).
 
-The [Chrome Web Store](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe) dashboard showed **0.5.0 pending review** on 22 October 2026, with automatic publication after approval. That submitted package does not contain the later storage fix. Committing 0.5.1 to GitHub does not replace the submitted package or change its review.
+The finished **0.5.1** package was submitted to the existing [Chrome Web Store listing](https://chromewebstore.google.com/detail/dlfllbncnbfpnocdaeddejjjldohmefe) on 22 October 2026. The dashboard confirmed **Pending review**, with automatic publication after approval enabled. The published version was still 0.3.0. The submission includes the storage fix and experience refinements.
 
 The [v0.4.1-beta.1 download](https://github.com/Assem130/Kalimat-365/releases/tag/v0.4.1-beta.1) is an older source-discovery build. Its [release notes](docs/store/release-notes-v0.4.1-beta.1.md) and [source investigation](docs/DISCOVERY-SUPPLY.md) remain historical records. The 365-word archive stays available for saved-data compatibility. `Kalimat-365` is the repository slug, not a 365-day course promise.
 
-[Verification evidence](docs/VERIFICATION.md) records the tested flows and limits. Native Firefox, physical toolbar interaction, audible speech, screen readers and actual worker suspension remain unverified for this candidate. Arabic speech availability depends on your browser and installed voices.
+[Verification evidence](docs/VERIFICATION.md) records the tested flows and limits. Chromium toolbar interaction, forced service-worker restart and packaged Firefox journeys passed. Native Firefox controls, audible speech, screen readers, reminder delivery and a store-installed upgrade remain unverified. Arabic speech availability depends on your browser and installed voices.
 
 ## Privacy and help
 

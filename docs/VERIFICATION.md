@@ -1,5 +1,13 @@
 # Extension verification
 
+## Main merge and store submission, 22 October 2026
+
+The finished experience changes were merged into `main` and pushed at `135a6d01c94d52208a53ee1c00dc90c12b527dea`. GitHub's Ubuntu and Windows verification and Pages deployment passed. The user authorized updating the existing Chrome Web Store submission.
+
+Native KDE dashboard interaction canceled the earlier pending review and uploaded the verified normal Chrome 0.5.1 ZIP. Both reader screenshots and the reviewer instructions were updated. The dashboard confirmed successful submission with automatic publication after approval enabled. The package page showed **0.5.1 pending review** and **0.3.0 published**. No store approval or installed store upgrade is claimed.
+
+The uploaded ZIP SHA256 is `26108df6063cdcc95c292601cb6d101c2bed0c0556cd45642d9a1ba7d6125903`, matching the tested experience candidate below. Native submission screenshots, the ZIP, screenshot hashes and instructions are preserved in `agent-docs/codex-maturity-2026-10-22/store-0.5.1/`. This distribution record supersedes the earlier submission statuses below.
+
 ## Experience refinement of 0.5.1, 22 October 2026
 
 This local candidate builds on `84866e2`. It fixes reader history routing, Explore detail navigation, and keyboard focus after saving. It aligns Arabic typography and themes across surfaces, exposes the daily example and reference in Atlas, and prioritizes reading and personal-data settings. The support website now describes the pilot and uses a current screenshot. No publication occurred.
