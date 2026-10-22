@@ -117,7 +117,8 @@ async function imported(page, file) {
   for (const [key, value] of Object.entries(fixture.wordSnapshots)) assert.deepEqual(state.wordSnapshots[key], value);
   await atlas.locator('#today').click();
   assert.equal((await atlas.locator('#today-card h3').innerText()).trim(), firstWord);
-  await atlas.locator('#today-card details').filter({ hasText: 'مثال وتفاصيل الاستعمال' }).locator('summary').click();
+  assert.ok(await atlas.locator('#today-card > .context').isVisible());
+  assert.equal((await atlas.locator('#today-card > .context .text').innerText()).trim(), (await page.locator('#example').innerText()).trim());
   assert.ok(await atlas.locator('#today-card a[href*="arabicacademy.gov.eg"]').isVisible());
   const popup = await context.newPage();
   await popup.setViewportSize({ width: 380, height: 650 });

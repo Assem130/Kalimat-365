@@ -11,10 +11,9 @@
 <body>
   <a class="skip-link" href="#main">تجاوز إلى المحتوى</a>
   <main id="main" tabindex="-1">
-    <p><a href="../newtab/newtab.html" target="_blank">افتح كلمة اليوم في صفحة جديدة</a></p>
-    <header class="masthead"><h1>كَلِمات</h1><button id="open-settings" class="daily-icon-button icon-settings" type="button" aria-label="إعدادات الأطلس" title="إعدادات الأطلس"></button></header>
+    <header class="masthead"><h1>كَلِمات</h1><div class="masthead-actions"><a class="reader-link" href="../newtab/newtab.html" target="_blank" rel="noopener" aria-label="قراءة موسّعة في صفحة جديدة">قراءة موسّعة</a><button id="open-settings" class="daily-icon-button icon-settings" type="button" aria-label="إعدادات الأطلس" title="إعدادات الأطلس"></button></div></header>
     <p id="status" class="status" aria-live="polite"></p>
-    <p id="warning" class="warning" hidden>تُعرض بياناتك، لكن تعذّر حفظ آخر تغيير.</p>
+    <p id="warning" class="warning" role="status" hidden>تُعرض بياناتك، لكن تعذّر حفظ آخر تغيير.</p>
     <section id="assigned" aria-label="كلمتك اليومية" hidden>
       <p class="daily-caption">كلمة اليوم</p>
       <article class="word-card">
@@ -25,7 +24,7 @@
         <div class="actions"><button id="speak" class="icon-speak" type="button">استمع</button><button id="save" class="icon-bookmark" type="button" aria-pressed="false">حفظ</button></div>
       </article>
       <p id="action-status" class="action-status" role="status" aria-live="polite"></p>
-      <button id="explore" class="atlas-link" type="button">اكتشف الكلمة في الأطلس</button>
+      <button id="explore" class="atlas-link" type="button">افتح في الأطلس</button>
       <details id="vocalization-details"><summary>ضبط الكلمة</summary><p id="vocalization" lang="ar" hidden></p><p id="register" class="register" hidden></p><p id="assignment-date" class="assignment-date" hidden></p></details>
       <details id="translation" hidden><summary>شرح بالإنجليزية والنطق اللاتيني</summary><p id="meaning-en" class="english" lang="en" dir="ltr"></p><p id="pronunciation" class="pronunciation" lang="en" dir="ltr"></p><p id="example-en" class="english" lang="en" dir="ltr"></p></details>
     </section>

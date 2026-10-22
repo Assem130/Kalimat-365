@@ -338,7 +338,7 @@ function atlasApi(responses = {}, options = {}) {
     "today-view", "explore-view", "history-view", "settings-view", "onboarding", "recovery",
     "empty", "error", "today-title", "explore-title", "history-title", "settings-title",
     "onboarding-title", "recovery-title", "empty-title", "error-title", "today-card", "today-date", "today-empty",
-    "explore-card", "atlas-search", "search-count", "search-results", "return-today",
+    "explore-card", "atlas-search", "search-count", "search-results", "return-today", "explore-results-view", "explore-back",
     "history-filter", "history-list", "settings-english", "settings-remote-speech", "settings-speech-rate", "settings-speech-repeat", "settings-save", "settings-time",
     "settings-reminder", "export", "import-file", "clear", "recovery-export", "recovery-import",
     "recovery-clear", "onboarding-settings", "today-save", "today-known", "today-difficult", "explore-lookup",
@@ -1552,7 +1552,7 @@ test("Atlas clear does not retain a profile-only warning as a reminder warning",
 test("Atlas exposes theme and export controls without a streak badge", () => {
   const html = atlasSource("atlas.html");
   assert.match(html, /<select\s+id="theme-select"[^>]*aria-label="اختر السمة"/);
-  assert.match(html, /<option\s+value="paper">ورقي<\/option>/);
+  assert.match(html, /<option\s+value="paper">ورقي \(حسب النظام\)<\/option>/);
   assert.match(html, /<option\s+value="emerald">زمردي<\/option>/);
   assert.match(html, /<option\s+value="midnight">ليلي<\/option>/);
   assert.doesNotMatch(html, /id="streak-badge"/);
@@ -3079,3 +3079,61 @@ for (const route of ["", "?view=explore&q=word"]) {
     assert.equal(fixture.calls.filter(message => message.type === "assignment.get").length, 1);
   });
 }
+
+
+test("Atlas History deep link opens retained words instead of Today", async () => {
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile({ assignments: { "2026-07-29": { wordId: "w2" } } })) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+  }, { search: "?view=history" });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("history-view").hidden, false);
+  assert.equal(fixture.elements.get("today-view").hidden, true);
+  assert.ok(fixture.elements.get("history-list").children.length > 0);
+  assert.equal(fixture.context.document.activeElement, fixture.elements.get("history-title"));
+});
+
+test("Atlas Explore selection preserves results and restores the selected result on Back", async () => {
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+  }, { vocabulary: [{ id: "w1", word: "كلمة", meaningAr: "معنى", reviewed: true }] });
+  await fixture.api.initialize();
+  fixture.elements.get("explore").listeners.click();
+  const rows = [...fixture.elements.get("search-results").children];
+  const result = rows[0];
+  result.focus();
+  result.listeners.click();
+  assert.equal(fixture.elements.get("explore-results-view").hidden, true);
+  assert.equal(fixture.elements.get("explore-card").hidden, false);
+  assert.equal(fixture.context.document.activeElement.tagName, "H3");
+  assert.equal(fixture.context.document.activeElement.textContent, fixture.elements.get("explore-card").children[0].textContent);
+  fixture.elements.get("explore-back").listeners.click();
+  assert.equal(fixture.elements.get("explore-results-view").hidden, false);
+  assert.equal(fixture.elements.get("explore-card").hidden, true);
+  assert.deepEqual(fixture.elements.get("search-results").children, rows);
+  assert.equal(fixture.context.document.activeElement, result);
+});
+
+test("Atlas direct word and dictionary detail return to a usable result query", async () => {
+  const fixture = atlasApi({
+    "assignment.get": { kind: "assigned", wordId: "w1", dateKey: "2026-07-30" },
+    "state.export": { kind: "export", text: JSON.stringify(atlasProfile()) },
+    "settings.get": { kind: "settings", reminder: { enabled: false, time: "09:00" } },
+    "online.lookup": { kind: "online-result", query: "كلمة", headword: "كلمة", definitionAr: "معنى", sourceUrl: "https://ar.wiktionary.org/wiki/test", retrievedAt: "2026-08-11" },
+  }, { search: "?view=explore&id=w2&q=meaning" });
+  await fixture.api.initialize();
+  assert.equal(fixture.elements.get("explore-results-view").hidden, true);
+  assert.equal(fixture.context.document.activeElement.tagName, "H3");
+  fixture.elements.get("explore-back").listeners.click();
+  assert.equal(fixture.elements.get("atlas-search").value, "meaning");
+  assert.equal(fixture.context.document.activeElement, fixture.elements.get("atlas-search"));
+  await fixture.api.lookupOnline("كلمة", fixture.elements.get("explore-lookup"));
+  assert.equal(fixture.elements.get("explore-results-view").hidden, true);
+  assert.equal(fixture.context.document.activeElement.tagName, "H3");
+  fixture.elements.get("explore-back").listeners.click();
+  assert.equal(fixture.elements.get("atlas-search").value, "meaning");
+  assert.equal(fixture.context.document.activeElement, fixture.elements.get("explore-lookup"));
+});

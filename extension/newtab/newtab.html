@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" class="daily-ui">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark"><title>كلمات</title>
@@ -7,8 +7,9 @@
   <script src="../shared/theme-init.js"></script>
 </head>
 <body>
-  <header><a href="../atlas/atlas.html?view=today" class="brand">كلمات<span class="brand-dot"></span></a><nav aria-label="روابط"><a href="../atlas/atlas.html?view=history">كلماتي</a><a href="../atlas/atlas.html?view=settings">الإعدادات</a></nav></header>
-  <main aria-busy="true">
+  <a class="skip-link" href="#main">تجاوز إلى المحتوى</a>
+  <header><a href="../atlas/atlas.html?view=today" class="brand">كَلِمات</a><nav aria-label="روابط"><a href="../atlas/atlas.html?view=history">كلماتي</a><a href="../atlas/atlas.html?view=settings">الإعدادات</a></nav></header>
+  <main id="main" tabindex="-1" aria-busy="true">
     <p id="status" role="status" aria-live="polite">نحضّر كلمتك…</p>
     <article id="encounter" hidden>
       <div class="date-row"><time id="date"></time><button id="dismiss" type="button">اكتفيت لليوم</button></div>
@@ -24,7 +25,7 @@
       <div class="recall-heading"><h2 id="recall-title">هل تذكر هذه الكلمة؟</h2><button id="skip" type="button">تخطَّ</button></div>
       <p id="recall-word" class="recall-word"></p>
       <button id="reveal" type="button" aria-expanded="false" aria-controls="recall-answer">اكشف المعنى</button>
-      <div id="recall-answer" hidden><p id="recall-meaning"></p><p id="recall-example"></p><button id="recall-done" type="button">تمّ</button></div>
+      <div id="recall-answer" tabindex="-1" role="region" aria-label="معنى الكلمة ومثالها" hidden><p id="recall-meaning"></p><p id="recall-example"></p><button id="recall-done" type="button">تمّ</button></div>
     </section>
     <button id="retry" type="button" hidden>إعادة المحاولة</button>
   </main>

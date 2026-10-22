@@ -191,6 +191,19 @@ html.daily-ui[data-theme="midnight"] {
   --daily-on-accent: #111e2b;
   color-scheme: dark;
 }
+/* Paper follows the device appearance on every extension surface. */
+@media (prefers-color-scheme: dark) {
+  html.daily-ui[data-theme="paper"], html.daily-ui:not([data-theme]) {
+    --daily-bg: #15231d;
+    --daily-ink: #f3efe5;
+    --daily-muted: #bdc9bf;
+    --daily-line: #48574b;
+    --daily-soft: #2b4033;
+    --daily-accent: #d8e8c6;
+    --daily-on-accent: #15231d;
+    color-scheme: dark;
+  }
+}
 .daily-ui ::selection { background: var(--daily-accent); color: var(--daily-on-accent); }
 .daily-ui { scrollbar-color: var(--daily-muted) var(--daily-bg); }
 .daily-ui button, .daily-ui summary { -webkit-tap-highlight-color: transparent; }

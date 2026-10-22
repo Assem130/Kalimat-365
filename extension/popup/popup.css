@@ -3,9 +3,12 @@
 [hidden] { display: none !important; }
 html, body { width: 380px; min-width: 380px; max-width: 380px; margin: 0; }
 body { max-height: 600px; overflow-y: auto; background: var(--daily-bg); color: var(--daily-ink); font: 18px/1.7 var(--serif); }
-main { width: 380px; max-width: 100%; padding: 14px var(--popup-gutter) 18px; }
+main { width: 380px; max-width: 100%; padding: 14px var(--popup-gutter) 12px; }
 .masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .masthead h1 { font: 700 30px/1.5 var(--serif); margin: 0; }
+.masthead-actions { display: flex; align-items: center; gap: 8px; }
+.reader-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--daily-muted); font-size: 16px; text-underline-offset: 4px; }
+.reader-link:hover { color: var(--daily-ink); }
 .daily-caption { font-size: 15px; margin: 10px 0 0; }
 #word { font-size: 58px; font-weight: 700; line-height: 1.5; margin: 4px 0 2px; padding: 0; text-align: center; overflow-wrap: anywhere; }
 .meaning { font-size: 20px; line-height: 1.8; margin: 0 0 20px; }
@@ -31,7 +34,7 @@ details p { margin: 6px 0 14px; }
 .skip-link { position: absolute; top: -80px; background: var(--daily-bg); color: var(--daily-ink); padding: 8px; }
 .skip-link:focus-visible { top: 0; z-index: 1; }
 .daily-ui .discovery-link { display: flex; align-items: center; margin: 16px auto 0; padding: 10px 12px; border: 1px solid var(--daily-line); border-radius: 8px; background: transparent; color: var(--daily-ink); font: 16px/1.7 var(--serif); text-align: start; cursor: pointer; }
-.daily-ui .source-attribution { margin-block-start: 12px; font-size: 11px; line-height: 1.8; }
+.daily-ui .source-attribution { margin-block-start: 12px; font-size: 13px; line-height: 1.8; color: var(--daily-muted); }
 .daily-ui .source-attribution p { font-size: inherit; }
 .daily-ui .source-attribution a { color: var(--daily-accent); display: block; overflow-wrap: anywhere; text-underline-offset: 3px; }
 .daily-source-setup { padding-block: 18px; }

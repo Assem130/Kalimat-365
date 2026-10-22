@@ -16,6 +16,33 @@ For the optional new-tab build, package with `--new-tab` and run without `KALIMA
 
 See the storage-recovery check below for temporary write-failure coverage. Neither script uses your personal browser profile.
 
+## Experience and lifecycle regression
+
+After building the normal package, run:
+
+```sh
+KALIMAT_PLAYWRIGHT_PATH=/path/to/existing/node_modules/playwright \
+node tests/e2e/experience.cjs
+```
+
+This complements the pilot and storage-recovery scripts. It checks reader Save focus with a delayed response, cross-surface saving, the My words link, Explore selection and Back, visible pilot examples and references, settings persistence, and rejection of an incompatible import without data loss. It also checks shared palettes, system dark mode, reduced motion, narrow layouts, and actual 200% browser zoom. Zoom screenshots capture the viewport because Chromium full-page capture clips at non-default browser zoom.
+
+The date checks simulate the Amsterdam daylight-saving transition and the next local date. The lifecycle check stops the actual MV3 worker through Chromium's debugging protocol, confirms its stopped state and absent target, then sends a message to resume it. The complete exported profile must remain identical after resumption and a full browser restart. This verifies forced termination, not a measured idle-suspension schedule.
+
+The same executable, package, and output environment variables as `pilot.cjs` are available. The test uses offline packaged code and disposable profiles. It records errors, external requests, screenshots and a JSON report. Dates and the save-response delay are controlled. The popup document is separate from native toolbar evidence. Screen-reader output and audible speech remain manual checks.
+
+## Independent Firefox runtime
+
+Use the installed Firefox and Python standard library. No driver or dependency installation is required:
+
+```sh
+python3 tests/e2e/firefox.py extension/dist/firefox --output /tmp/kalimat-firefox-evidence
+```
+
+The harness starts a disposable headless Firefox profile and installs the actual temporary addon through Marionette. It checks daily rendering, saving, reader dismissal after refresh, history routing, Explore focus and Back, shared themes, backup/clear/import, and actual addon reload. Backup operations use the extension's runtime API. UI actions use document controls, not native desktop input. This does not verify the Firefox toolbar, permission prompts, native file chooser, audible speech, or persistence across a Firefox process restart.
+
+Use `--firefox` or `KALIMAT_FIREFOX` to select the executable. The harness records browser capabilities, an aggregate package hash, screenshots and a JSON report. It removes its temporary profile after success or failure. This harness requires a Firefox build that supports Marionette's `--remote-allow-system-access` flag and temporary addon installation. It changes no personal profiles or system preferences.
+
 ## Historical discovery extension E2E
 
 The following `discovery.cjs` and `daily.cjs` flows target earlier source-discovery packages. They do not describe the current pilot daily flow.

@@ -20,8 +20,9 @@
     byId("encounter").classList.toggle("compact", compact);
     byId("full").hidden = compact;
     byId("reopen").hidden = !compact;
-    byId("save").textContent = current.saved ? "أزل من المحفوظات" : "حفظ الكلمة";
+    byId("save").textContent = current.saved ? "محفوظة" : "حفظ الكلمة";
     byId("save").setAttribute("aria-pressed", String(!!current.saved));
+    byId("save").title = current.saved ? "إزالة من المحفوظات" : "حفظ الكلمة";
     byId("source").href = word.source.url;
     byId("source").textContent = word.source.title;
     byId("encounter").hidden = false;
@@ -57,6 +58,7 @@
   async function mutate(message, apply, focusId) {
     if (busy || !current) return;
     busy = true;
+    const invoker = document.activeElement;
     const controls = [...document.querySelectorAll("button")];
     controls.forEach(button => { button.disabled = true; });
     let focusAfter = false;
@@ -70,7 +72,12 @@
     finally {
       busy = false;
       controls.forEach(button => { button.disabled = false; });
-      if (focusAfter && focusId) byId(focusId).focus();
+      // Disabling a focused button drops focus in Chromium. Restore it only
+      // while the user has not moved to another control during the request.
+      if (!document.activeElement || document.activeElement === document.body || document.activeElement === invoker) {
+        const target = focusAfter && focusId ? byId(focusId) : invoker;
+        if (target && !target.hidden && !target.closest("[hidden]")) target.focus();
+      }
       if (refreshPending) { refreshPending = false; load(); }
     }
   }
@@ -80,7 +87,7 @@
   const finishRecall = () => mutate({ type: "pilot.recall.skip", dateKey: current.dateKey }, () => { current.recall = null; }, "dismiss");
   byId("skip").addEventListener("click", finishRecall);
   byId("recall-done").addEventListener("click", finishRecall);
-  byId("reveal").addEventListener("click", () => { reveal = true; render(); byId("recall-done").focus(); });
+  byId("reveal").addEventListener("click", () => { reveal = true; render(); byId("recall-answer").focus(); });
   byId("retry").addEventListener("click", load);
   api.storage.onChanged?.addListener((changes, area) => { if (area === "local" && changes["kalimat.profile"]) load(); });
   window.addEventListener("focus", load);

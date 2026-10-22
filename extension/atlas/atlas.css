@@ -435,9 +435,6 @@ hr {
   border-top: 1px solid var(--atlas-border);
   margin: 24px 0;
 }
-  border-top: 1px solid var(--atlas-border);
-  margin: 24px 0;
-}
 
 @media (max-width: 480px) {
   body {
@@ -693,7 +690,7 @@ hr {
 .word-card .english, .word-card .pronunciation { unicode-bidi: isolate; }
 .word-card summary { min-height: 44px; cursor: pointer; padding: 8px 0; }
 
-/* Daily encounter and its shared Atlas navigation. Other views keep their controls. */
+/* Daily encounter and its shared Atlas navigation. */
 html.daily-ui { background: var(--daily-bg); color: var(--daily-ink); }
 .daily-ui body { max-width: 1120px; padding: 0 32px 32px; background: var(--daily-bg); color: var(--daily-ink); }
 .daily-ui .masthead { gap: 24px; padding: 14px 0; border-color: var(--daily-line); flex-wrap: nowrap; }
@@ -798,3 +795,65 @@ html.daily-ui { background: var(--daily-bg); color: var(--daily-ink); }
 #today-card:has(> .sense-context) > .daily-morphology { grid-row: 6; }
 #today-card:has(> .sense-context) > .daily-example { grid-row: 7; }
 #today-card:has(> .sense-context) > .daily-translation { grid-row: 8; }
+
+/* Secondary views share the daily encounter's palette and reading typography. */
+html.daily-ui {
+  --atlas-bg: var(--daily-bg);
+  --atlas-surface: var(--daily-bg);
+  --atlas-surface-strong: var(--daily-soft);
+  --atlas-surface-hover: var(--daily-soft);
+  --atlas-text: var(--daily-ink);
+  --atlas-border: var(--daily-line);
+  --atlas-input-border: var(--daily-muted);
+  --atlas-card-bg: var(--daily-bg);
+  --atlas-card-text: var(--daily-ink);
+  --atlas-muted: var(--daily-muted);
+}
+.daily-ui .view { background: transparent; color: var(--daily-ink); border: 0; padding: 24px 0; font: 20px/1.8 var(--serif); }
+.daily-ui .view > h2 { font: 400 30px/1.6 var(--serif); margin: 0 0 24px; }
+.daily-ui :where(#explore-view, #history-view, #settings-view, #recovery) button,
+.daily-ui .file-button {
+  background: transparent; color: var(--daily-ink); border: 1px solid var(--daily-line);
+  border-radius: 8px; font: 18px/1.6 var(--serif); padding: 8px 16px;
+}
+.daily-ui :where(#explore-view, #history-view, #settings-view) button:hover:not(:disabled),
+.daily-ui .file-button:hover { background: var(--daily-soft); color: var(--daily-ink); }
+.daily-ui :where(#explore-view, #history-view, #settings-view) button[aria-pressed="true"],
+.daily-ui #settings-reminder[aria-checked="true"] { background: var(--daily-soft); color: var(--daily-ink); border-color: var(--daily-accent); }
+.daily-ui .view input, .daily-ui .view select { background: var(--daily-bg); border-color: var(--daily-muted); color: var(--daily-ink); border-radius: 6px; font: 18px/1.6 var(--serif); max-width: 100%; }
+.daily-ui .view input[type="checkbox"] { min-height: auto; accent-color: var(--daily-accent); }
+.daily-ui .result-list, .daily-ui .history-list { gap: 0; border-top: 1px solid var(--daily-line); }
+.daily-ui .result-list button, .daily-ui .history-list button { border: 0; border-bottom: 1px solid var(--daily-line); border-radius: 0; background: transparent; padding: 16px 8px; font: 20px/1.8 var(--serif); overflow-wrap: anywhere; }
+.daily-ui #explore-card { border: 0; background: transparent; color: var(--daily-ink); padding: 24px 0; margin-block: 12px; max-width: 760px; }
+.daily-ui #explore-card h3 { color: var(--daily-ink); font: 700 clamp(36px, 6vw, 56px)/1.6 var(--serif); text-decoration: none; margin: 0 0 14px; }
+.daily-ui #explore-card .meaning { font: 25px/1.9 var(--serif); }
+.daily-ui #explore-card :where(p, summary) { font-family: var(--serif); }
+.daily-ui #explore-card :where(.source-note, .source-link, .metadata, .label) { color: var(--daily-muted); }
+.daily-ui #explore-card .english { font-family: var(--sans); }
+.daily-ui #explore-back { margin-inline-end: 10px; }
+.daily-ui .settings-section { max-width: 720px; border-bottom: 1px solid var(--daily-line); padding-block: 8px 28px; margin-bottom: 24px; }
+.daily-ui .settings-section h3 { font: 700 24px/1.6 var(--serif); margin: 0 0 18px; }
+.daily-ui .settings-section h4 { font: 700 21px/1.7 var(--serif); margin: 24px 0 10px; }
+.daily-ui .settings-section > label { display: block; margin-block: 14px 6px; }
+.daily-ui .settings-section > p, .daily-ui .legacy-preferences > p { max-width: 62ch; color: var(--daily-muted); font-size: 18px; }
+.daily-ui #settings-save { display: block; margin-top: 24px; }
+.daily-ui .data-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.daily-ui .data-actions .file-button { margin: 0; }
+.daily-ui button.danger { border-color: var(--atlas-danger-border); color: var(--atlas-danger-text); }
+.daily-ui :where(.legacy-preferences, .optional-discovery) { max-width: 720px; margin-top: 24px; }
+.daily-ui :where(.legacy-preferences, .optional-discovery) > summary { cursor: pointer; padding-block: 10px; min-height: 44px; }
+.daily-ui .legacy-preferences { font-size: 18px; }
+.daily-ui .discovery-panel { background: transparent; color: var(--daily-ink); border: 0; padding: 16px 0; margin: 0; }
+.daily-ui .discovery-note, .daily-ui .discovery-eyebrow { color: var(--daily-muted); }
+.daily-ui fieldset { border-color: var(--daily-line); border-radius: 6px; }
+@media (max-width: 540px) {
+  .daily-ui .history-controls { align-items: stretch; }
+  .daily-ui .data-actions > :not(input[type="file"]) { width: 100%; }
+}
+.daily-ui .discovery-note { font-size: 17px; }
+.daily-ui .discovery-eyebrow { font-size: 15px; }
+.daily-ui .warning { color: var(--daily-ink); }
+.daily-ui .view a { color: var(--daily-accent); text-underline-offset: 4px; }
+@media (prefers-color-scheme: dark) {
+  html.daily-ui[data-theme="paper"] { --atlas-danger-border: #ef9b8c; --atlas-danger-text: #ffd8d0; --atlas-warning-border: #efc26d; }
+}

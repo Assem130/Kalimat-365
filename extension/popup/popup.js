@@ -93,7 +93,7 @@
     renderSources(word);
     elements.vocalization.textContent = word.vocalization || "";
     elements.vocalization.hidden = !word.vocalization || word.vocalization === word.word;
-    elements.vocalizationDetails.hidden = elements.vocalization.hidden && !word.register && !state.dateKey;
+    elements.vocalizationDetails.hidden = elements.vocalization.hidden && !word.register && (word.contentVersion === 4 || !state.dateKey);
     elements.register.textContent = { standard: "فصيح", classical: "أدبي", colloquial: "عامي" }[word.register] || "";
     elements.register.hidden = !elements.register.textContent;
     elements.save.setAttribute("aria-pressed", String(result.saved === true));

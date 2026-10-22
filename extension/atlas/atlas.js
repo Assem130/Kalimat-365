@@ -26,6 +26,7 @@
   };
   let elements;
   let reminderQueue = Promise.resolve();
+  let exploreInvoker = null;
 
   const canonicalSearchKey = globalThis.KalimatVocabulary?.canonicalSearchKey;
   if (typeof canonicalSearchKey !== "function") throw new TypeError("KalimatVocabulary.canonicalSearchKey is required.");
@@ -187,7 +188,7 @@
       "today-title", "explore-title", "history-title", "settings-title",
       "onboarding-title", "recovery-title", "empty-title", "error-title",
       "today-card", "today-date", "today-empty", "explore-card",
-      "atlas-search", "search-count", "search-results", "return-today",
+      "atlas-search", "search-count", "search-results", "return-today", "explore-results-view", "explore-back",
       "history-filter", "history-list",
       "settings-english", "settings-remote-speech", "settings-speech-rate", "settings-speech-repeat", "settings-save", "settings-time", "settings-reminder",
       "export", "import-file", "clear",
@@ -330,7 +331,6 @@
     if (daily) container.append(elements["today-save"]);
     const morphology = daily ? disclosure(word.contentVersion === 3 && !word.root && !word.pattern && !word.vocalization ? "معلومات الكلمة" : "أصل الكلمة وضبطها", "daily-morphology") : container;
     const example = daily ? disclosure(word.exampleKind === "quotation" && word.exampleSource ? "شاهد ومصدره" : "مثال وتفاصيل الاستعمال", "daily-example") : container;
-    if (word.contentVersion === 4) addSourceLink(example, word.source, "المصدر المعجمي");
     if (word.contentVersion === 3) {
       addText(example, "p", "تعريف من مصدر معجمي · لم يراجعه فريق كلمات", "source-note", "rtl");
       addSourceLink(example, word.source, "مصدر التعريف");
@@ -347,10 +347,11 @@
       addLabeledText(translation, word.contextEn, "context english", "Usage", "ltr");
       if (!daily) container.append(translation);
     }
-    const visibleContext = word.contextAr || (daily && word.contentVersion === 3 ? word.exampleAr : "");
+    const visibleContext = word.contextAr || (daily && [3, 4].includes(word.contentVersion) ? word.exampleAr : "");
     addLabeledText(container, visibleContext, "context", word.contentVersion === 3 ? "شاهد من المصدر" : "في الاستعمال", "rtl");
+    if (word.contentVersion === 4) addSourceLink(daily ? container : example, word.source, "المصدر المعجمي");
     addLabeledText(example, word.usageNote, "usage-note", "في الاستعمال", "rtl");
-    if (!daily || word.exampleAr !== visibleContext) addLabeledText(example, word.exampleAr, "example", word.exampleKind === "original" ? "مثال من تحرير كلمات" : word.exampleKind === "quotation" && word.exampleSource ? "شاهد" : "مثال", "rtl");
+    if (word.exampleAr !== visibleContext) addLabeledText(example, word.exampleAr, "example", word.exampleKind === "original" ? "مثال من تحرير كلمات" : word.exampleKind === "quotation" && word.exampleSource ? "شاهد" : "مثال", "rtl");
     if (word.exampleKind === "quotation" && word.exampleSource) {
       try {
         const url = new URL(word.exampleSource.url);
@@ -386,7 +387,7 @@
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = other.word;
-        button.addEventListener("click", () => { viewWord(other); show("explore"); });
+        button.addEventListener("click", () => viewWord(other));
         related.append(button);
       }
       if (related.childElementCount) morphology.append(related);
@@ -439,11 +440,34 @@
     elements["today-difficult"].setAttribute("aria-pressed", String(wordState?.status === "difficult"));
   }
 
-  function viewWord(word) {
+  function showExploreDetail(invoker = null) {
+    if (invoker) exploreInvoker = invoker;
+    elements["explore-results-view"].hidden = true;
+    elements["explore-back"].hidden = false;
+    elements["explore-card"].hidden = false;
+    show("explore");
+    const heading = [...elements["explore-card"].children].find(node => node.tagName === "H3");
+    if (heading) { heading.setAttribute("tabindex", "-1"); heading.focus(); }
+  }
+
+  function returnToResults() {
+    elements["explore-results-view"].hidden = false;
+    elements["explore-back"].hidden = true;
+    elements["return-today"].hidden = true;
+    elements["explore-card"].hidden = true;
+    const invoker = exploreInvoker;
+    if (!elements["search-results"].childElementCount) search();
+    exploreInvoker = null;
+    if (invoker?.isConnected) invoker.focus();
+    else elements["atlas-search"].focus();
+  }
+
+  function viewWord(word, invoker = null) {
     state.exploreWord = word;
     renderWord(elements["explore-card"], word);
     elements["explore-card"].hidden = false;
     elements["return-today"].hidden = word.id === state.today?.word?.id;
+    showExploreDetail(invoker);
   }
 
   function mergeAssignment(result) {
@@ -466,6 +490,10 @@
 
   function search() {
     const rawQuery = elements["atlas-search"].value;
+    exploreInvoker = null;
+    elements["explore-results-view"].hidden = false;
+    elements["explore-back"].hidden = true;
+    elements["return-today"].hidden = true;
     elements["explore-card"].replaceChildren();
     elements["explore-card"].hidden = true;
     let matches;
@@ -512,12 +540,14 @@
       const button = document.createElement("button");
       button.type = "button";
       button.textContent = `${word.word} — ${word.meaningAr}`;
-      button.addEventListener("click", () => viewWord(word));
+      button.addEventListener("click", () => viewWord(word, button));
       elements["search-results"].append(button);
     }
   }
 
   function renderOnlineResult(result) {
+    state.exploreWord = null;
+    elements["return-today"].hidden = !state.today?.word;
     const container = elements["explore-card"];
     container.replaceChildren();
     container.hidden = false;
@@ -563,7 +593,7 @@
     retrieved.textContent = `وقت الاسترجاع: ${result.retrievedAt}`;
     container.append(retrieved);
 
-    show("explore");
+    showExploreDetail(elements["explore-lookup"]);
   }
 
   async function lookupOnline(queryOverride, triggeringButton) {
@@ -614,7 +644,7 @@
       if (btn) {
         btn.setAttribute("aria-busy", "false");
         btn.disabled = false;
-        btn.focus();
+        if (!elements["explore-results-view"].hidden) btn.focus();
       }
     }
   }
@@ -651,7 +681,7 @@
         button.type = "button";
         button.dataset.historyKey = `saved:${word.id}`;
         button.textContent = `${word.word} · محفوظة`;
-        button.addEventListener("click", () => { viewWord(word); show("explore"); });
+        button.addEventListener("click", () => { elements["atlas-search"].value = word.word; search(); viewWord(word); });
         elements["history-list"].append(button);
       }
     }
@@ -1113,7 +1143,6 @@
       return;
     }
     viewWord(word);
-    show("explore");
   }
 
   function renderRecovery(raw) {
@@ -1209,17 +1238,18 @@
     // Recall remains available even when sources cannot provide a new word.
     const reviewResult = await loadDueReviews({ force: true });
     if (reviewResult?.kind === "recovery" || ReviewSession.isRecovery(reviewSession)) return;
+    if (requestedView === "history" && !dateKey && !directWord) { show("history"); renderHistory(); return; }
     if (needsSetup && !directWord && !exploreRequested) { state.today = null; renderToday(); show("today"); return; }
     if (directWord) {
+      elements["atlas-search"].value = requestedQuery || directWord.word;
+      search();
       viewWord(directWord);
-      show("explore");
       return;
     }
     updateStreakBadge(assignment?.dateKey);
     if (assignment?.kind === "assigned") {
       if (dateKey) {
         viewWord(assignedWord);
-        show("explore");
       } else {
         if (state.view !== "today") show("today");
         if (exploreRequested) {
@@ -1696,6 +1726,7 @@
     document.querySelectorAll("label.file-button").forEach((label) => label.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") { event.preventDefault(); label.click(); }
     }));
+    elements["explore-back"].addEventListener("click", returnToResults);
     elements["return-today"].addEventListener("click", returnToToday);
     elements["history-filter"].addEventListener("change", renderHistory);
     elements["settings-save"].addEventListener("click", () => saveSettings().catch(() => status("تعذّر حفظ الإعدادات.")));
